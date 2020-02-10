@@ -17,7 +17,7 @@
 package apis
 
 import (
-	"github.ibm.com/IBMPrivateCloud/audit-logging-operator/pkg/apis/certmanager/v1alpha1"
+	"github.com/ibm/ibm-auditlogging-operator/pkg/apis/certmanager/v1alpha1"
 )
 
 func init() {

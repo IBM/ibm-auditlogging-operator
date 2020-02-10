@@ -1,4 +1,4 @@
-module github.ibm.com/IBMPrivateCloud/audit-logging-operator
+module github.com/ibm/ibm-auditlogging-operator
 
 go 1.13
 

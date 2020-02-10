@@ -1,15 +1,15 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: audit-logging-operator
+  name: ibm-auditlogging-operator
 subjects:
 - kind: ServiceAccount
-  name: audit-logging-operator
+  name: ibm-auditlogging-operator
   namespace: kube-system
 - kind: ServiceAccount
   name: default
   namespace: kube-system
 roleRef:
   kind: ClusterRole
-  name: audit-logging-operator
+  name: ibm-auditlogging-operator
   apiGroup: rbac.authorization.k8s.io

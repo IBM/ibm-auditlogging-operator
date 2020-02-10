@@ -17,7 +17,7 @@
 package controller
 
 import (
-	"github.ibm.com/IBMPrivateCloud/audit-logging-operator/pkg/controller/auditlogging"
+	"github.com/ibm/ibm-auditlogging-operator/pkg/controller/auditlogging"
 )
 
 func init() {

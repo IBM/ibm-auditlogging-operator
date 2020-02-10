@@ -28,9 +28,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	"github.ibm.com/IBMPrivateCloud/audit-logging-operator/pkg/apis"
-	"github.ibm.com/IBMPrivateCloud/audit-logging-operator/pkg/controller"
-	"github.ibm.com/IBMPrivateCloud/audit-logging-operator/version"
+	"github.com/ibm/ibm-auditlogging-operator/pkg/apis"
+	"github.com/ibm/ibm-auditlogging-operator/pkg/controller"
+	"github.com/ibm/ibm-auditlogging-operator/version"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -100,7 +100,7 @@ func main() {
 
 	ctx := context.TODO()
 	// Become the leader before proceeding
-	err = leader.Become(ctx, "audit-logging-operator-lock")
+	err = leader.Become(ctx, "ibm-auditlogging-operator-lock")
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
