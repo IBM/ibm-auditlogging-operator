@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-logging-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: audit-logging-operator
+  template:
+    metadata:
+      labels:
+        name: audit-logging-operator
+    spec:
+      imagePullSecrets:
+        - name: docker-scratch
+      serviceAccountName: audit-logging-operator
+      containers:
+        - name: audit-logging-operator
+          # Replace this with the built image name
+          image: hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/operator/audit-logging-operator:v0.0.2
+          command:
+          - audit-logging-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              value: ""
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "audit-logging-operator"
