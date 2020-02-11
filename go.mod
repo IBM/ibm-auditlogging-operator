@@ -6,7 +6,7 @@ require (
 	github.com/jetstack/cert-manager v0.13.0 // indirect
 	github.com/operator-framework/operator-sdk v0.14.0
 	github.com/spf13/pflag v1.0.5
-	github.ibm.com/IBMPrivateCloud/icp-cert-manager v3.2.1+incompatible
+	// github.ibm.com/IBMPrivateCloud/icp-cert-manager v3.2.1+incompatible
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
