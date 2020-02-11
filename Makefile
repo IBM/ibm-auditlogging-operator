@@ -137,15 +137,15 @@ build: build-amd64 build-ppc64le build-s390x
 
 build-amd64:
 	@echo "Building the ${IMAGE_NAME} amd64 binary..."
-	@GOARCH=amd64 common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME) ./cmd
+	@GOARCH=amd64 common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME) ./cmd/manager
 
 build-ppc64le:
 	@echo "Building the ${IMAGE_NAME} ppc64le binary..."
-	@GOARCH=ppc64le common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-ppc64le ./cmd
+	@GOARCH=ppc64le common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-ppc64le ./cmd/manager
 
 build-s390x:
 	@echo "Building the ${IMAGE_NAME} s390x binary..."
-	@GOARCH=s390x common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-s390x ./cmd
+	@GOARCH=s390x common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-s390x ./cmd/manager
 
 ############################################################
 # images section
