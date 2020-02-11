@@ -10,15 +10,15 @@ ARG VCS_URL
 
 LABEL org.label-schema.vendor="IBM" \
   org.label-schema.name="ibm-auditlogging-operator" \
-  org.label-schema.description="A github repo with golang" \
+  org.label-schema.description="Audit Logging Service that forwards a service's audit logs to a SIEM." \
   org.label-schema.vcs-ref=$VCS_REF \
   org.label-schema.vcs-url=$VCS_URL \
   org.label-schema.license="Licensed Materials - Property of IBM" \
   org.label-schema.schema-version="1.0" \
   name="ibm-auditlogging-operator" \
   vendor="IBM" \
-  description="A github repo with golang" \
-  summary="A github repo with golang"
+  description="Audit Logging Service that forwards a service's audit logs to a SIEM." \
+  summary="Audit Logging Service that forwards a service's audit logs to a SIEM."
 
 ENV OPERATOR=/usr/local/bin/ibm-auditlogging-operator \
   USER_UID=1001 \
