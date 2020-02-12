@@ -18,7 +18,7 @@ spec:
       containers:
         - name: ibm-auditlogging-operator
           # Replace this with the built image name
-          image: hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/operator/ibm-auditlogging-operator:v0.0.2
+          image: quay.io/opencloudio/ibm-auditlogging-operator:latest
           command:
           - ibm-auditlogging-operator
           imagePullPolicy: Always

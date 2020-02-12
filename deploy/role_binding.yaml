@@ -5,10 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: ibm-auditlogging-operator
-  namespace: kube-system
-- kind: ServiceAccount
-  name: default
-  namespace: kube-system
+  namespace: ibmcs-auditlogging
 roleRef:
   kind: ClusterRole
   name: ibm-auditlogging-operator

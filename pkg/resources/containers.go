@@ -37,7 +37,7 @@ const fluentdConfigKey = "fluent.conf"
 const sourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
-const AuditLoggingNamespace = "kube-system"
+const AuditLoggingNamespace = "ibmcs-auditlogging"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
@@ -88,14 +88,14 @@ var commonTolerations = []corev1.Toleration{
 
 var fluentdMainConfigData = `
 fluent.conf: |-
-  # Input plugins\n@include /fluentd/etc/source.conf\n# Output plugins\n#
-  Only use one output plugin conf file at a time. Comment or remove other files
-  \n# To forward audit logs to QRadar, uncommnet following line, add QRadar server
-  information in the 'audit-logging-fluentd-ds-remote-syslog-config' ConfigMap and
-  restart the 'audit-logging-fluentd-ds-*' pods\n#@include /fluentd/etc/remoteSyslog.conf\n#To
-  forward audit logs to Splunk over HTTPS, uncomment following line, add Splunk
-  server information in the 'audit-logging-fluentd-ds-splunk-hec-config' ConfigMap
-  and restart the 'audit-logging-fluentd-ds-*' pods\n#@include /fluentd/etc/splunkHEC.conf
+  # Input plugins
+  @include /fluentd/etc/source.conf
+  # Output plugins
+  # Only use one output plugin conf file at a time. Comment or remove other files 
+  # To forward audit logs to QRadar, uncommnet following line, add QRadar server information in the 'audit-logging-fluentd-ds-remote-syslog-config' ConfigMap and restart the 'audit-logging-fluentd-ds-*' pods
+  #@include /fluentd/etc/remoteSyslog.conf
+  #To forward audit logs to Splunk over HTTPS, uncomment following line, add Splunk server information in the 'audit-logging-fluentd-ds-splunk-hec-config' ConfigMap and restart the 'audit-logging-fluentd-ds-*' pods
+  #@include /fluentd/etc/splunkHEC.conf
 `
 
 var sourceConfigData1 = `

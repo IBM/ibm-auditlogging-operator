@@ -25,6 +25,8 @@ import (
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -72,6 +74,48 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 			return reconcile.Result{}, err
 		}
 	}
+	return reconcile.Result{}, nil
+}
+
+// IBMDEV serviceAccountForCR returns (reconcile.Result, error)
+func (r *ReconcileAuditLogging) serviceAccountForCR(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("cr.Name", cr.Name)
+
+	expectedRes := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy + res.ServiceAcct,
+			Namespace: cr.Spec.InstanceNamespace,
+		},
+	}
+	// Set CR instance as the owner and controller
+	err := controllerutil.SetControllerReference(cr, expectedRes, r.scheme)
+	if err != nil {
+		reqLogger.Error(err, "Failed to define expected resource")
+		return reconcile.Result{}, err
+	}
+
+	// If ServiceAccount does not exist, create it and requeue
+	foundSvcAcct := &corev1.ServiceAccount{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: cr.Spec.InstanceNamespace}, foundSvcAcct)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
+		err = r.client.Create(context.TODO(), expectedRes)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
+			return reconcile.Result{}, err
+		}
+		// Created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get ServiceAccount")
+		return reconcile.Result{}, err
+	}
+	// No extra validation of the service account required
+
+	// No reconcile was necessary
 	return reconcile.Result{}, nil
 }
 

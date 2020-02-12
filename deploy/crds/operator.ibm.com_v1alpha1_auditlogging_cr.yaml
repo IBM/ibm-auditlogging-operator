@@ -3,8 +3,8 @@ kind: AuditLogging
 metadata:
   name: example-auditlogging
 spec:
-  operatorVersion: v1.0
-  instanceNamespace: kube-system
+  operatorVersion: 3.5.0
+  instanceNamespace: ibmcs-auditlogging
   fluentd:
     enabled: true
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
