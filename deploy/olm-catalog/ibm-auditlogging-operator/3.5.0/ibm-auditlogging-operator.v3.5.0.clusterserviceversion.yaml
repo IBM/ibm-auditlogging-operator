@@ -219,6 +219,14 @@ spec:
           - get
           - update
           - patch
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - ibm-privileged-scc
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
         serviceAccountName: ibm-auditlogging-operator
       deployments:
       - name: ibm-auditlogging-operator
