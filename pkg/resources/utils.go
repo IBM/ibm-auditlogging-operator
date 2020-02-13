@@ -39,7 +39,7 @@ const clusterRoleBindingSuffix = "-role"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
-const ServiceAcct = "auditlogging-svcacct"
+const ServiceAcct = "-auditlogging-svcacct"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
