@@ -173,3 +173,11 @@ rules:
   - get
   - update
   - patch
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  resourceNames:
+  - ibm-privileged-scc
+  verbs:
+  - use

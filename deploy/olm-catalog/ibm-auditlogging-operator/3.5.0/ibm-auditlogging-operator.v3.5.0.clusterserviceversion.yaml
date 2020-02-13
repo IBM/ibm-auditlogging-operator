@@ -264,7 +264,20 @@ spec:
     type: MultiNamespace
   - supported: true
     type: AllNamespaces
+  keywords:
+  - IBM
+  - Cloud
+  - Audit Logging
+  - Common Services
+  labels:
+    name: ibm-auditlogging-operator
+  links:
+  - name: GitHub
+    url: https://github.com/IBM/ibm-auditlogging-operator
+  maintainers:
+  - email: Yanni@us.ibm.com
+    name: Yanni Zhang
   maturity: alpha
-  provider: {}
-  replaces: ibm-auditlogging-operator.v0.0.0
+  provider:
+    name: IBM
   version: 3.5.0
