@@ -1,0 +1,270 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "operator.ibm.com/v1alpha1",
+          "kind": "AuditLogging",
+          "metadata": {
+            "name": "example-auditlogging"
+          },
+          "spec": {
+            "fluentd": {
+              "enabled": true,
+              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64",
+              "imageTagPostfix": "v1.6.2-rhc",
+              "journalPath": "/var/log/audit",
+              "pullPolicy": "IfNotPresent"
+            },
+            "instanceNamespace": "ibmcs-auditlogging",
+            "operatorVersion": "3.5.0",
+            "policyController": {
+              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64",
+              "imageTagPostfix": "3.3.1",
+              "pullPolicy": "IfNotPresent",
+              "verbosity": "0"
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+  name: ibm-auditlogging-operator.v3.5.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: AuditLogging is the Schema for the auditloggings API
+      kind: AuditLogging
+      name: auditloggings.operator.ibm.com
+      version: v1alpha1
+  description: Placeholder description
+  displayName: Ibm Auditlogging Operator
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - '*'
+          resources:
+          - '*'
+          verbs:
+          - get
+          - list
+        - apiGroups:
+          - certmanager.k8s.io
+          resources:
+          - clusterissuers
+          verbs:
+          - use
+        - apiGroups:
+          - certmanager.k8s.io
+          resources:
+          - certificates
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - services/finalizers
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          - serviceaccounts
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - apps
+          resourceNames:
+          - ibm-auditlogging-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - replicasets
+          - deployments
+          verbs:
+          - get
+        - apiGroups:
+          - operator.ibm.com
+          resources:
+          - '*'
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - certmanager.k8s.io
+          resources:
+          - '*'
+          - certificates
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          - clusterrolebindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - mutatingwebhookconfigurations
+          - validatingwebhookconfigurations
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - audit.policies.ibm.com
+          resources:
+          - auditpolicies
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - audit.policies.ibm.com
+          resources:
+          - auditpolicies/status
+          verbs:
+          - get
+          - update
+          - patch
+        serviceAccountName: ibm-auditlogging-operator
+      deployments:
+      - name: ibm-auditlogging-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: ibm-auditlogging-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: ibm-auditlogging-operator
+            spec:
+              containers:
+              - command:
+                - ibm-auditlogging-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: ibm-auditlogging-operator
+                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+                imagePullPolicy: Always
+                name: ibm-auditlogging-operator
+                resources: {}
+              imagePullSecrets:
+              - name: docker-scratch
+              serviceAccountName: ibm-auditlogging-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  maturity: alpha
+  provider: {}
+  replaces: ibm-auditlogging-operator.v0.0.0
+  version: 3.5.0
