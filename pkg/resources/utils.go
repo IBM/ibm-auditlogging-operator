@@ -39,6 +39,7 @@ const clusterRoleBindingSuffix = "-role"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
+const ServiceAcct = "-auditlogging-svcacct"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -55,13 +56,13 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
-			Name:      "default",
-			Namespace: instance.Spec.InstanceNamespace,
+			Name:      AuditPolicyControllerDeploy + ServiceAcct,
+			Namespace: AuditLoggingNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     AuditPolicyControllerDeploy + clusterRoleBindingSuffix,
+			Name:     AuditPolicyControllerDeploy + clusterRoleSuffix,
 		},
 	}
 	return rb
@@ -234,6 +235,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName:            AuditPolicyControllerDeploy + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
