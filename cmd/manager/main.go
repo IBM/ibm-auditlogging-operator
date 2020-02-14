@@ -31,6 +31,7 @@ import (
 	"github.com/ibm/ibm-auditlogging-operator/pkg/apis"
 	"github.com/ibm/ibm-auditlogging-operator/pkg/controller"
 	"github.com/ibm/ibm-auditlogging-operator/version"
+	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -120,6 +121,12 @@ func main() {
 
 	// Setup Scheme for all resources
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	//IBMDEV
+	if err := certmgr.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
