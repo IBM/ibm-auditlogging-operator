@@ -18,7 +18,7 @@ metadata:
               "journalPath": "/var/log/audit",
               "pullPolicy": "IfNotPresent"
             },
-            "instanceNamespace": "ibmcs-auditlogging",
+            "instanceNamespace": "ibm-common-services",
             "operatorVersion": "3.5.0",
             "policyController": {
               "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64",

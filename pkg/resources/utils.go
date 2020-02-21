@@ -57,7 +57,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      AuditPolicyControllerDeploy + ServiceAcct,
-			Namespace: AuditLoggingNamespace,
+			Namespace: instance.Spec.InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
