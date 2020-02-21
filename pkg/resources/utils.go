@@ -39,7 +39,7 @@ const clusterRoleBindingSuffix = "-role"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
-const ServiceAcct = "-auditlogging-svcacct"
+const ServiceAcct = "-svcacct"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -111,6 +111,17 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
 				APIGroups: []string{"apps"},
 				Resources: []string{"deployments"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch"},
+				APIGroups: []string{""},
+				Resources: []string{"namespaces"},
+			},
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"ibm-privileged-scc"},
 			},
 		},
 	}
