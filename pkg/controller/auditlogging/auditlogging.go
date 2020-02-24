@@ -119,15 +119,33 @@ func (r *ReconcileAuditLogging) serviceAccountForCR(cr *operatorv1alpha1.AuditLo
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) createOrUpdateRoles(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.createOrUpdateRole(instance, res.FluentdDaemonSetName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.createOrUpdateClusterRole(instance, res.AuditPolicyControllerDeploy)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRole.Namespace", instance.Spec.InstanceNamespace, "ClusterRole.Name", instance.Name)
-	expected := res.BuildClusterRole(instance)
+	var expected *rbacv1.ClusterRole
+	if name == res.FluentdDaemonSetName {
+		expected = res.BuildRoleForFluentd(instance)
+	} else {
+		expected = res.BuildClusterRoleForPolicyController(instance)
+	}
 	found := &rbacv1.ClusterRole{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new ClusterRole
-		// newClusterRole := res.BuildClusterRole(instance)
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -161,9 +179,28 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1al
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) createOrUpdateRoleBindings(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.createOrUpdateRoleBinding(instance, res.FluentdDaemonSetName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.createOrUpdateClusterRoleBinding(instance, res.AuditPolicyControllerDeploy)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", instance.Spec.InstanceNamespace, "CLusterRoleBinding.Name", instance.Name)
-	expected := res.BuildClusterRoleBinding(instance)
+	expected := nil
+	if name == res.FluentdDaemonSetName {
+		expected = res.BuildRoleBindingForFluentd(instance)
+	} else {
+		expected = res.BuildClusterRoleBindingForPolicyController(instance)
+	}
 	found := &rbacv1.ClusterRoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
@@ -268,26 +305,26 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditConfigMaps(instance *operator
 
 func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.AuditLogging, configName string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Spec.InstanceNamespace, "ConfigMap.Name", instance.Name)
+	expected, err := res.BuildConfigMap(instance, configName)
+	if err != nil {
+		reqLogger.Error(err, "Failed to create ConfigMap")
+		return reconcile.Result{}, err
+	}
 	configMapFound := &corev1.ConfigMap{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: instance.Spec.InstanceNamespace}, configMapFound)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new ConfigMap
-		newConfigMap, err := res.BuildConfigMap(instance, configName)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create ConfigMap")
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err := controllerutil.SetControllerReference(instance, newConfigMap, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", newConfigMap.Namespace, "ConfigMap.Name", newConfigMap.Name)
-		err = r.client.Create(context.TODO(), newConfigMap)
+		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", expected.Namespace, "ConfigMap.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", newConfigMap.Namespace,
-				"ConfigMap.Name", newConfigMap.Name)
+			reqLogger.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", expected.Namespace,
+				"ConfigMap.Name", expected.Name)
 			return reconcile.Result{}, err
 		}
 		// ConfigMap created successfully - return and requeue

@@ -46,7 +46,7 @@ var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
+func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
 	ls := LabelsForPolicyController(instance.Name)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -69,7 +69,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 }
 
 // BuildClusterRole returns a ClusterRole object
-func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
+func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
 	ls := LabelsForPolicyController(instance.Name)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
@@ -117,6 +117,49 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 				APIGroups: []string{""},
 				Resources: []string{"namespaces"},
 			},
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"ibm-privileged-scc"},
+			},
+		},
+	}
+	return cr
+}
+
+// BuildClusterRoleBinding returns a ClusterRoleBinding object
+func BuildCRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+	ls := LabelsForFluentd(instance.Name)
+	rb := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   FluentdDaemonSetName + clusterRoleBindingSuffix,
+			Labels: ls,
+		},
+		Subjects: []rbacv1.Subject{{
+			APIGroup:  "",
+			Kind:      "ServiceAccount",
+			Name:      FluentdDaemonSetName + ServiceAcct,
+			Namespace: instance.Spec.InstanceNamespace,
+		}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     FluentdDaemonSetName + clusterRoleSuffix,
+		},
+	}
+	return rb
+}
+
+// BuildClusterRole returns a ClusterRole object
+func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
+	ls := LabelsForFluentd(instance.Name)
+	cr := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix,
+			Labels: ls,
+		},
+		Rules: []rbacv1.PolicyRule{
 			{
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},

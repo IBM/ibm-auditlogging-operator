@@ -10,7 +10,7 @@ spec:
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
     imageTagPostfix: v1.6.2-rhc
     pullPolicy: IfNotPresent
-    journalPath: /var/log/audit
+    journalPath: /var/log/journal
   policyController:
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
     imageTagPostfix: 3.3.1
