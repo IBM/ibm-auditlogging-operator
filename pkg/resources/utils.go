@@ -121,7 +121,7 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"ibm-privileged-scc"},
+				ResourceNames: []string{"restricted"},
 			},
 		},
 	}
@@ -129,7 +129,7 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 }
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildCRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
 	ls := LabelsForFluentd(instance.Name)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -164,7 +164,7 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"ibm-privileged-scc"},
+				ResourceNames: []string{"privileged"},
 			},
 		},
 	}
@@ -554,11 +554,20 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 	return commonVolumes
 }
 
+func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
+	return !reflect.DeepEqual(found.Rules, expected.Rules)
+}
+
 func EqualClusterRoles(expected *rbacv1.ClusterRole, found *rbacv1.ClusterRole) bool {
 	return !reflect.DeepEqual(found.Rules, expected.Rules)
 }
 
-func EqualRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
+func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
+	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
+		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
+}
+
+func EqualClusterRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
 }
