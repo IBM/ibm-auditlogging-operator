@@ -134,6 +134,7 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   FluentdDaemonSetName + clusterRoleBindingSuffix,
+			Namespace: instance.Spec.InstanceNamespace,
 			Labels: ls,
 		},
 		Subjects: []rbacv1.Subject{{
@@ -144,7 +145,7 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
+			Kind:     "Role",
 			Name:     FluentdDaemonSetName + clusterRoleSuffix,
 		},
 	}
