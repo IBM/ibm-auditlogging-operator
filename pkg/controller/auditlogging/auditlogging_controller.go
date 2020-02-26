@@ -164,8 +164,14 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Reconcile the expected ServiceAccount
+	// Reconcile the expected ServiceAccount for Audit Policy Controller
 	recResult, recErr = r.serviceAccountForCR(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the expected ServiceAccount
+	recResult, recErr = r.serviceAccountForFluentd(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}

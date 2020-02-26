@@ -156,7 +156,7 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	ls := LabelsForFluentd(instance.Name)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix,
+			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix, // why audit policy controller deploy... shouldn't it be fluentd?
 			Labels: ls,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -383,6 +383,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName: FluentdDaemonSetName + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: []corev1.Toleration{
