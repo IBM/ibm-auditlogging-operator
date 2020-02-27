@@ -203,14 +203,14 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1al
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", instance.Spec.InstanceNamespace, "CLusterRoleBinding.Name", instance.Name)
-	expected := res.BuildRoleBindingForFluentd(instance)
-	found := &rbacv1.RoleBinding{}
+func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", instance.Spec.InstanceNamespace, "ClusterRoleBinding.Name", instance.Name)
+	expected := res.BuildClusterRoleBindingForPolicyController(instance)
+	found := &rbacv1.ClusterRoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
 	if err != nil && errors.IsNotFound(err) {
-		// Define a new ClusterRole
+		// Define a new Role
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -221,13 +221,95 @@ func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1al
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
 			reqLogger.Error(err, "Failed to create new ClusterRoleBinding", "ClusterRoleBinding.Namespace", expected.Namespace,
-				"ClusterRoleBinding.Name", expected.Name)
+				"RoleBinding.Name", expected.Name)
 			return reconcile.Result{}, err
 		}
 		// ClusterRoleBinding created successfully - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ClusterRoleBinding")
+		return reconcile.Result{}, err
+	} else if result := res.EqualClusterRoleBindings(expected, found); result {
+		// If rolebinding is incorrect, delete it and requeue
+		reqLogger.Info("Found rolebinding is incorrect", "Found", found.Subjects, "Expected", expected.Subjects)
+		err = r.client.Delete(context.TODO(), found)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete rolebinding", "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		// Deleted - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Role.Namespace", instance.Spec.InstanceNamespace, "Role.Name", instance.Name)
+	expected := res.BuildRoleForFluentd(instance)
+	found := &rbacv1.Role{}
+	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Role
+		// newClusterRole := res.BuildRole(instance)
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Creating a new Role", "Role.Namespace", expected.Namespace, "Role.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new Role", "Role.Namespace", expected.Namespace,
+				"Role.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Role created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get Role")
+		return reconcile.Result{}, err
+	} else if result := res.EqualRoles(expected, found); result {
+		// If role permissions are incorrect, update it and requeue
+		reqLogger.Info("Found role is incorrect", "Found", found.Rules, "Expected", expected.Rules)
+		found.Rules = expected.Rules
+		err = r.client.Update(context.TODO(), found)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update role", "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		// Updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("RoleBinding.Namespace", instance.Spec.InstanceNamespace, "RoleBinding.Name", instance.Name)
+	expected := res.BuildRoleBindingForFluentd(instance)
+	found := &rbacv1.RoleBinding{}
+	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Role
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Creating a new RoleBinding", "Role.Namespace", expected.Namespace, "RoleBinding.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new RoleBinding", "RoleBinding.Namespace", expected.Namespace,
+				"RoleBinding.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// RoleBinding created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get RoleBinding")
 		return reconcile.Result{}, err
 	} else if result := res.EqualRoleBindings(expected, found); result {
 		// If rolebinding is incorrect, delete it and requeue

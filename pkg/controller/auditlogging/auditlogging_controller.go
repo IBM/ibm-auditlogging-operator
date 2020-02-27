@@ -146,14 +146,20 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Reconcile the expected daemonset
-	recResult, recErr = r.createOrUpdateFluentdDaemonSet(instance)
+	// Reconcile the expected Role
+	recResult, recErr = r.createOrUpdateClusterRole(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the expected RoleBinding
+	recResult, recErr = r.createOrUpdateClusterRoleBinding(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected Role
-	recResult, recErr = r.createOrUpdateClusterRole(instance)
+	recResult, recErr = r.createOrUpdateRole(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
@@ -164,13 +170,19 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
+	// Reconcile the expected daemonset
+	recResult, recErr = r.createOrUpdateFluentdDaemonSet(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
 	// Reconcile the expected ServiceAccount for Audit Policy Controller
 	recResult, recErr = r.serviceAccountForCR(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
-	// Reconcile the expected ServiceAccount
+	// Reconcile the expected ServiceAccount for fluentd
 	recResult, recErr = r.serviceAccountForFluentd(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr

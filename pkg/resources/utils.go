@@ -128,12 +128,12 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 	return cr
 }
 
-// BuildClusterRoleBinding returns a ClusterRoleBinding object
+// BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
 func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
 	ls := LabelsForFluentd(instance.Name)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   FluentdDaemonSetName + clusterRoleBindingSuffix,
+			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
 			Namespace: instance.Spec.InstanceNamespace,
 			Labels: ls,
 		},
@@ -152,12 +152,13 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 	return rb
 }
 
-// BuildClusterRole returns a ClusterRole object
+// BuildRoleForFluentd returns a Role object for fluentd
 func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	ls := LabelsForFluentd(instance.Name)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix, // why audit policy controller deploy... shouldn't it be fluentd?
+			Name:      FluentdDaemonSetName + clusterRoleSuffix,
+			Namespace: instance.Spec.InstanceNamespace,
 			Labels: ls,
 		},
 		Rules: []rbacv1.PolicyRule{
