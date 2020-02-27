@@ -134,7 +134,7 @@ func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ClusterRole.Namespace", instance.Spec.InstanceNamespace, "ClusterRole.Name", instance.Name)
+	reqLogger := log.WithValues("ClusterRole.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildClusterRoleForPolicyController(instance)
 	found := &rbacv1.ClusterRole{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
@@ -176,7 +176,7 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1al
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", instance.Spec.InstanceNamespace, "ClusterRoleBinding.Name", instance.Name)
+	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildClusterRoleBindingForPolicyController(instance)
 	found := &rbacv1.ClusterRoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
@@ -216,11 +216,11 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *opera
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Role.Namespace", instance.Spec.InstanceNamespace, "Role.Name", instance.Name)
+	reqLogger := log.WithValues("Role.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildRoleForFluentd(instance)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Spec.InstanceNamespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		// newClusterRole := res.BuildRole(instance)
@@ -259,11 +259,11 @@ func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.Au
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("RoleBinding.Namespace", instance.Spec.InstanceNamespace, "RoleBinding.Name", instance.Name)
+	reqLogger := log.WithValues("RoleBinding.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildRoleBindingForFluentd(instance)
 	found := &rbacv1.RoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Spec.InstanceNamespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
@@ -280,7 +280,7 @@ func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1al
 			return reconcile.Result{}, err
 		}
 		// RoleBinding created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
+		return reconcile.Result{}, nil
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get RoleBinding")
 		return reconcile.Result{}, err
@@ -299,7 +299,7 @@ func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1al
 }
 
 func (r *ReconcileAuditLogging) createOrUpdatePolicyControllerDeployment(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Deployment.Namespace", instance.Spec.InstanceNamespace, "Deployment.Name", instance.Name)
+	reqLogger := log.WithValues("Deployment.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 
 	expected := res.BuildDeploymentForPolicyController(instance)
 	found := &appsv1.Deployment{}
@@ -364,7 +364,7 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditConfigMaps(instance *operator
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.AuditLogging, configName string) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Spec.InstanceNamespace, "ConfigMap.Name", instance.Name)
+	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	configMapFound := &corev1.ConfigMap{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: instance.Spec.InstanceNamespace}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
@@ -397,7 +397,7 @@ func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Daemonset.Namespace", instance.Spec.InstanceNamespace, "Daemonset.Name", instance.Name)
+	reqLogger := log.WithValues("Daemonset.Namespace", instance.Spec.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildDaemonForFluentd(instance)
 	found := &appsv1.DaemonSet{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: instance.Spec.InstanceNamespace}, found)
