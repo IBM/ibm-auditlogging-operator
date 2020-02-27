@@ -177,6 +177,8 @@ spec:
           resources:
           - clusterroles
           - clusterrolebindings
+          - roles
+          - rolebindings
           verbs:
           - create
           - delete
@@ -238,6 +240,15 @@ spec:
           - get
           - update
           - patch
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          resourceNames:
+          - anyuid
+          - privileged
+          verbs:
+          - use
         serviceAccountName: ibm-auditlogging-operator
       deployments:
       - name: ibm-auditlogging-operator
