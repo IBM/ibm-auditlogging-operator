@@ -39,14 +39,14 @@ const clusterRoleBindingSuffix = "-role"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
-const ServiceAcct = "-auditlogging-svcacct"
+const ServiceAcct = "-svcacct"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
+func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
 	ls := LabelsForPolicyController(instance.Name)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -57,7 +57,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      AuditPolicyControllerDeploy + ServiceAcct,
-			Namespace: AuditLoggingNamespace,
+			Namespace: instance.Spec.InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -69,7 +69,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 }
 
 // BuildClusterRole returns a ClusterRole object
-func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
+func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
 	ls := LabelsForPolicyController(instance.Name)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
@@ -111,6 +111,62 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
 				APIGroups: []string{"apps"},
 				Resources: []string{"deployments"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch"},
+				APIGroups: []string{""},
+				Resources: []string{"namespaces"},
+			},
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"anyuid"},
+			},
+		},
+	}
+	return cr
+}
+
+// BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
+func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+	ls := LabelsForFluentd(instance.Name)
+	rb := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
+			Namespace: instance.Spec.InstanceNamespace,
+			Labels:    ls,
+		},
+		Subjects: []rbacv1.Subject{{
+			APIGroup:  "",
+			Kind:      "ServiceAccount",
+			Name:      FluentdDaemonSetName + ServiceAcct,
+			Namespace: instance.Spec.InstanceNamespace,
+		}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     FluentdDaemonSetName + clusterRoleSuffix,
+		},
+	}
+	return rb
+}
+
+// BuildRoleForFluentd returns a Role object for fluentd
+func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
+	ls := LabelsForFluentd(instance.Name)
+	cr := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      FluentdDaemonSetName + clusterRoleSuffix,
+			Namespace: instance.Spec.InstanceNamespace,
+			Labels:    ls,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"privileged"},
 			},
 		},
 	}
@@ -329,6 +385,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName:            FluentdDaemonSetName + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: []corev1.Toleration{
@@ -500,11 +557,20 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 	return commonVolumes
 }
 
+func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
+	return !reflect.DeepEqual(found.Rules, expected.Rules)
+}
+
 func EqualClusterRoles(expected *rbacv1.ClusterRole, found *rbacv1.ClusterRole) bool {
 	return !reflect.DeepEqual(found.Rules, expected.Rules)
 }
 
-func EqualRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
+func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
+	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
+		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
+}
+
+func EqualClusterRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
 }

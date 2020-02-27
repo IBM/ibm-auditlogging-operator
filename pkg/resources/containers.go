@@ -37,7 +37,6 @@ const fluentdConfigKey = "fluent.conf"
 const sourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
-const AuditLoggingNamespace = "ibmcs-auditlogging"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
