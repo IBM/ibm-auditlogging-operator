@@ -112,6 +112,8 @@ rules:
   resources:
   - clusterroles
   - clusterrolebindings
+  - roles
+  - rolebindings
   verbs:
   - create
   - delete
@@ -173,3 +175,12 @@ rules:
   - get
   - update
   - patch
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  resourceNames:
+  - anyuid
+  - privileged
+  verbs:
+  - use
