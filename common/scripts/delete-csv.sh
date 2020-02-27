@@ -18,7 +18,6 @@
 set -e
 QUAY_NAMESPACE=${QUAY_NAMESPACE:-opencloudio}
 QUAY_REPOSITORY=${QUAY_REPOSITORY:-ibm-auditlogging-operator-app}
-BUNDLE_DIR=${BUNDLE_DIR:-deploy/olm-catalog/ibm-auditlogging-operator}
 
 [[ "X$QUAY_USERNAME" == "X" ]] && read -rp "Enter username quay.io: " QUAY_USERNAME
 [[ "X$QUAY_PASSWORD" == "X" ]] && read -rsp "Enter password quay.io: " QUAY_PASSWORD && echo
@@ -33,26 +32,9 @@ AUTH_TOKEN=$(curl -sH "Content-Type: application/json" -XPOST https://quay.io/cn
     }
 }' | awk -F'"' '{print $4}')
 
-function cleanup() {
-    rm -f bundle.tar.gz
-}
-trap cleanup EXIT
 
-tar czf bundle.tar.gz "${BUNDLE_DIR}"
-
-if [[ "${OSTYPE}" == "darwin"* ]]; then
-  BLOB=$(base64 -b0 < bundle.tar.gz)
-else
-  BLOB=$(base64 -w0 < bundle.tar.gz)
-fi
-
-# Push application to repository
+# Delete application release in repository
 echo "Push package ${QUAY_REPOSITORY} into namespace ${QUAY_NAMESPACE}"
 curl -H "Content-Type: application/json" \
      -H "Authorization: ${AUTH_TOKEN}" \
-     -XPOST https://quay.io/cnr/api/v1/packages/"${QUAY_NAMESPACE}"/"${QUAY_REPOSITORY}" -d '
-{
-    "blob": "'"${BLOB}"'",
-    "release": "'"${RELEASE}"'",
-    "media_type": "helm"
-}'
+     -XDELETE https://quay.io/cnr/api/v1/packages/"${QUAY_NAMESPACE}"/"${QUAY_REPOSITORY}"/"${RELEASE}"/helm
