@@ -30,10 +30,10 @@ metadata:
         }
       ]
     capabilities: Basic Install
-  repository: https://github.com/IBM/ibm-auditlogging-operator
-  containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
-  support: IBM
-  description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
+    repository: https://github.com/IBM/ibm-auditlogging-operator
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
+    support: IBM
+    description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
   name: ibm-auditlogging-operator.v3.5.0
   namespace: ibm-common-services
 spec:
