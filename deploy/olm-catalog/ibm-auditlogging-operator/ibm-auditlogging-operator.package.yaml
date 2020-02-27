@@ -1,5 +1,5 @@
 channels:
-- currentCSV: ibm-auditlogging-operator.v1.0.5
+- currentCSV: ibm-auditlogging-operator.v3.5.0
   name: alpha
 defaultChannel: alpha
 packageName: ibm-auditlogging-operator-app
