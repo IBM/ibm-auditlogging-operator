@@ -77,55 +77,27 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	return reconcile.Result{}, nil
 }
 
-// IBMDEV serviceAccountForCR returns (reconcile.Result, error)
-func (r *ReconcileAuditLogging) serviceAccountForCR(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("cr.Name", cr.Name)
-
-	expectedRes := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + res.ServiceAcct,
-			Namespace: cr.Spec.InstanceNamespace,
-		},
+func (r *ReconcileAuditLogging) createOrUpdateServiceAccounts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.serviceAccount(instance, res.FluentdDaemonSetName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
 	}
-	// Set CR instance as the owner and controller
-	err := controllerutil.SetControllerReference(cr, expectedRes, r.scheme)
-	if err != nil {
-		reqLogger.Error(err, "Failed to define expected resource")
-		return reconcile.Result{}, err
+	recResult, recErr = r.serviceAccount(instance, res.AuditPolicyControllerDeploy)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
 	}
-
-	// If ServiceAccount does not exist, create it and requeue
-	foundSvcAcct := &corev1.ServiceAccount{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: cr.Spec.InstanceNamespace}, foundSvcAcct)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
-		err = r.client.Create(context.TODO(), expectedRes)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
-			return reconcile.Result{}, err
-		}
-		// Created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get ServiceAccount")
-		return reconcile.Result{}, err
-	}
-	// No extra validation of the service account required
-
-	// No reconcile was necessary
 	return reconcile.Result{}, nil
 }
 
 // IBMDEV serviceAccountForCR returns (reconcile.Result, error)
-func (r *ReconcileAuditLogging) serviceAccountForFluentd(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("cr.Name", cr.Name)
 
 	expectedRes := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.FluentdDaemonSetName + res.ServiceAcct,
+			Name:      name + res.ServiceAcct,
 			Namespace: cr.Spec.InstanceNamespace,
 		},
 	}
@@ -259,6 +231,7 @@ func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.Au
 		err = r.client.Create(context.TODO(), expected)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
+			reqLogger.Info("Already exists", "Role.Namespace", expected.Namespace, "Role.Name", expected.Name)
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
 			reqLogger.Error(err, "Failed to create new Role", "Role.Namespace", expected.Namespace,

@@ -121,7 +121,7 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"restricted"},
+				ResourceNames: []string{"anyuid"},
 			},
 		},
 	}
@@ -135,7 +135,7 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
 			Namespace: instance.Spec.InstanceNamespace,
-			Labels: ls,
+			Labels:    ls,
 		},
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
@@ -159,7 +159,7 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleSuffix,
 			Namespace: instance.Spec.InstanceNamespace,
-			Labels: ls,
+			Labels:    ls,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -385,7 +385,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: FluentdDaemonSetName + ServiceAcct,
+					ServiceAccountName:            FluentdDaemonSetName + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: []corev1.Toleration{
