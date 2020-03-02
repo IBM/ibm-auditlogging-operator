@@ -114,7 +114,12 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 			{
 				Verbs:     []string{"get", "list", "watch"},
 				APIGroups: []string{""},
-				Resources: []string{"pods", "namespaces", "configmaps"},
+				Resources: []string{"pods", "namespaces"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "update"},
+				APIGroups: []string{""},
+				Resources: []string{"configmaps"},
 			},
 			{
 				Verbs:     []string{"create", "get", "update", "patch"},
