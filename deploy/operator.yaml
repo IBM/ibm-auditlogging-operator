@@ -12,8 +12,6 @@ spec:
       labels:
         name: ibm-auditlogging-operator
     spec:
-      imagePullSecrets:
-        - name: docker-scratch
       serviceAccountName: ibm-auditlogging-operator
       containers:
         - name: ibm-auditlogging-operator

@@ -39,6 +39,7 @@ const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
 const ServiceAcct = "-svcacct"
+const defaultClusterIssuer = "cs-ca-clusterissuer"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -322,8 +323,17 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 }
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging) *certmgr.Certificate {
+func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
+	reqLogger := log.WithValues("Certificate.Namespace", instance.Spec.InstanceNamespace, "Certificate.Name", AuditLoggingCertName)
 	ls := LabelsForFluentd(instance.Name)
+	var clusterIssuer string
+	if issuer != "" {
+		reqLogger.Info("clusterIssuer=" + issuer)
+		clusterIssuer = issuer
+	} else {
+		reqLogger.Info("clusterIssuer is blank, default=" + defaultClusterIssuer)
+		clusterIssuer = defaultClusterIssuer
+	}
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -335,7 +345,7 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging) *certmgr
 			CommonName: AuditLoggingCertName,
 			SecretName: auditLoggingCertSecretName,
 			IssuerRef: certmgr.ObjectReference{
-				Name: "cs-ca-clusterissuer",
+				Name: clusterIssuer,
 				Kind: certmgr.ClusterIssuerKind,
 			},
 		},

@@ -443,7 +443,7 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alp
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditLoggingCertName, Namespace: instance.Spec.InstanceNamespace}, certificateFound)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Certificate
-		newCertificate := res.BuildCertsForAuditLogging(instance)
+		newCertificate := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer)
 		// Set Audit Logging instance as the owner and controller of the Certificate
 		err := controllerutil.SetControllerReference(instance, newCertificate, r.scheme)
 		if err != nil && errors.IsAlreadyExists(err) {
