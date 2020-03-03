@@ -35,7 +35,7 @@ import (
 const auditLoggingComponentName = "fluentd"
 const AuditLoggingCrType = "audit-logging-cr"
 const clusterRoleSuffix = "-role"
-const clusterRoleBindingSuffix = "-role"
+const clusterRoleBindingSuffix = "-rolebinding"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
@@ -54,7 +54,6 @@ func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.Audit
 			Labels: ls,
 		},
 		Subjects: []rbacv1.Subject{{
-			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      AuditPolicyControllerDeploy + ServiceAcct,
 			Namespace: instance.Spec.InstanceNamespace,
@@ -115,7 +114,17 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 			{
 				Verbs:     []string{"get", "list", "watch"},
 				APIGroups: []string{""},
-				Resources: []string{"namespaces"},
+				Resources: []string{"pods", "namespaces"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "update"},
+				APIGroups: []string{""},
+				Resources: []string{"configmaps"},
+			},
+			{
+				Verbs:     []string{"create", "get", "update", "patch"},
+				APIGroups: []string{""},
+				Resources: []string{"events"},
 			},
 			{
 				Verbs:         []string{"use"},
