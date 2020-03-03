@@ -33,7 +33,6 @@ import (
 )
 
 const auditLoggingComponentName = "fluentd"
-const AuditLoggingCrType = "audit-logging-cr"
 const clusterRoleSuffix = "-role"
 const clusterRoleBindingSuffix = "-rolebinding"
 const productName = "IBM Cloud Platform Common Services"
@@ -328,17 +327,15 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging) *certmgr
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditLoggingCertName,
-			Labels: ls,
-			Annotations: map[string]string{"helm.sh/hook": "pre-install,pre-upgrade", "helm.sh/hook-weight": "0",
-				"helm.sh/hook-delete-policy": "before-hook-creation"},
+			Name:      AuditLoggingCertName,
+			Labels:    ls,
 			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Spec: certmgr.CertificateSpec{
 			CommonName: AuditLoggingCertName,
 			SecretName: auditLoggingCertSecretName,
 			IssuerRef: certmgr.ObjectReference{
-				Name: "icp-ca-issuer",
+				Name: "cs-ca-clusterissuer",
 				Kind: certmgr.ClusterIssuerKind,
 			},
 		},
