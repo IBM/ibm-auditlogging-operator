@@ -40,7 +40,7 @@ spec:
                   type: boolean
                 imageRegistry:
                   type: string
-                imageTagPostfix:
+                imageTag:
                   type: string
                 journalPath:
                   type: string
@@ -67,7 +67,7 @@ spec:
                   type: string
                 imageRegistry:
                   type: string
-                imageTagPostfix:
+                imageTag:
                   type: string
                 pullPolicy:
                   type: string

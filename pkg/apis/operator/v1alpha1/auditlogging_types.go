@@ -38,7 +38,7 @@ type AuditLoggingSpec struct {
 type AuditLoggingSpecFluentd struct {
 	EnableAuditLoggingForwarding bool   `json:"enabled"`
 	ImageRegistry                string `json:"imageRegistry,omitempty"`
-	ImageTagPostfix              string `json:"imageTagPostfix,omitempty"`
+	ImageTag                     string `json:"imageTag,omitempty"`
 	PullPolicy                   string `json:"pullPolicy,omitempty"`
 	JournalPath                  string `json:"journalPath,omitempty"`
 	ClusterIssuer                string `json:"clusterIssuer,omitempty"`
@@ -46,12 +46,12 @@ type AuditLoggingSpecFluentd struct {
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec
 type AuditLoggingSpecPolicyController struct {
-	ImageRegistry   string `json:"imageRegistry,omitempty"`
-	ImageTagPostfix string `json:"imageTagPostfix,omitempty"`
-	PullPolicy      string `json:"pullPolicy,omitempty"`
-	Verbosity       string `json:"verbosity,omitempty"`
-	Frequency       string `json:"frequency,omitempty"`
-	Duration        string `json:"duration,omitempty"`
+	ImageRegistry string `json:"imageRegistry,omitempty"`
+	ImageTag      string `json:"imageTag,omitempty"`
+	PullPolicy    string `json:"pullPolicy,omitempty"`
+	Verbosity     string `json:"verbosity,omitempty"`
+	Frequency     string `json:"frequency,omitempty"`
+	Duration      string `json:"duration,omitempty"`
 }
 
 // AuditLoggingStatus defines the observed state of AuditLogging
