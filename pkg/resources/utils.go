@@ -324,14 +324,11 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
-	reqLogger := log.WithValues("Certificate.Namespace", instance.Spec.InstanceNamespace, "Certificate.Name", AuditLoggingCertName)
 	ls := LabelsForFluentd(instance.Name)
 	var clusterIssuer string
 	if issuer != "" {
-		reqLogger.Info("clusterIssuer=" + issuer)
 		clusterIssuer = issuer
 	} else {
-		reqLogger.Info("clusterIssuer is blank, default=" + defaultClusterIssuer)
 		clusterIssuer = defaultClusterIssuer
 	}
 
@@ -571,6 +568,10 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 		},
 	}
 	return commonVolumes
+}
+
+func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool {
+	return !reflect.DeepEqual(found.Spec, expected.Spec)
 }
 
 func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
