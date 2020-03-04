@@ -254,11 +254,15 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	reqLogger := log.WithValues("deploymentForPolicyController", "Entry", "instance.Name", instance.Name)
 	ls := LabelsForPolicyController(instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
-	if instance.Spec.PolicyController.ImageRegistry != "" && instance.Spec.PolicyController.ImageTagPostfix != "" {
-		policyControllerMainContainer.Image = instance.Spec.PolicyController.ImageRegistry +
-			"/audit-policy-controller:" +
-			instance.Spec.PolicyController.ImageTagPostfix
+
+	if instance.Spec.PolicyController.ImageRegistry != "" {
+		imageRegistry := instance.Spec.PolicyController.ImageRegistry
+		policyControllerMainContainer.Image = imageRegistry + "/" + defaultPCImageName + ":" + defaultPCImageTag
 	}
+	if instance.Spec.PolicyController.ImageTagPostfix != "" {
+		policyControllerMainContainer.Image += instance.Spec.PolicyController.ImageTagPostfix
+	}
+
 	if instance.Spec.PolicyController.PullPolicy != "" {
 		switch instance.Spec.PolicyController.PullPolicy {
 		case "Always":
@@ -357,9 +361,15 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	annotations := annotationsForMetering(FluentdDaemonSetName)
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
-	if instance.Spec.Fluentd.ImageRegistry != "" && instance.Spec.Fluentd.ImageTagPostfix != "" {
-		fluentdMainContainer.Image = instance.Spec.Fluentd.ImageRegistry + "/fluentd:" + instance.Spec.Fluentd.ImageTagPostfix
+
+	if instance.Spec.Fluentd.ImageRegistry != "" {
+		imageRegistry := instance.Spec.Fluentd.ImageRegistry
+		fluentdMainContainer.Image = imageRegistry + "/" + defaultFluentdImageName + ":" + defaultFluentdImageTag
 	}
+	if instance.Spec.Fluentd.ImageTagPostfix != "" {
+		fluentdMainContainer.Image += instance.Spec.Fluentd.ImageTagPostfix
+	}
+
 	if instance.Spec.Fluentd.PullPolicy != "" {
 		switch instance.Spec.Fluentd.PullPolicy {
 		case "Always":
