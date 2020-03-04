@@ -33,13 +33,13 @@ import (
 )
 
 const auditLoggingComponentName = "fluentd"
-const AuditLoggingCrType = "audit-logging-cr"
 const clusterRoleSuffix = "-role"
 const clusterRoleBindingSuffix = "-rolebinding"
 const productName = "IBM Cloud Platform Common Services"
 const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
 const ServiceAcct = "-svcacct"
+const defaultClusterIssuer = "cs-ca-clusterissuer"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -323,22 +323,26 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 }
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging) *certmgr.Certificate {
+func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
 	ls := LabelsForFluentd(instance.Name)
+	var clusterIssuer string
+	if issuer != "" {
+		clusterIssuer = issuer
+	} else {
+		clusterIssuer = defaultClusterIssuer
+	}
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditLoggingCertName,
-			Labels: ls,
-			Annotations: map[string]string{"helm.sh/hook": "pre-install,pre-upgrade", "helm.sh/hook-weight": "0",
-				"helm.sh/hook-delete-policy": "before-hook-creation"},
+			Name:      AuditLoggingCertName,
+			Labels:    ls,
 			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Spec: certmgr.CertificateSpec{
 			CommonName: AuditLoggingCertName,
 			SecretName: auditLoggingCertSecretName,
 			IssuerRef: certmgr.ObjectReference{
-				Name: "icp-ca-issuer",
+				Name: clusterIssuer,
 				Kind: certmgr.ClusterIssuerKind,
 			},
 		},
@@ -564,6 +568,10 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 		},
 	}
 	return commonVolumes
+}
+
+func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool {
+	return !reflect.DeepEqual(found.Spec, expected.Spec)
 }
 
 func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {

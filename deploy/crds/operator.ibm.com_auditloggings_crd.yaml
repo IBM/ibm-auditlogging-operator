@@ -34,6 +34,8 @@ spec:
             fluentd:
               description: AuditLoggingSpecFluentd defines the desired state of Fluentd
               properties:
+                clusterIssuer:
+                  type: string
                 enabled:
                   type: boolean
                 imageRegistry:

@@ -439,13 +439,12 @@ func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operato
 
 func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("instance.Spec.InstanceNamespace", instance.Spec.InstanceNamespace, "Instance.Name", instance.Name)
-	certificateFound := &certmgr.Certificate{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditLoggingCertName, Namespace: instance.Spec.InstanceNamespace}, certificateFound)
+	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer)
+	foundCert := &certmgr.Certificate{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {
-		// Define a new Certificate
-		newCertificate := res.BuildCertsForAuditLogging(instance)
 		// Set Audit Logging instance as the owner and controller of the Certificate
-		err := controllerutil.SetControllerReference(instance, newCertificate, r.scheme)
+		err := controllerutil.SetControllerReference(instance, expectedCert, r.scheme)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
@@ -453,11 +452,11 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alp
 			reqLogger.Error(err, "Failed to set owner for Certificate")
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Creating a new Fluentd Certificate", "Certificate.Namespace", newCertificate.Namespace, "Certificate.Name", newCertificate.Name)
-		err = r.client.Create(context.TODO(), newCertificate)
+		reqLogger.Info("Creating a new Fluentd Certificate", "Certificate.Namespace", expectedCert.Namespace, "Certificate.Name", expectedCert.Name)
+		err = r.client.Create(context.TODO(), expectedCert)
 		if err != nil {
-			reqLogger.Error(err, "Failed to create new Fluentd Certificate", "Certificate.Namespace", newCertificate.Namespace,
-				"Certificatep.Name", newCertificate.Name)
+			reqLogger.Error(err, "Failed to create new Fluentd Certificate", "Certificate.Namespace", expectedCert.Namespace,
+				"Certificate.Name", expectedCert.Name)
 			return reconcile.Result{}, err
 		}
 		// Certificate created successfully - return and requeue
@@ -465,6 +464,17 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alp
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get Certificate")
 		return reconcile.Result{}, err
+	} else if result := res.EqualCerts(expectedCert, foundCert); result {
+		// If spec is incorrect, update it and requeue
+		reqLogger.Info("Found Certificate spec is incorrect", "Found", foundCert.Spec, "Expected", expectedCert.Spec)
+		foundCert.Spec = expectedCert.Spec
+		err = r.client.Update(context.TODO(), foundCert)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Certificate", "Namespace", foundCert.ObjectMeta.Namespace, "Name", foundCert.Name)
+			return reconcile.Result{}, err
+		}
+		// Spec updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
 }

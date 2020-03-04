@@ -41,6 +41,7 @@ type AuditLoggingSpecFluentd struct {
 	ImageTagPostfix              string `json:"imageTagPostfix,omitempty"`
 	PullPolicy                   string `json:"pullPolicy,omitempty"`
 	JournalPath                  string `json:"journalPath,omitempty"`
+	ClusterIssuer                string `json:"clusterIssuer,omitempty"`
 }
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec
