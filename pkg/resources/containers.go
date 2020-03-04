@@ -42,9 +42,9 @@ const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 const defaultImageRegistry = "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64"
 const defaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "1.6.2-rhc"
+const defaultFluentdImageTag = "1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
-const defaultPCImageTag = "3.3.1"
+const defaultPCImageTag = "3.4.0"
 
 var trueVar = true
 var falseVar = false
