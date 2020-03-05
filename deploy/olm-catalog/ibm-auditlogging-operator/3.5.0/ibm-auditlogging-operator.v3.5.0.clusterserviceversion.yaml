@@ -13,16 +13,16 @@ metadata:
           "spec": {
             "fluentd": {
               "enabled": true,
-              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64",
-              "imageTagPostfix": "v1.6.2-rhc",
+              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/",
+              "imageTag": "v1.6.2-rhc",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
             "instanceNamespace": "ibm-common-services",
             "operatorVersion": "3.5.0",
             "policyController": {
-              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64",
-              "imageTagPostfix": "3.3.1",
+              "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/",
+              "imageTag": "3.4.0",
               "pullPolicy": "IfNotPresent",
               "verbosity": "0"
             }
@@ -135,12 +135,6 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - ""
-          resources:
-          - pods
-          verbs:
-          - get
-        - apiGroups:
           - apps
           resources:
           - replicasets
@@ -242,11 +236,11 @@ spec:
           - patch
         - apiGroups:
           - security.openshift.io
-          resources:
-          - securitycontextconstraints
           resourceNames:
           - anyuid
           - privileged
+          resources:
+          - securitycontextconstraints
           verbs:
           - use
         serviceAccountName: ibm-auditlogging-operator
@@ -281,8 +275,6 @@ spec:
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources: {}
-              imagePullSecrets:
-              - name: docker-scratch
               serviceAccountName: ibm-auditlogging-operator
     strategy: deployment
   installModes:
