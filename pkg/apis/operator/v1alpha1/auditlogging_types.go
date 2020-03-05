@@ -31,12 +31,12 @@ type AuditLoggingSpec struct {
 	OperatorVersion   string                           `json:"operatorVersion,omitempty"`
 	Fluentd           AuditLoggingSpecFluentd          `json:"fluentd,omitempty"`
 	PolicyController  AuditLoggingSpecPolicyController `json:"policyController,omitempty"`
-	InstanceNamespace string                           `json:"instanceNamespace,omitempty"`
+	InstanceNamespace string                           `json:"instanceNamespace"`
 }
 
 // AuditLoggingSpecFluentd defines the desired state of Fluentd
 type AuditLoggingSpecFluentd struct {
-	EnableAuditLoggingForwarding bool   `json:"enabled"`
+	EnableAuditLoggingForwarding bool   `json:"enabled,omitempty"`
 	ImageRegistry                string `json:"imageRegistry,omitempty"`
 	ImageTagPostfix              string `json:"imageTagPostfix,omitempty"`
 	PullPolicy                   string `json:"pullPolicy,omitempty"`

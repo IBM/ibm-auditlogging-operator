@@ -41,7 +41,7 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(res.InstanceNamespace),
-		client.MatchingLabels(res.LabelsForFluentd(instance.Name)),
+		client.MatchingLabels(res.LabelsForSelector(res.FluentdName, instance.Name)),
 	}
 	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
 		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
@@ -55,7 +55,7 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	// Get audit-policy-controller pod too
 	listOpts = []client.ListOption{
 		client.InNamespace(res.InstanceNamespace),
-		client.MatchingLabels(res.LabelsForPolicyController(instance.Name)),
+		client.MatchingLabels(res.LabelsForSelector(res.AuditPolicyControllerDeploy, instance.Name)),
 	}
 	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
 		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
