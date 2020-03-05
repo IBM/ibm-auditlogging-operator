@@ -26,6 +26,9 @@ IMAGE_NAME ?= ibm-auditlogging-operator
 IMAGE_REPO ?= quay.io/opencloudio
 CSV_VERSION ?= $(VERSION)
 
+# The namespcethat operator will be deployed in
+NAMESPACE=ibm-common-services
+
 # Github host to use for checking the source tree;
 # Override this variable ue with your own value if you're working on forked repo.
 GIT_HOST ?= github.com/IBM
@@ -187,6 +190,39 @@ multiarch-image:
 	@chmod +x /tmp/manifest-tool
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
+
+
+############################################################
+# local testing section
+############################################################
+
+install: ## Install all resources (CR/CRD's, RBCA and Operator)
+	@echo ....... Installing .......
+	@echo ....... Applying CRDS and Operator .......
+	- kubectl apply -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
+	- kubectl apply -f deploy/crds/audit.policies.ibm.com_auditpolicies_crd.yaml
+	@echo ....... Applying RBAC .......
+	- kubectl apply -f deploy/service_account.yaml -n ${NAMESPACE}
+	- kubectl apply -f deploy/role.yaml -n ${NAMESPACE}
+	- kubectl apply -f deploy/role_binding.yaml -n ${NAMESPACE}
+	@echo ....... Applying Operator .......
+	- kubectl apply -f deploy/operator.yaml -n ${NAMESPACE}
+	@echo ....... Creating the Instance .......
+	- kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+
+uninstall: ## Uninstall all that all performed in the $ make install
+	@echo ....... Uninstalling .......
+	@echo ....... Deleting CR .......
+	- kubectl delete -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+	@echo ....... Deleting Operator .......
+	- kubectl delete -f deploy/operator.yaml -n ${NAMESPACE}
+	@echo ....... Deleting CRDs.......
+	- kubectl delete -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
+	- kubectl delete -f deploy/crds/audit.policies.ibm.com_auditpolicies_crd.yaml
+	@echo ....... Deleting Rules and Service Account .......
+	- kubectl delete -f deploy/role_binding.yaml -n ${NAMESPACE}
+	- kubectl delete -f deploy/service_account.yaml -n ${NAMESPACE}
+	- kubectl delete -f deploy/role.yaml -n ${NAMESPACE}
 
 ############################################################
 # CSV section

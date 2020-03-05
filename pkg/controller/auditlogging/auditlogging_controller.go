@@ -19,6 +19,7 @@ package auditlogging
 import (
 	"context"
 	"reflect"
+	"time"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -197,5 +198,8 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
+	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
+	time.Sleep(5 * time.Second)
+
 	return reconcile.Result{}, nil
 }
