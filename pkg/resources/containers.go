@@ -42,7 +42,7 @@ const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "1.6.2-ubi7"
+const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
 
