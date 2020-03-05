@@ -193,11 +193,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	var err error
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
-		if instance.Spec.InstanceNamespace != "" {
-			dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
-		} else {
-			dataMap[enableAuditLogForwardKey] = "false"
-		}
+		dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
 		type Data struct {
 			Value string `yaml:"fluent.conf"`
 		}
