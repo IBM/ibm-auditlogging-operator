@@ -46,8 +46,6 @@ spec:
                   type: string
                 pullPolicy:
                   type: string
-              required:
-              - enabled
               type: object
             instanceNamespace:
               type: string
@@ -74,6 +72,8 @@ spec:
                 verbosity:
                   type: string
               type: object
+          required:
+          - instanceNamespace
           type: object
         status:
           description: AuditLoggingStatus defines the observed state of AuditLogging

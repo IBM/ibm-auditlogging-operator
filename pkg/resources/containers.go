@@ -39,6 +39,7 @@ const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
+const FluentdName = "fluentd"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
@@ -204,7 +205,7 @@ var policyControllerMainContainer = corev1.Container{
 
 var fluentdMainContainer = corev1.Container{
 	Image:           defaultImageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag,
-	Name:            "fluentd",
+	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	VolumeMounts: []corev1.VolumeMount{
 		{

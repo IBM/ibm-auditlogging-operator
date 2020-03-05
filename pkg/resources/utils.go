@@ -30,13 +30,16 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	ver "github.com/ibm/ibm-auditlogging-operator/version"
 )
 
-const auditLoggingComponentName = "fluentd"
+const auditLoggingComponentName = "auditlogging_svc"
+const auditLoggingReleaseName = "auditlogging"
+const auditLoggingCrType = "auditlogging_cr"
 const clusterRoleSuffix = "-role"
 const clusterRoleBindingSuffix = "-rolebinding"
 const productName = "IBM Cloud Platform Common Services"
-const productVersion = "3.5.0.0"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
 const ServiceAcct = "-svcacct"
 const defaultClusterIssuer = "cs-ca-clusterissuer"
@@ -47,11 +50,11 @@ var commonVolumes = []corev1.Volume{}
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
 func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
-	ls := LabelsForPolicyController(instance.Name)
+	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   AuditPolicyControllerDeploy + clusterRoleBindingSuffix,
-			Labels: ls,
+			Labels: metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
 			Kind:      "ServiceAccount",
@@ -69,11 +72,11 @@ func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.Audit
 
 // BuildClusterRole returns a ClusterRole object
 func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
-	ls := LabelsForPolicyController(instance.Name)
+	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix,
-			Labels: ls,
+			Labels: metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -139,12 +142,12 @@ func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging
 
 // BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
 func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
-	ls := LabelsForFluentd(instance.Name)
+	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
 			Namespace: instance.Spec.InstanceNamespace,
-			Labels:    ls,
+			Labels:    metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
@@ -163,12 +166,12 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 
 // BuildRoleForFluentd returns a Role object for fluentd
 func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
-	ls := LabelsForFluentd(instance.Name)
+	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleSuffix,
 			Namespace: instance.Spec.InstanceNamespace,
-			Labels:    ls,
+			Labels:    metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -185,16 +188,12 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 // BuildConfigMap returns a ConfigMap object
 func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Spec.InstanceNamespace, "ConfigMap.Name", name)
-	ls := LabelsForFluentd(instance.Name)
+	metaLabels := LabelsForMetadata(FluentdName)
 	dataMap := make(map[string]string)
 	var err error
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
-		if instance.Spec.InstanceNamespace != "" {
-			dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
-		} else {
-			dataMap[enableAuditLogForwardKey] = "false"
-		}
+		dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
 		type Data struct {
 			Value string `yaml:"fluent.conf"`
 		}
@@ -241,7 +240,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Labels:    ls,
+			Labels:    metaLabels,
 			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Data: dataMap,
@@ -252,7 +251,9 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 // BuildDeploymentForPolicyController returns a Deployment object
 func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging) *appsv1.Deployment {
 	reqLogger := log.WithValues("deploymentForPolicyController", "Entry", "instance.Name", instance.Name)
-	ls := LabelsForPolicyController(instance.Name)
+	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
+	selectorLabels := LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
+	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
 
 	var tag, imageRegistry string
@@ -299,15 +300,16 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditPolicyControllerDeploy,
 			Namespace: instance.Spec.InstanceNamespace,
+			Labels:    metaLabels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: ls,
+				MatchLabels: selectorLabels,
 			},
 			Replicas: &replicas,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:      ls,
+					Labels:      podLabels,
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
@@ -335,7 +337,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
-	ls := LabelsForFluentd(instance.Name)
+	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
 		clusterIssuer = issuer
@@ -346,7 +348,7 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditLoggingCertName,
-			Labels:    ls,
+			Labels:    metaLabels,
 			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Spec: certmgr.CertificateSpec{
@@ -364,8 +366,10 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 // BuildDaemonForFluentd returns a Daemonset object
 func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
 	reqLogger := log.WithValues("dameonForFluentd", "Entry", "instance.Name", instance.Name)
-	ls := LabelsForFluentd(instance.Name)
-	annotations := annotationsForMetering(FluentdDaemonSetName)
+	metaLabels := LabelsForMetadata(FluentdName)
+	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
+	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
+	annotations := annotationsForMetering(FluentdName)
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 
@@ -401,10 +405,11 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
 			Namespace: instance.Spec.InstanceNamespace,
+			Labels:    metaLabels,
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: ls,
+				MatchLabels: selectorLabels,
 			},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 				Type: appsv1.RollingUpdateDaemonSetStrategyType,
@@ -418,7 +423,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 			MinReadySeconds: 5,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:      ls,
+					Labels:      podLabels,
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
@@ -648,22 +653,34 @@ func GetPodNames(pods []corev1.Pod) []string {
 }
 
 //IBMDEV
-func LabelsForPolicyController(crName string) map[string]string {
-	return map[string]string{"app": AuditPolicyControllerDeploy, "auditlogging_cr": crName}
+func LabelsForMetadata(name string) map[string]string {
+	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": auditLoggingComponentName,
+		"app.kubernetes.io/managed-by": "operator", "app.kubernetes.io/instance": auditLoggingReleaseName, "release": auditLoggingReleaseName}
 }
 
 //IBMDEV
-func LabelsForFluentd(crName string) map[string]string {
-	return map[string]string{"app": auditLoggingComponentName, "auditlogging_cr": crName}
+func LabelsForSelector(name string, crName string) map[string]string {
+	return map[string]string{"app": name, "component": auditLoggingComponentName, auditLoggingCrType: crName}
 }
 
+//IBMDEV
+func LabelsForPodMetadata(deploymentName string, crName string) map[string]string {
+	podLabels := LabelsForMetadata(deploymentName)
+	selectorLabels := LabelsForSelector(deploymentName, crName)
+	for key, value := range selectorLabels {
+		podLabels[key] = value
+	}
+	return podLabels
+}
+
+//IBMDEV
 func annotationsForMetering(deploymentName string) map[string]string {
 	annotations := map[string]string{
 		"productName":    productName,
-		"productVersion": productVersion,
+		"productVersion": ver.Version,
 		"productID":      productID,
 	}
-	if deploymentName == FluentdDaemonSetName {
+	if deploymentName == FluentdName {
 		annotations["seccomp.security.alpha.kubernetes.io/pod"] = "docker/default"
 	}
 	return annotations
