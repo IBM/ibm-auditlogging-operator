@@ -7,12 +7,12 @@ spec:
   instanceNamespace: ibm-common-services
   fluentd:
     enabled: true
-    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
-    imageTagPostfix: v1.6.2-rhc
+    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/
+    imageTag: v1.6.2-rhc
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
   policyController:
-    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
-    imageTagPostfix: 3.3.1
+    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/
+    imageTag: 3.4.0
     pullPolicy: IfNotPresent
     verbosity: "0"

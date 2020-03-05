@@ -41,6 +41,12 @@ const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const FluentdName = "fluentd"
 
+const defaultImageRegistry = "quay.io/opencloudio/"
+const defaultFluentdImageName = "fluentd"
+const defaultFluentdImageTag = "v1.6.2-ubi7"
+const defaultPCImageName = "audit-policy-controller"
+const defaultPCImageTag = "3.4.0"
+
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
@@ -159,7 +165,7 @@ remoteSyslog.conf: |-
     </match>`
 
 var policyControllerMainContainer = corev1.Container{
-	Image:           "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/audit-policy-controller:3.3.1",
+	Image:           defaultImageRegistry + defaultPCImageName + ":" + defaultPCImageTag,
 	Name:            AuditPolicyControllerDeploy,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	VolumeMounts: []corev1.VolumeMount{
@@ -198,7 +204,7 @@ var policyControllerMainContainer = corev1.Container{
 }
 
 var fluentdMainContainer = corev1.Container{
-	Image:           "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/fluentd:v1.6.2-rhc",
+	Image:           defaultImageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag,
 	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	VolumeMounts: []corev1.VolumeMount{
