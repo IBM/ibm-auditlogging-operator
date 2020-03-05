@@ -13,6 +13,6 @@ spec:
     journalPath: /var/log/journal
   policyController:
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64
-    imageTag: 3.3.1
+    imageTag: 3.4.0
     pullPolicy: IfNotPresent
     verbosity: "0"

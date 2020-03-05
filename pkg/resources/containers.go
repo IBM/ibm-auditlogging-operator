@@ -40,7 +40,7 @@ const qRadarConfigKey = "remoteSyslog.conf"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
-const defaultImageRegistry = "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64"
+const defaultImageRegistry = "quay.io/opencloudio"
 const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
