@@ -267,7 +267,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 		} else {
 			tag = defaultPCImageTag
 		}
-		policyControllerMainContainer.Image = imageRegistry + "/" + defaultPCImageName + ":" + tag
+		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + tag
 	}
 
 	if instance.Spec.PolicyController.PullPolicy != "" {
@@ -381,7 +381,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		} else {
 			tag = defaultFluentdImageTag
 		}
-		fluentdMainContainer.Image = imageRegistry + "/" + defaultFluentdImageName + ":" + tag
+		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + tag
 	}
 
 	if instance.Spec.Fluentd.PullPolicy != "" {
