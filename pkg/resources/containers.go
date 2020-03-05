@@ -39,6 +39,7 @@ const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
+const FluentdName = "fluentd"
 
 var trueVar = true
 var falseVar = false
@@ -198,7 +199,7 @@ var policyControllerMainContainer = corev1.Container{
 
 var fluentdMainContainer = corev1.Container{
 	Image:           "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/fluentd:v1.6.2-rhc",
-	Name:            "fluentd",
+	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	VolumeMounts: []corev1.VolumeMount{
 		{
