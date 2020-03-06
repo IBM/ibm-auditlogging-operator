@@ -98,7 +98,7 @@ func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging
 	expectedRes := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name + res.ServiceAcct,
-			Namespace: cr.Spec.InstanceNamespace,
+			Namespace: res.InstanceNamespace,
 		},
 	}
 	// Set CR instance as the owner and controller
@@ -110,15 +110,15 @@ func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging
 
 	// If ServiceAccount does not exist, create it and requeue
 	foundSvcAcct := &corev1.ServiceAccount{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: cr.Spec.InstanceNamespace}, foundSvcAcct)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: res.InstanceNamespace}, foundSvcAcct)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
+		reqLogger.Info("Creating a new ServiceAccount", "Namespace", res.InstanceNamespace, "Name", expectedRes.Name)
 		err = r.client.Create(context.TODO(), expectedRes)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", cr.Spec.InstanceNamespace, "Name", expectedRes.Name)
+			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", res.InstanceNamespace, "Name", expectedRes.Name)
 			return reconcile.Result{}, err
 		}
 		// Created successfully - return and requeue

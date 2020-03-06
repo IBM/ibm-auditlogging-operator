@@ -47,8 +47,6 @@ spec:
                 pullPolicy:
                   type: string
               type: object
-            instanceNamespace:
-              type: string
             operatorVersion:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
