@@ -4,7 +4,6 @@ metadata:
   name: example-auditlogging
 spec:
   operatorVersion: 3.5.0
-  instanceNamespace: ibm-common-services
   fluentd:
     enabled: true
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/

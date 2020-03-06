@@ -43,6 +43,7 @@ const productName = "IBM Cloud Platform Common Services"
 const productID = "AuditLogging_3.5.0.0_Apache_00000"
 const ServiceAcct = "-svcacct"
 const defaultClusterIssuer = "cs-ca-clusterissuer"
+const InstanceNamespace = "ibm-common-services"
 
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -59,7 +60,7 @@ func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.Audit
 		Subjects: []rbacv1.Subject{{
 			Kind:      "ServiceAccount",
 			Name:      AuditPolicyControllerDeploy + ServiceAcct,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -146,14 +147,14 @@ func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      FluentdDaemonSetName + ServiceAcct,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -170,7 +171,7 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + clusterRoleSuffix,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -187,7 +188,7 @@ func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 
 // BuildConfigMap returns a ConfigMap object
 func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
-	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Spec.InstanceNamespace, "ConfigMap.Name", name)
+	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	dataMap := make(map[string]string)
 	var err error
@@ -240,8 +241,8 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
-			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Data: dataMap,
 	}
@@ -299,7 +300,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditPolicyControllerDeploy,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -348,8 +349,8 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditLoggingCertName,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
-			Namespace: instance.Spec.InstanceNamespace,
 		},
 		Spec: certmgr.CertificateSpec{
 			CommonName: AuditLoggingCertName,
@@ -404,7 +405,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
-			Namespace: instance.Spec.InstanceNamespace,
+			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DaemonSetSpec{

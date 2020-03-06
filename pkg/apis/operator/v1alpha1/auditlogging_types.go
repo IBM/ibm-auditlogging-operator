@@ -28,10 +28,9 @@ type AuditLoggingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	OperatorVersion   string                           `json:"operatorVersion,omitempty"`
-	Fluentd           AuditLoggingSpecFluentd          `json:"fluentd,omitempty"`
-	PolicyController  AuditLoggingSpecPolicyController `json:"policyController,omitempty"`
-	InstanceNamespace string                           `json:"instanceNamespace"`
+	OperatorVersion  string                           `json:"operatorVersion,omitempty"`
+	Fluentd          AuditLoggingSpecFluentd          `json:"fluentd,omitempty"`
+	PolicyController AuditLoggingSpecPolicyController `json:"policyController,omitempty"`
 }
 
 // AuditLoggingSpecFluentd defines the desired state of Fluentd
