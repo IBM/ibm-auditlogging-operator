@@ -257,11 +257,21 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
 
-	if instance.Spec.PolicyController.ImageRegistry != "" && instance.Spec.PolicyController.ImageTagPostfix != "" {
-		policyControllerMainContainer.Image = instance.Spec.PolicyController.ImageRegistry +
-			"/audit-policy-controller:" +
-			instance.Spec.PolicyController.ImageTagPostfix
+	var tag, imageRegistry string
+	if instance.Spec.PolicyController.ImageRegistry != "" || instance.Spec.PolicyController.ImageTag != "" {
+		if instance.Spec.PolicyController.ImageRegistry != "" {
+			imageRegistry = instance.Spec.PolicyController.ImageRegistry
+		} else {
+			imageRegistry = defaultImageRegistry
+		}
+		if instance.Spec.PolicyController.ImageTag != "" {
+			tag = instance.Spec.PolicyController.ImageTag
+		} else {
+			tag = defaultPCImageTag
+		}
+		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + tag
 	}
+
 	if instance.Spec.PolicyController.PullPolicy != "" {
 		switch instance.Spec.PolicyController.PullPolicy {
 		case "Always":
@@ -364,9 +374,21 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 
-	if instance.Spec.Fluentd.ImageRegistry != "" && instance.Spec.Fluentd.ImageTagPostfix != "" {
-		fluentdMainContainer.Image = instance.Spec.Fluentd.ImageRegistry + "/fluentd:" + instance.Spec.Fluentd.ImageTagPostfix
+	var tag, imageRegistry string
+	if instance.Spec.Fluentd.ImageRegistry != "" || instance.Spec.Fluentd.ImageTag != "" {
+		if instance.Spec.Fluentd.ImageRegistry != "" {
+			imageRegistry = instance.Spec.Fluentd.ImageRegistry
+		} else {
+			imageRegistry = defaultImageRegistry
+		}
+		if instance.Spec.Fluentd.ImageTag != "" {
+			tag = instance.Spec.Fluentd.ImageTag
+		} else {
+			tag = defaultFluentdImageTag
+		}
+		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + tag
 	}
+
 	if instance.Spec.Fluentd.PullPolicy != "" {
 		switch instance.Spec.Fluentd.PullPolicy {
 		case "Always":
