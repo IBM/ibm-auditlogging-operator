@@ -70,8 +70,6 @@ spec:
                 verbosity:
                   type: string
               type: object
-          required:
-          - instanceNamespace
           type: object
         status:
           description: AuditLoggingStatus defines the observed state of AuditLogging
