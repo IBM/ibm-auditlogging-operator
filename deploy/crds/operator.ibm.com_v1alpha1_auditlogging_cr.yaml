@@ -7,7 +7,7 @@ spec:
   fluentd:
     enabled: true
     imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/
-    imageTag: v1.6.2-rhc
+    imageTag: v1.6.2-ubi7
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
   policyController:

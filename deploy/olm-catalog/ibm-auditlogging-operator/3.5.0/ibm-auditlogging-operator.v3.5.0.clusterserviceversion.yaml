@@ -14,7 +14,7 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/",
-              "imageTag": "v1.6.2-rhc",
+              "imageTag": "v1.6.2-ubi7",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
