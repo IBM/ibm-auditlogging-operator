@@ -30,19 +30,21 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
-	ver "github.com/ibm/ibm-auditlogging-operator/version"
 )
 
-const auditLoggingComponentName = "auditlogging_svc"
-const auditLoggingReleaseName = "auditlogging"
+const auditLoggingComponentName = "common-audit-logging"
+const auditLoggingReleaseName = "common-audit-logging"
 const auditLoggingCrType = "auditlogging_cr"
+const productName = "IBM Cloud Platform Common Services"
+const productID = "068a62892a1e4db39641342e592daa25"
+const productVersion = "3.3.0"
+const productMetric = "FREE"
+
 const clusterRoleSuffix = "-role"
 const clusterRoleBindingSuffix = "-rolebinding"
-const productName = "IBM Cloud Platform Common Services"
-const productID = "AuditLogging_3.5.0.0_Apache_00000"
 const ServiceAcct = "-svcacct"
 const defaultClusterIssuer = "cs-ca-clusterissuer"
+
 const InstanceNamespace = "ibm-common-services"
 
 var log = logf.Log.WithName("controller_auditlogging")
@@ -678,11 +680,13 @@ func LabelsForPodMetadata(deploymentName string, crName string) map[string]strin
 func annotationsForMetering(deploymentName string) map[string]string {
 	annotations := map[string]string{
 		"productName":    productName,
-		"productVersion": ver.Version,
 		"productID":      productID,
+		"productVersion": productVersion,
+		"productMetric":  productMetric,
 	}
 	if deploymentName == FluentdName {
 		annotations["seccomp.security.alpha.kubernetes.io/pod"] = "docker/default"
+		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
 	}
 	return annotations
 }
