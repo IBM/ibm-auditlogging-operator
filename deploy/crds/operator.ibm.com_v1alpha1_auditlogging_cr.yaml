@@ -6,12 +6,12 @@ spec:
   operatorVersion: 3.5.0
   fluentd:
     enabled: true
-    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/
+    imageRegistry: quay.io/opencloudio/
     imageTag: v1.6.2-ubi7
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
   policyController:
-    imageRegistry: hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/
+    imageRegistry: quay.io/opencloudio/
     imageTag: 3.4.0
     pullPolicy: IfNotPresent
     verbosity: "0"
