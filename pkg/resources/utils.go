@@ -431,18 +431,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					ServiceAccountName:            FluentdDaemonSetName + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
-					Tolerations: []corev1.Toleration{
-						{
-							Key:      "dedicated",
-							Operator: corev1.TolerationOpExists,
-							Effect:   corev1.TaintEffectNoSchedule,
-						},
-						{
-							Key:      "CriticalAddonsOnly",
-							Operator: corev1.TolerationOpExists,
-						},
-					},
-					Volumes: commonVolumes,
+					Tolerations: commonTolerations,
+					Volumes:     commonVolumes,
 					Containers: []corev1.Container{
 						fluentdMainContainer,
 					},
