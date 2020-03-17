@@ -53,8 +53,12 @@ var rootUser = int64(0)
 var user100 = int64(100)
 var replicas = int32(1)
 var cpu25 = resource.NewMilliQuantity(25, resource.DecimalSI)          // 25m
+var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
+var cpu200 = resource.NewMilliQuantity(200, resource.DecimalSI)        // 200m
 var cpu300 = resource.NewMilliQuantity(300, resource.DecimalSI)        // 300m
 var memory100 = resource.NewQuantity(100*1024*1024, resource.BinarySI) // 100Mi
+var memory150 = resource.NewQuantity(150*1024*1024, resource.BinarySI) // 150Mi
+var memory300 = resource.NewQuantity(300*1024*1024, resource.BinarySI) // 300Mi
 var memory400 = resource.NewQuantity(400*1024*1024, resource.BinarySI) // 400Mi
 
 var commonCapabilities = corev1.Capabilities{
@@ -197,6 +201,14 @@ var policyControllerMainContainer = corev1.Container{
 		},
 		InitialDelaySeconds: 10,
 		TimeoutSeconds:      2,
+	},
+	Resources: corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *cpu200,
+			corev1.ResourceMemory: *memory300},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *cpu100,
+			corev1.ResourceMemory: *memory150},
 	},
 	SecurityContext: &policyControllerSecurityContext,
 }
