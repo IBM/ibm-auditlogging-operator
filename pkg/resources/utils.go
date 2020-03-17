@@ -289,10 +289,8 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	var args = make([]string, 0)
 	if instance.Spec.PolicyController.Verbosity != "" {
 		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
-	}
-	if instance.Spec.PolicyController.Duration != "" {
-		args = append(args, "--default-duration="+instance.Spec.PolicyController.Duration)
-		reqLogger.Info("Test", "Duration", instance.Spec.PolicyController.Duration)
+	} else {
+		args = append(args, "--v=0")
 	}
 	if instance.Spec.PolicyController.Frequency != "" {
 		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)

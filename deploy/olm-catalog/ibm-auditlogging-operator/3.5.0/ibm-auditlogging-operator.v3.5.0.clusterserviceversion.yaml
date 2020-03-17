@@ -18,7 +18,6 @@ metadata:
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
-            "operatorVersion": "3.5.0",
             "policyController": {
               "imageRegistry": "hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/ibmcom-amd64/",
               "imageTag": "3.4.0",
