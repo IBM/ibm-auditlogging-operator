@@ -47,6 +47,7 @@ const defaultClusterIssuer = "cs-ca-clusterissuer"
 
 const InstanceNamespace = "ibm-common-services"
 
+var DefaultStatusForCR = []string{"none"}
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}

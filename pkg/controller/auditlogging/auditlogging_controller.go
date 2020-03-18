@@ -22,6 +22,7 @@ import (
 	"time"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -132,6 +133,16 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	// Set a default Status value
+	if len(instance.Status.Nodes) == 0 {
+		instance.Status.Nodes = res.DefaultStatusForCR
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to set AuditLogging default status")
+			return reconcile.Result{}, err
+		}
 	}
 
 	var recResult reconcile.Result
