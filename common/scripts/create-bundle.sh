@@ -28,9 +28,9 @@ else
     mkdir bundle
 fi
 
-cp -p deploy/olm-catalog/ibm-metering-operator/ibm-metering-operator.package.yaml bundle/
-cp -p deploy/olm-catalog/ibm-metering-operator/3.5.0/*.yaml bundle/
+cp -p deploy/olm-catalog/ibm-auditlogging-operator/ibm-auditlogging-operator.package.yaml bundle/
+cp -p deploy/olm-catalog/ibm-auditlogging-operator/3.5.0/*.yaml bundle/
 
 cd bundle || exit
-zip ibm-metering-metadata ./*.yaml
+zip ibm-auditlogging-metadata ./*.yaml
 cd ..
