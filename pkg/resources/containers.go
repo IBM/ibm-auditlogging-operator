@@ -136,7 +136,7 @@ var sourceConfigData2 = `
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit kube-audit>
+     <match icp-audit>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
