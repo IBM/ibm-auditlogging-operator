@@ -15,6 +15,7 @@ Red Hat OpenShift Container Platform 4.X
 - Kubernetes 1.11.0 or higher
 - Tiller 2.7.2 or higher
 - ibm-certmanager-operator
+- Must run in the `ibm-common-services` namespace
 
 ## Red Hat OpenShift SCC Requirements
 
