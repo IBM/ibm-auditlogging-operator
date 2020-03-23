@@ -14,7 +14,7 @@ Red Hat OpenShift Container Platform 4.X
 
 - Kubernetes 1.11.0 or higher
 - Tiller 2.7.2 or higher
-- ibm-certmanager-operator
+- ibm-certmanager-operator must be installed
 - Must run in the `ibm-common-services` namespace
 
 ## Red Hat OpenShift SCC Requirements
@@ -102,6 +102,10 @@ For installation and configuration, see [IBM Knowledge Center link].
   - for information about the Go types that implement Ingress, etc, go to <https://godoc.org/k8s.io/api/networking/v1beta1>
 
 ### Testing
+
+#### Prerequisites for building the operator locally
+
+- [Install linters](https://github.com/IBM/go-repo-template/blob/master/docs/development.md)
 
 #### Run the operator on a cluster
 
