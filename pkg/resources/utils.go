@@ -290,10 +290,8 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	var args = make([]string, 0)
 	if instance.Spec.PolicyController.Verbosity != "" {
 		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
-	}
-	if instance.Spec.PolicyController.Duration != "" {
-		args = append(args, "--default-duration="+instance.Spec.PolicyController.Duration)
-		reqLogger.Info("Test", "Duration", instance.Spec.PolicyController.Duration)
+	} else {
+		args = append(args, "--v=0")
 	}
 	if instance.Spec.PolicyController.Frequency != "" {
 		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
@@ -434,18 +432,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					ServiceAccountName:            FluentdDaemonSetName + ServiceAcct,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
-					Tolerations: []corev1.Toleration{
-						{
-							Key:      "dedicated",
-							Operator: corev1.TolerationOpExists,
-							Effect:   corev1.TaintEffectNoSchedule,
-						},
-						{
-							Key:      "CriticalAddonsOnly",
-							Operator: corev1.TolerationOpExists,
-						},
-					},
-					Volumes: commonVolumes,
+					Tolerations: commonTolerations,
+					Volumes:     commonVolumes,
 					Containers: []corev1.Container{
 						fluentdMainContainer,
 					},

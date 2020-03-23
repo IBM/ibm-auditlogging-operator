@@ -3,7 +3,6 @@ kind: AuditLogging
 metadata:
   name: example-auditlogging
 spec:
-  operatorVersion: 3.5.0
   fluentd:
     enabled: true
     imageRegistry: quay.io/opencloudio/
