@@ -47,9 +47,10 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    categories: Logging
+    categories: Security
     certified: "false"
     containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
+    createdAt: "2020-02-11T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     repository: https://github.com/IBM/ibm-auditlogging-operator
     support: IBM
