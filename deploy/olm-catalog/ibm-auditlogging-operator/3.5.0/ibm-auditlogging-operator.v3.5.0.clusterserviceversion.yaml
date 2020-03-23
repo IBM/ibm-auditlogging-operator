@@ -25,6 +25,25 @@ metadata:
               "verbosity": "0"
             }
           }
+        },
+        {
+          "apiVersion": "audit.policies.ibm.com/v1alpha1",
+          "kind": "AuditPolicy",
+          "metadata": {
+            "name": "example-auditpolicy"
+          },
+          "spec": {
+            "namespaceSelector": {
+              "include": ["ibm-common-services"],
+              "exclude": ["kube-public"]
+            },
+            "clusterAuditPolicy": {
+              "auditPolicyRules": {
+                "auth-pdp": "validate"
+              }
+            },
+            "remediationAction": "inform"
+          }
         }
       ]
     capabilities: Basic Install
