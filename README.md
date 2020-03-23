@@ -129,7 +129,7 @@ For installation and configuration, see [IBM Knowledge Center link].
 
 1. Create the `ibm-common-services` namespace
 1. Create an [OperatorSource](https://github.com/IBM/operand-deployment-lifecycle-manager/blob/master/docs/install/common-service-integration.md#1-create-an-operatorsource-in-the-openshift-cluster) in your cluster
-1. Select the Operators Tab and in the drop down select OperatorHub
+1. Select the `Operators` Tab and in the drop down select `OperatorHub`
 1. Search for the `ibm-auditlogging-operator`
 1. Install the operator in the `ibm-common-services` namespace
 1. Create an `AuditLogging` instance

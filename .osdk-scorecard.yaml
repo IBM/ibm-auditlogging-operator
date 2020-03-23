@@ -6,8 +6,10 @@ scorecard:
     - basic:
         cr-manifest:
           - "deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml"
+          - "deploy/crds/audit.policies.ibm.com_v1alpha1_auditpolicy_cr.yaml"
     # `olm` tests configured to test the CRs
     - olm:
         cr-manifest:
           - "deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml"
+          - "deploy/crds/audit.policies.ibm.com_v1alpha1_auditpolicy_cr.yaml"
         csv-path: "deploy/olm-catalog/ibm-auditlogging-operator/3.5.0/ibm-auditlogging-operator.v3.5.0.clusterserviceversion.yaml"

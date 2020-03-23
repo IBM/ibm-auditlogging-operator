@@ -10,3 +10,6 @@ spec:
     auditPolicyRules:
       "auth-pdp": validate
   remediationAction: inform
+status:
+  auditDetails: {}
+  compliant: ""
