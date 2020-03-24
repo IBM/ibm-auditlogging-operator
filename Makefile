@@ -221,7 +221,6 @@ uninstall: ## Uninstall all that all performed in the $ make install
 	- kubectl delete -f deploy/role_binding.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/service_account.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/role.yaml -n ${NAMESPACE}
-	- kubectl delete crd auditpolicies.audit.policies.ibm.com
 
 ############################################################
 # CSV section

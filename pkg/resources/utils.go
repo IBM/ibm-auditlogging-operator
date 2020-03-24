@@ -122,7 +122,7 @@ func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.Cu
 								},
 								"clusterAuditPolicy": {
 									Description: "enforce, inform",
-									Type:        "string",
+									Type:        "object",
 								},
 							},
 							Type: "object",
@@ -142,7 +142,7 @@ func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.Cu
 					},
 				},
 			},
-			Version: "v1aplha1",
+			Version: "v1alpha1",
 		},
 		Status: extv1beta1.CustomResourceDefinitionStatus{
 			AcceptedNames: extv1beta1.CustomResourceDefinitionNames{
