@@ -25,6 +25,7 @@ import (
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -73,6 +74,36 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("CRD.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
+	expected := res.BuildAuditPolicyCRD(instance)
+	found := &extv1beta1.CustomResourceDefinition{}
+	// Note: crds are namespaced-scoped, so this does not search using namespace (unlike other resources above)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new CRD
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Creating a new Audit Policy CRD", "CRD.Namespace", expected.Namespace, "CRD.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new CRD", "CRD.Namespace", expected.Namespace,
+				"CRD.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// CRD created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get CRD")
+		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }
