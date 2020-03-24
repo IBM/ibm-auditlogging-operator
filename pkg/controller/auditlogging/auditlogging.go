@@ -82,8 +82,7 @@ func (r *ReconcileAuditLogging) createAuditPolicyCRD(instance *operatorv1alpha1.
 	reqLogger := log.WithValues("CRD.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildAuditPolicyCRD(instance)
 	found := &extv1beta1.CustomResourceDefinition{}
-	// Note: crds are namespaced-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new CRD
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
