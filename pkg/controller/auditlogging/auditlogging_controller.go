@@ -23,11 +23,12 @@ import (
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
+
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-
+	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,6 +84,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&rbacv1.RoleBinding{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
+		&extv1beta1.CustomResourceDefinition{},
 	}
 	for _, restype := range secondaryResourceTypes {
 		log.Info("Watching", "restype", reflect.TypeOf(restype))
@@ -174,6 +176,12 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 
 	// Reconcile the expected RoleBinding
 	recResult, recErr = r.createOrUpdateClusterRoleBinding(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the AuditPolicy CRD
+	recResult, recErr = r.createAuditPolicyCRD(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}

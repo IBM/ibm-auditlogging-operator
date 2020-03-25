@@ -40,6 +40,7 @@ const qRadarConfigKey = "remoteSyslog.conf"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const FluentdName = "fluentd"
+const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"

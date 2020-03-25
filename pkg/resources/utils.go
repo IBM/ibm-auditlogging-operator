@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -51,6 +52,110 @@ var DefaultStatusForCR = []string{"none"}
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
+
+// BuildAuditPolicyCRD returns a CRD object
+func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
+	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
+	metaLabels["controller-tools.k8s.io"] = "1.0"
+	crd := &extv1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   AuditPolicyCRDName,
+			Labels: metaLabels,
+		},
+		Spec: extv1beta1.CustomResourceDefinitionSpec{
+			Group: "audit.policies.ibm.com",
+			Names: extv1beta1.CustomResourceDefinitionNames{
+				Kind:       "AuditPolicy",
+				Plural:     "auditpolicies",
+				ShortNames: []string{"ap"},
+			},
+			Scope: "Namespaced",
+			Validation: &extv1beta1.CustomResourceValidation{
+				OpenAPIV3Schema: &extv1beta1.JSONSchemaProps{
+					Properties: map[string]extv1beta1.JSONSchemaProps{
+						"apiVersion": {
+							Description: "APIVersion defines the versioned schema of this representation of an object. " +
+								"Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. " +
+								"More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type: "string",
+						},
+						"kind": {
+							Description: "'Kind is a string value representing the REST resource this object represents. " +
+								"Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. " +
+								"More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type: "string",
+						},
+						"metadata": {
+							Type: "object",
+						},
+						"spec": {
+							Properties: map[string]extv1beta1.JSONSchemaProps{
+								"labelSelector": {
+									Description: "selecting a list of namespaces where the policy applies",
+									Type:        "object",
+								},
+								"namespaceSelector": {
+									Description: "namespaces on which to run the policy",
+									Properties: map[string]extv1beta1.JSONSchemaProps{
+										"exclude": {
+											Items: &extv1beta1.JSONSchemaPropsOrArray{
+												Schema: &extv1beta1.JSONSchemaProps{
+													Type: "string",
+												},
+											},
+											Type: "array",
+										},
+										"include": {
+											Items: &extv1beta1.JSONSchemaPropsOrArray{
+												Schema: &extv1beta1.JSONSchemaProps{
+													Type: "string",
+												},
+											},
+											Type: "array",
+										},
+									},
+									Type: "object",
+								},
+								"remediationAction": {
+									Description: "remediate or enforce",
+									Type:        "string",
+								},
+								"clusterAuditPolicy": {
+									Description: "enforce, inform",
+									Type:        "object",
+								},
+							},
+							Type: "object",
+						},
+						"status": {
+							Properties: map[string]extv1beta1.JSONSchemaProps{
+								"auditDetails": {
+									Description: "selecting a list of services to validate",
+									Type:        "object",
+								},
+								"compliant": {
+									Type: "string",
+								},
+							},
+							Type: "object",
+						},
+					},
+				},
+			},
+			Version: "v1alpha1",
+		},
+		Status: extv1beta1.CustomResourceDefinitionStatus{
+			AcceptedNames: extv1beta1.CustomResourceDefinitionNames{
+				Kind:   "",
+				Plural: "",
+			},
+			Conditions:     []extv1beta1.CustomResourceDefinitionCondition{},
+			StoredVersions: []string{},
+		},
+	}
+
+	return crd
+}
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
 func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
