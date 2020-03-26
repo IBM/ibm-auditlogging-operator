@@ -30,7 +30,7 @@ metadata:
     capabilities: Basic Install
     categories: Security
     certified: "false"
-    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.5.0
     createdAt: "2020-02-11T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     repository: https://github.com/IBM/ibm-auditlogging-operator
@@ -329,7 +329,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-auditlogging-operator
-                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+                image: quay.io/opencloudio/ibm-auditlogging-operator:3.5.0
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources: {}
