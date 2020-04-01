@@ -40,6 +40,7 @@ type AuditLoggingSpecFluentd struct {
 	PullPolicy                   string `json:"pullPolicy,omitempty"`
 	JournalPath                  string `json:"journalPath,omitempty"`
 	ClusterIssuer                string `json:"clusterIssuer,omitempty"`
+	HTTPPort                     string `json:"httpPort,omitempty"`
 }
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec

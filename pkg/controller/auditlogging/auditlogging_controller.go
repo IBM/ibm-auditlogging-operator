@@ -85,6 +85,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&extv1beta1.CustomResourceDefinition{},
+		&corev1.Service{},
 	}
 	for _, restype := range secondaryResourceTypes {
 		log.Info("Watching", "restype", reflect.TypeOf(restype))
@@ -200,6 +201,12 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 
 	// Reconcile the expected RoleBinding
 	recResult, recErr = r.createOrUpdateRoleBinding(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the expected RoleBinding
+	recResult, recErr = r.createOrUpdateService(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}

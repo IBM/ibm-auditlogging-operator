@@ -47,6 +47,7 @@ const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
+const defaultHTTPPort = 8888
 
 var trueVar = true
 var falseVar = false
@@ -127,8 +128,26 @@ var sourceConfigData2 = `
           fields_strip_underscores true
           fields_lowercase true
         </entry>
+    </source>`
+var sourceConfigData3 = `
+    <source>
+        @type http
+        # Tag is not supported in yaml, must be set by request path (/icp_audit.http is required for validation and export)
+        port `
+var sourceConfigData4 = `
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /fluentd/etc/tls/ca.crt
+          cert_path /fluentd/etc/tls/tls.crt
+          private_key_path /fluentd/etc/tls/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
     </source>
-    <filter icp-audit>
+    <filter icp-audit icp-audit.**>
         @type parser
         format json
         key_name message
@@ -137,7 +156,7 @@ var sourceConfigData2 = `
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit>
+     <match icp-audit icp-audit.**>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -148,7 +167,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit>
+    <match icp-audit icp-audit.**>
         @type copy
         <store>
           @type remote_syslog
@@ -271,7 +290,13 @@ var fluentdMainContainer = corev1.Container{
 				},
 			},
 		},
-	}, //CS??? TODO
+	},
+	Ports: []corev1.ContainerPort{
+		{
+			ContainerPort: defaultHTTPPort,
+			Protocol:      "TCP",
+		},
+	},
 	LivenessProbe: &corev1.Probe{
 		Handler: corev1.Handler{
 			Exec: &corev1.ExecAction{

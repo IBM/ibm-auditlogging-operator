@@ -53,6 +53,42 @@ var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
+// BuildAuditService returns a Service object
+func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
+	metaLabels := LabelsForMetadata(FluentdName)
+	selectorLabels := LabelsForSelector(instance.Name, FluentdName)
+
+	var httpPort int32
+	if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
+		httpPort = port
+	} else {
+		httpPort = defaultHTTPPort
+	}
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      auditLoggingComponentName + "-svc",
+			Namespace: InstanceNamespace,
+			Labels:    metaLabels,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: "ClusterIP",
+			Ports: []corev1.ServicePort{
+				{
+					Name:     auditLoggingComponentName,
+					Protocol: "TCP",
+					Port:     httpPort,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: httpPort,
+					},
+				},
+			},
+			Selector: selectorLabels,
+		},
+	}
+	return service
+}
+
 // BuildAuditPolicyCRD returns a CRD object
 func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
@@ -320,6 +356,14 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		} else {
 			result = sourceConfigData1 + journalPath + sourceConfigData2
 		}
+		var p string
+		if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
+			p = strconv.Itoa(int(port))
+			result += sourceConfigData3 + p + sourceConfigData4
+		} else {
+			p = strconv.Itoa(defaultHTTPPort)
+			result += sourceConfigData3 + p + sourceConfigData4
+		}
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[sourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
@@ -508,6 +552,10 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		}
 	}
 
+	if result, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); result {
+		fluentdMainContainer.Ports[0].ContainerPort = port
+	}
+
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
@@ -694,6 +742,24 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 		},
 	}
 	return commonVolumes
+}
+
+func getHTTPPort(port string) (bool, int32) {
+	if port == "" {
+		return false, 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return false, 0
+	}
+	if p > 0 && p <= 65535 {
+		return true, int32(p)
+	}
+	return false, 0
+}
+
+func EqualServices(expected *corev1.Service, found *corev1.Service) bool {
+	return !reflect.DeepEqual(found.Spec.Ports, expected.Spec.Ports)
 }
 
 func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool {
