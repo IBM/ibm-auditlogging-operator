@@ -56,7 +56,7 @@ var commonVolumes = []corev1.Volume{}
 // BuildAuditService returns a Service object
 func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
 	metaLabels := LabelsForMetadata(FluentdName)
-	selectorLabels := LabelsForSelector(instance.Name, FluentdName)
+	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 
 	var httpPort int32
 	if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
@@ -66,7 +66,7 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 	}
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      auditLoggingComponentName + "-svc",
+			Name:      auditLoggingComponentName,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
