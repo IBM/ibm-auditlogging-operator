@@ -21,9 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const journalPath = "/run/log/journal"
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
 const auditLoggingCertSecretName = "audit-certs"
+
 const ConfigName = "config"
 const FluentdConfigName = "main-config"
 const SourceConfigName = "source-config"
@@ -47,6 +47,7 @@ const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
+const defaultJournalPath = "/run/log/journal"
 const defaultHTTPPort = 8888
 
 var trueVar = true
@@ -100,7 +101,7 @@ var commonTolerations = []corev1.Toleration{
 
 var fluentdMainConfigData = `
 fluent.conf: |-
-  # Input plugins
+  # Input plugins (Supports Systemd and HTTP)
   @include /fluentd/etc/source.conf
 
   # Output plugins (Only use one output plugin conf file at a time. Comment or remove other files)
@@ -138,21 +139,30 @@ var sourceConfigData4 = `
         bind 0.0.0.0
         body_size_limit 32m
         keepalive_timeout 10s
-        <transport tls>
-          ca_path /fluentd/etc/tls/ca.crt
-          cert_path /fluentd/etc/tls/tls.crt
-          private_key_path /fluentd/etc/tls/tls.key
-        </transport>
+        #<transport tls>
+          #ca_path /fluentd/etc/tls/ca.crt
+          #cert_path /fluentd/etc/tls/tls.crt
+          #private_key_path /fluentd/etc/tls/tls.key
+        #</transport>
         <parse>
           @type json
         </parse>
     </source>
-    <filter icp-audit icp-audit.**>
+    <filter icp-audit>
         @type parser
         format json
         key_name message
         reserve_data true
     </filter>`
+
+/*
+    <match icp-audit.http>
+        @type copy
+        <store>
+          @type "stdout"
+        </store>
+	</match>`
+*/
 
 var splunkConfigData = `
 splunkHEC.conf: |-
@@ -260,7 +270,7 @@ var fluentdMainContainer = corev1.Container{
 		},
 		{
 			Name:      "journal",
-			MountPath: journalPath,
+			MountPath: defaultJournalPath,
 			ReadOnly:  true,
 		},
 		{

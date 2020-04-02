@@ -354,16 +354,15 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		if instance.Spec.Fluentd.JournalPath != "" {
 			result = sourceConfigData1 + instance.Spec.Fluentd.JournalPath + sourceConfigData2
 		} else {
-			result = sourceConfigData1 + journalPath + sourceConfigData2
+			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
 		}
 		var p string
 		if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
 			p = strconv.Itoa(int(port))
-			result += sourceConfigData3 + p + sourceConfigData4
 		} else {
 			p = strconv.Itoa(defaultHTTPPort)
-			result += sourceConfigData3 + p + sourceConfigData4
 		}
+		result += sourceConfigData3 + p + sourceConfigData4
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[sourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
@@ -599,7 +598,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 
 // BuildCommonVolumeMounts returns an array of VolumeMount objects
 func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}
@@ -648,7 +647,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 
 // BuildCommonVolumes returns an array of Volume objects
 func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}
