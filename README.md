@@ -121,7 +121,7 @@ For installation and configuration, see [IBM Knowledge Center link].
   1. There is one controller for each `kind` or CRD. The controller watches and reconciles the resources that are owned by the CR.
   1. For information about the Go types that implement Deployments, DaemonSets, and others, go to <https://godoc.org/k8s.io/api/apps/v1>.
   1. For information about the Go types that implement Pods, VolumeMounts, and others, go to <https://godoc.org/k8s.io/api/core/v1>.
-  1. For information about the Go types that implement Ingress, go to <https://godoc.org/k8s.io/api/networking/v1beta1.
+  1. For information about the Go types that implement Ingress, go to <https://godoc.org/k8s.io/api/networking/v1beta1>.
 
 ### Testing
 
