@@ -153,20 +153,17 @@ var sourceConfigData4 = `
         format json
         key_name message
         reserve_data true
-    </filter>`
-
-/*
-    <match icp-audit.http>
+    </filter>
+    <match http-audit>
         @type copy
         <store>
           @type "stdout"
         </store>
-	</match>`
-*/
+    </match>`
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit icp-audit.**>
+     <match icp-audit http-audit>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -177,7 +174,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit icp-audit.**>
+    <match icp-audit http-audit>
         @type copy
         <store>
           @type remote_syslog
