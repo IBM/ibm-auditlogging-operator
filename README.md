@@ -23,7 +23,7 @@ The predefined SecurityContextConstraints (SCC) `privileged` and `anyuid` are be
 
 ## Documentation
 
-For installation and configuration, see [IBM Knowledge Center link].
+For installation and configuration, see [IBM Knowledge Center link](http://ibm.biz/cpcsdocs).
 
 ## Developer guide
 
