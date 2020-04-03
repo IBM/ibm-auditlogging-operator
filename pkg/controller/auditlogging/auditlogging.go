@@ -390,6 +390,10 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditConfigMaps(instance *operator
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
+	recResult, recErr = r.createOrUpdateConfig(instance, res.FluentdDaemonSetName+"-"+res.ELKConfigName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
 	return reconcile.Result{}, nil
 }
 

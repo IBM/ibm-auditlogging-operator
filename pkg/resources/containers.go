@@ -24,19 +24,27 @@ import (
 const journalPath = "/run/log/journal"
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
 const auditLoggingCertSecretName = "audit-certs"
+
 const ConfigName = "config"
 const FluentdConfigName = "main-config"
 const SourceConfigName = "source-config"
 const QRadarConfigName = "remote-syslog-config"
 const SplunkConfigName = "splunk-hec-config"
+const ELKConfigName = "elk-config"
+
 const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
+const elkOutput = "/fluentd/etc/elk.conf"
+
 const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
+
 const fluentdConfigKey = "fluent.conf"
 const sourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
+const elkConfigKey = "elk.conf"
+
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const FluentdName = "fluentd"
@@ -105,6 +113,7 @@ fluent.conf: |-
   # Output plugins (Only use one output plugin conf file at a time. Comment or remove other files)
   #@include /fluentd/etc/remoteSyslog.conf
   #@include /fluentd/etc/splunkHEC.conf
+  #@include /fluentd/etc/elk.conf
 `
 
 var sourceConfigData1 = `
@@ -165,6 +174,41 @@ remoteSyslog.conf: |-
             message_key message
           </format>
         </store>
+    </match>`
+
+var elkCongfigData1 = `
+elk.conf: |-
+    <filter icp-audit>
+      @type elasticsearch_genid
+      hash_id_key _hash
+    </filter>  
+    <match icp-audit>
+      @type elasticsearch
+      @log_level info
+      type_name fluentd
+      id_key _hash
+      remove_keys _hash
+      logstash_prefix audit
+      host ELASTICSEARCH_SERVER_HOSTNAME
+      port ELASTICSEARCH_PORT
+      scheme `
+var elkConfigHTTP = `
+      user ELASTICSEARCH_USERNAME
+      password ELASTICSEARCH_PASSWORD`
+var elkConfigHTTPS = `
+      ssl_version TLSv1_2
+      ca_file /fluentd/etc/tls/ca.crt
+      client_cert /fluentd/etc/tls/tls.crt
+      client_key /fluentd/etc/tls/tls.key`
+var elkConfigData2 = `
+      <buffer>
+        flush_thread_count 2
+        flush_interval 15s
+        chunk_limit_size 2M
+        queue_limit_length 32
+        retry_max_interval 30
+        retry_forever true
+      </buffer>
     </match>`
 
 var policyControllerMainContainer = corev1.Container{
@@ -240,9 +284,9 @@ var fluentdMainContainer = corev1.Container{
 			SubPath:   splunkConfigKey,
 		},
 		{
-			Name:      "journal",
-			MountPath: journalPath,
-			ReadOnly:  true,
+			Name:      ELKConfigName,
+			MountPath: elkOutput,
+			SubPath:   elkConfigKey,
 		},
 		{
 			Name:      "shared",

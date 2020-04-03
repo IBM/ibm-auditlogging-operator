@@ -339,6 +339,20 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		dq := DataQRadar{}
 		err = yaml.Unmarshal([]byte(qRadarConfigData), &dq)
 		dataMap[qRadarConfigKey] = dq.Value
+	case FluentdDaemonSetName + "-" + ELKConfigName:
+		type DataELK struct {
+			Value string `yaml:"elk.conf"`
+		}
+		de := DataELK{}
+		result := elkCongfigData1
+		if instance.Spec.Fluentd.Elasticsearch.Scheme != "" && instance.Spec.Fluentd.Elasticsearch.Scheme == "http" {
+			result += "http" + elkConfigHTTP
+		} else {
+			result += "https" + elkConfigHTTPS
+		}
+		result += elkConfigData2
+		err = yaml.Unmarshal([]byte(result), &de)
+		dataMap[elkConfigKey] = de.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
@@ -478,7 +492,18 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
 	annotations := annotationsForMetering(FluentdName)
 	commonVolumes = BuildCommonVolumes(instance)
-	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
+
+	var journal = journalPath
+	if instance.Spec.Fluentd.JournalPath != "" {
+		journal = instance.Spec.Fluentd.JournalPath
+	}
+	fluentdMainContainer.VolumeMounts = append(fluentdMainContainer.VolumeMounts,
+		corev1.VolumeMount{
+			Name:      "journal",
+			MountPath: journal,
+			ReadOnly:  true,
+		},
+	)
 
 	var tag, imageRegistry string
 	if instance.Spec.Fluentd.ImageRegistry != "" || instance.Spec.Fluentd.ImageTag != "" {
@@ -542,60 +567,16 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Containers: []corev1.Container{
 						fluentdMainContainer,
 					},
+					// ImagePullSecrets: []corev1.LocalObjectReference{
+					// 	{
+					// 		Name: "docker-scratch",
+					// 	},
+					// },
 				},
 			},
 		},
 	}
 	return daemon
-}
-
-// BuildCommonVolumeMounts returns an array of VolumeMount objects
-func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
-	var journal = journalPath
-	if instance.Spec.Fluentd.JournalPath != "" {
-		journal = instance.Spec.Fluentd.JournalPath
-	}
-	commonVolumeMounts := []corev1.VolumeMount{
-		{
-			Name:      FluentdConfigName,
-			MountPath: "/fluentd/etc/" + fluentdConfigKey,
-			SubPath:   fluentdConfigKey,
-		},
-		{
-			Name:      SourceConfigName,
-			MountPath: fluentdInput,
-			SubPath:   sourceConfigKey,
-		},
-		{
-			Name:      QRadarConfigName,
-			MountPath: qRadarOutput,
-			SubPath:   qRadarConfigKey,
-		},
-		{
-			Name:      SplunkConfigName,
-			MountPath: splunkOutput,
-			SubPath:   splunkConfigKey,
-		},
-		{
-			Name:      "journal",
-			MountPath: journal,
-			ReadOnly:  true,
-		},
-		{
-			Name:      "shared",
-			MountPath: "/icp-audit",
-		},
-		{
-			Name:      "shared",
-			MountPath: "/tmp",
-		},
-		{
-			Name:      "certs",
-			MountPath: "/fluentd/etc/tls",
-			ReadOnly:  true,
-		},
-	}
-	return commonVolumeMounts
 }
 
 // BuildCommonVolumes returns an array of Volume objects
@@ -673,6 +654,22 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 						{
 							Key:  splunkConfigKey,
 							Path: splunkConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: ELKConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + ELKConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  elkConfigKey,
+							Path: elkConfigKey,
 						},
 					},
 				},

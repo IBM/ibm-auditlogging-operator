@@ -5,12 +5,11 @@ metadata:
 spec:
   fluentd:
     enabled: true
-    imageRegistry: quay.io/opencloudio/
-    imageTag: v1.6.2-ubi7
+    imageRegistry: hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/
+    imageTag: v1.6.2-ruby
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
+    elasticsearch: 
+      scheme: http
   policyController:
-    imageRegistry: quay.io/opencloudio/
-    imageTag: 3.4.0
-    pullPolicy: IfNotPresent
     verbosity: "0"
