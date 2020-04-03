@@ -176,39 +176,34 @@ remoteSyslog.conf: |-
         </store>
     </match>`
 
-var elkCongfigData1 = `
+var elkCongfigData = `
 elk.conf: |-
     <filter icp-audit>
-      @type elasticsearch_genid
-      hash_id_key _hash
-    </filter>  
+        @type elasticsearch_genid
+        hash_id_key _hash
+    </filter>
     <match icp-audit>
-      @type elasticsearch
-      @log_level info
-      type_name fluentd
-      id_key _hash
-      remove_keys _hash
-      logstash_prefix audit
-      host ELASTICSEARCH_SERVER_HOSTNAME
-      port ELASTICSEARCH_PORT
-      scheme `
-var elkConfigHTTP = `
-      user ELASTICSEARCH_USERNAME
-      password ELASTICSEARCH_PASSWORD`
-var elkConfigHTTPS = `
-      ssl_version TLSv1_2
-      ca_file /fluentd/etc/tls/ca.crt
-      client_cert /fluentd/etc/tls/tls.crt
-      client_key /fluentd/etc/tls/tls.key`
-var elkConfigData2 = `
-      <buffer>
-        flush_thread_count 2
-        flush_interval 15s
-        chunk_limit_size 2M
-        queue_limit_length 32
-        retry_max_interval 30
-        retry_forever true
-      </buffer>
+        @type elasticsearch
+        @log_level info
+        type_name fluentd
+        id_key _hash
+        remove_keys _hash
+        logstash_prefix audit
+        host ELASTICSEARCH_SERVER_HOSTNAME
+        port ELASTICSEARCH_PORT
+        scheme https
+        ssl_version TLSv1_2
+        ca_file /fluentd/etc/tls/ca.crt
+        client_cert /fluentd/etc/tls/tls.crt
+        client_key /fluentd/etc/tls/tls.key
+        <buffer>
+          flush_thread_count 2
+          flush_interval 15s
+          chunk_limit_size 2M
+          queue_limit_length 32
+          retry_max_interval 30
+          retry_forever true
+        </buffer>
     </match>`
 
 var policyControllerMainContainer = corev1.Container{
