@@ -24,7 +24,7 @@ BUILD_LOCALLY ?= 1
 # IBMDEV Set image and repo
 IMAGE_NAME ?= ibm-auditlogging-operator
 IMAGE_REPO ?= quay.io/opencloudio
-CSV_VERSION ?= $(VERSION)
+CSV_VERSION ?= 3.6.0
 
 # The namespcethat operator will be deployed in
 NAMESPACE=ibm-common-services

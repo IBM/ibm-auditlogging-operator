@@ -27,15 +27,15 @@ metadata:
           }
         }
       ]
-    capabilities: Seamless Upgrades
+    capabilities: Basic Install
     categories: Security
     certified: "false"
-    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.5.0
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
     createdAt: "2020-02-11T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     repository: https://github.com/IBM/ibm-auditlogging-operator
     support: IBM
-  name: ibm-auditlogging-operator.v3.5.0
+  name: ibm-auditlogging-operator.v3.6.0
   namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
@@ -323,7 +323,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-auditlogging-operator
-                image: quay.io/opencloudio/ibm-auditlogging-operator:3.5.0
+                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources: {}
@@ -354,4 +354,4 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  version: 3.5.0
+  version: 3.6.0
