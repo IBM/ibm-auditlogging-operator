@@ -344,7 +344,14 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"elk.conf"`
 		}
 		de := DataELK{}
-		err = yaml.Unmarshal([]byte(elkCongfigData), &de)
+		result := elkCongfigData1
+		if instance.Spec.Fluentd.Elasticsearch.Scheme != "" && instance.Spec.Fluentd.Elasticsearch.Scheme == "http" {
+			result += "http" + elkConfigHTTP
+		} else {
+			result += "https" + elkConfigHTTPS
+		}
+		result += elkConfigData2
+		err = yaml.Unmarshal([]byte(result), &de)
 		dataMap[elkConfigKey] = de.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
@@ -560,11 +567,11 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Containers: []corev1.Container{
 						fluentdMainContainer,
 					},
-					ImagePullSecrets: []corev1.LocalObjectReference{
-						{
-							Name: "docker-scratch",
-						},
-					},
+					// ImagePullSecrets: []corev1.LocalObjectReference{
+					// 	{
+					// 		Name: "docker-scratch",
+					// 	},
+					// },
 				},
 			},
 		},

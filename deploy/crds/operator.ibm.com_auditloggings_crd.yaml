@@ -39,6 +39,13 @@ spec:
               properties:
                 clusterIssuer:
                   type: string
+                elasticsearch:
+                  description: OutputPlugin defines the fluentd output plugin configuration
+                    in the the audit logging spec
+                  properties:
+                    scheme:
+                      type: string
+                  type: object
                 enabled:
                   type: boolean
                 imageRegistry:
