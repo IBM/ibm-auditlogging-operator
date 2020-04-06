@@ -189,13 +189,15 @@ elk.conf: |-
       id_key _hash
       remove_keys _hash
       logstash_prefix audit
-      host ELASTICSEARCH_SERVER_HOSTNAME
-      port ELASTICSEARCH_PORT
       scheme `
 var elkConfigHTTP = `
+      host ELASTICSEARCH_SERVER_HOSTNAME
+      port ELASTICSEARCH_PORT
       user ELASTICSEARCH_USERNAME
       password ELASTICSEARCH_PASSWORD`
 var elkConfigHTTPS = `
+      host elasticsearch
+      port 9200
       ssl_version TLSv1_2
       ca_file /fluentd/etc/tls/ca.crt
       client_cert /fluentd/etc/tls/tls.crt
