@@ -507,8 +507,22 @@ func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operato
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.createOrUpdateAuditCertificate(instance, res.AuditLoggingHTTPSCertName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.createOrUpdateAuditCertificate(instance, res.AuditLoggingCertName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateAuditCertificate(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Certificate.Namespace", res.InstanceNamespace, "Instance.Name", instance.Name)
-	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer)
+	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

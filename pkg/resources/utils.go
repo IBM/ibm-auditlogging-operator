@@ -486,7 +486,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 }
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
+func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
@@ -497,19 +497,26 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      AuditLoggingCertName,
+			Name:      name,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Spec: certmgr.CertificateSpec{
-			CommonName: AuditLoggingCertName,
-			SecretName: auditLoggingCertSecretName,
+			CommonName: name,
 			IssuerRef: certmgr.ObjectReference{
 				Name: clusterIssuer,
 				Kind: certmgr.ClusterIssuerKind,
 			},
 		},
 	}
+
+	if name == AuditLoggingHTTPSCertName {
+		certificate.Spec.SecretName = AuditLoggingServerCertSecName
+		certificate.Spec.DNSNames = []string{auditLoggingComponentName}
+	} else {
+		certificate.Spec.SecretName = AuditLoggingClientCertSecName
+	}
+
 	return certificate
 }
 
@@ -637,8 +644,13 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 			MountPath: "/tmp",
 		},
 		{
-			Name:      "certs",
+			Name:      AuditLoggingClientCertSecName,
 			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      AuditLoggingServerCertSecName,
+			MountPath: "/fluentd/etc/https",
 			ReadOnly:  true,
 		},
 	}
@@ -732,10 +744,18 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 			},
 		},
 		{
-			Name: "certs",
+			Name: AuditLoggingClientCertSecName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: auditLoggingCertSecretName,
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
 				},
 			},
 		},
