@@ -56,6 +56,8 @@ spec:
                   type: string
                 pullPolicy:
                   type: string
+                sourceTag:
+                  type: string
               type: object
             policyController:
               description: AuditLoggingSpecPolicyController defines the policy controller

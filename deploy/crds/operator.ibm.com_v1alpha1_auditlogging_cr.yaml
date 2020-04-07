@@ -11,5 +11,6 @@ spec:
     journalPath: /var/log/journal
     elasticsearch: 
       scheme: http
+    sourceTag: mcm-audit
   policyController:
     verbosity: "0"

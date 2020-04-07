@@ -314,12 +314,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"source.conf"`
 		}
 		ds := DataS{}
-		var result string
-		if instance.Spec.Fluentd.JournalPath != "" {
-			result = sourceConfigData1 + instance.Spec.Fluentd.JournalPath + sourceConfigData2
-		} else {
-			result = sourceConfigData1 + journalPath + sourceConfigData2
-		}
+		var result = buildSourceConfig(instance)
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[sourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
@@ -344,7 +339,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"elk.conf"`
 		}
 		de := DataELK{}
-		result := elkCongfigData1
+		var result = elkCongfigData1
 		if instance.Spec.Fluentd.Elasticsearch.Scheme != "" && instance.Spec.Fluentd.Elasticsearch.Scheme == "http" {
 			result += "http" + elkConfigHTTP
 		} else {
@@ -369,6 +364,32 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		Data: dataMap,
 	}
 	return cm, nil
+}
+
+func buildSourceConfig(instance *operatorv1alpha1.AuditLogging) string {
+	var result = `source.conf: |-`
+	var jPath = journalPath
+	if instance.Spec.Fluentd.JournalPath != "" {
+		jPath = instance.Spec.Fluentd.JournalPath
+	}
+	var tags = []string{defaultSourceTag}
+	if instance.Spec.Fluentd.SourceTag != "" {
+		tags = append(tags, instance.Spec.Fluentd.SourceTag)
+	}
+	var source string
+	var sourceID = `input_systemd_icp`
+	var sourcePath = `/icp-audit`
+	for _, t := range tags {
+		if t != defaultSourceTag {
+			sourceID = `input_systemd_` + t
+			sourcePath = `/icp-audit/` + t
+		}
+		source = sourceConfigData1
+		source += `        @id ` + sourceID + "\n" + `        matches '[{ "SYSLOG_IDENTIFIER": ` + t + `}]'` + "\n" + `        tag ` + t + "\n"
+		source += `        path ` + jPath + sourceConfigData2 + `        path ` + sourcePath + sourceConfigData3 + "\n"
+		result += source
+	}
+	return result + "\n" + icpAuditSourceFilter
 }
 
 // BuildDeploymentForPolicyController returns a Deployment object
@@ -492,18 +513,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
 	annotations := annotationsForMetering(FluentdName)
 	commonVolumes = BuildCommonVolumes(instance)
-
-	var journal = journalPath
-	if instance.Spec.Fluentd.JournalPath != "" {
-		journal = instance.Spec.Fluentd.JournalPath
-	}
-	fluentdMainContainer.VolumeMounts = append(fluentdMainContainer.VolumeMounts,
-		corev1.VolumeMount{
-			Name:      "journal",
-			MountPath: journal,
-			ReadOnly:  true,
-		},
-	)
+	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 
 	var tag, imageRegistry string
 	if instance.Spec.Fluentd.ImageRegistry != "" || instance.Spec.Fluentd.ImageTag != "" {
@@ -567,16 +577,65 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Containers: []corev1.Container{
 						fluentdMainContainer,
 					},
-					// ImagePullSecrets: []corev1.LocalObjectReference{
-					// 	{
-					// 		Name: "docker-scratch",
-					// 	},
-					// },
 				},
 			},
 		},
 	}
 	return daemon
+}
+
+// BuildCommonVolumeMounts returns an array of VolumeMount objects
+func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
+	var journal = journalPath
+	if instance.Spec.Fluentd.JournalPath != "" {
+		journal = instance.Spec.Fluentd.JournalPath
+	}
+	commonVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      FluentdConfigName,
+			MountPath: "/fluentd/etc/" + fluentdConfigKey,
+			SubPath:   fluentdConfigKey,
+		},
+		{
+			Name:      SourceConfigName,
+			MountPath: fluentdInput,
+			SubPath:   sourceConfigKey,
+		},
+		{
+			Name:      QRadarConfigName,
+			MountPath: qRadarOutput,
+			SubPath:   qRadarConfigKey,
+		},
+		{
+			Name:      SplunkConfigName,
+			MountPath: splunkOutput,
+			SubPath:   splunkConfigKey,
+		},
+		{
+			Name:      ELKConfigName,
+			MountPath: elkOutput,
+			SubPath:   elkConfigKey,
+		},
+		{
+			Name:      "journal",
+			MountPath: journal,
+			ReadOnly:  true,
+		},
+		{
+			Name:      "shared",
+			MountPath: "/icp-audit",
+		},
+		{
+			Name:      "shared",
+			MountPath: "/tmp",
+		},
+		{
+			Name:      "certs",
+			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+	}
+	return commonVolumeMounts
 }
 
 // BuildCommonVolumes returns an array of Volume objects

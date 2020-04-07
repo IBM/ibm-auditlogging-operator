@@ -41,6 +41,7 @@ type AuditLoggingSpecFluentd struct {
 	JournalPath                  string       `json:"journalPath,omitempty"`
 	ClusterIssuer                string       `json:"clusterIssuer,omitempty"`
 	Elasticsearch                OutputPlugin `json:"elasticsearch,omitempty"`
+	SourceTag                    string       `json:"sourceTag,omitempty"`
 }
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec

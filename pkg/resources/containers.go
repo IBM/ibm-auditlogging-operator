@@ -55,6 +55,7 @@ const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
+const defaultSourceTag = "icp-audit"
 
 var trueVar = true
 var falseVar = false
@@ -117,26 +118,25 @@ fluent.conf: |-
 `
 
 var sourceConfigData1 = `
-source.conf: |-
     <source>
         @type systemd
-        @id input_systemd_icp
         @log_level info
-        tag icp-audit
-        path `
+`
 var sourceConfigData2 = `
-        matches '[{ "SYSLOG_IDENTIFIER": "icp-audit" }]'
         read_from_head true
         <storage>
           @type local
           persistent true
-          path /icp-audit
+`
+var sourceConfigData3 = `
         </storage>
         <entry>
           fields_strip_underscores true
           fields_lowercase true
         </entry>
-    </source>
+    </source>`
+
+var icpAuditSourceFilter = `
     <filter icp-audit>
         @type parser
         format json
@@ -144,6 +144,15 @@ var sourceConfigData2 = `
         reserve_data true
     </filter>`
 
+// IBMDEV systemd debug
+/*
+   <match mcm-audit>
+       @type copy
+       <store>
+         @type "stdout"
+       </store>
+   </match>`
+*/
 var splunkConfigData = `
 splunkHEC.conf: |-
      <match icp-audit>
@@ -264,46 +273,6 @@ var fluentdMainContainer = corev1.Container{
 	Image:           defaultImageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag,
 	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
-	VolumeMounts: []corev1.VolumeMount{
-		{
-			Name:      FluentdConfigName,
-			MountPath: "/fluentd/etc/" + fluentdConfigKey,
-			SubPath:   fluentdConfigKey,
-		},
-		{
-			Name:      SourceConfigName,
-			MountPath: fluentdInput,
-			SubPath:   sourceConfigKey,
-		},
-		{
-			Name:      QRadarConfigName,
-			MountPath: qRadarOutput,
-			SubPath:   qRadarConfigKey,
-		},
-		{
-			Name:      SplunkConfigName,
-			MountPath: splunkOutput,
-			SubPath:   splunkConfigKey,
-		},
-		{
-			Name:      ELKConfigName,
-			MountPath: elkOutput,
-			SubPath:   elkConfigKey,
-		},
-		{
-			Name:      "shared",
-			MountPath: "/icp-audit",
-		},
-		{
-			Name:      "shared",
-			MountPath: "/tmp",
-		},
-		{
-			Name:      "certs",
-			MountPath: "/fluentd/etc/tls",
-			ReadOnly:  true,
-		},
-	},
 	// CommonEnvVars
 	Env: []corev1.EnvVar{
 		{
