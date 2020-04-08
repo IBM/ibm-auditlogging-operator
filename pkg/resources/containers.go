@@ -139,7 +139,7 @@ var sourceConfigData2 = `
 var sourceConfigData3 = `
     <source>
         @type http
-        # Tag is not supported in yaml, must be set by request path (/http-audit is required for validation and export)
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
         port `
 var sourceConfigData4 = `
         bind 0.0.0.0
@@ -159,21 +159,17 @@ var sourceConfigData4 = `
         format json
         key_name message
         reserve_data true
-    </filter>`
-
-// IBMDEV http debug
-/*
-    `<match http-audit>
+    </filter>
+    <match icp-audit.**>
         @type copy
         <store>
           @type "stdout"
         </store>
-	</match>`
-*/
+    </match>`
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit http-audit>
+     <match icp-audit.**>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -184,7 +180,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit http-audit>
+    <match icp-audit.**>
         @type copy
         <store>
           @type remote_syslog
