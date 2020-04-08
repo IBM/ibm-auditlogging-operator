@@ -159,13 +159,7 @@ var sourceConfigData4 = `
         format json
         key_name message
         reserve_data true
-    </filter>
-    <match icp-audit.**>
-        @type copy
-        <store>
-          @type "stdout"
-        </store>
-    </match>`
+    </filter>`
 
 var splunkConfigData = `
 splunkHEC.conf: |-
