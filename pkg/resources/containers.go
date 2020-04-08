@@ -135,15 +135,14 @@ var sourceConfigData3 = `
             fields_strip_underscores true
             fields_lowercase true
         </entry>
-    </source>
-`
+    </source>`
 
 var icpAuditSourceFilter = `
         @type parser
         format json
         key_name message
         reserve_data true
-`
+    </filter>`
 
 // IBMDEV systemd debug
 /*
@@ -161,7 +160,7 @@ var splunkConfigData = `
         hec_token SPLUNK_HEC_TOKEN
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
-`
+    </match>`
 
 var qRadarConfigData = `
         @type copy
@@ -175,18 +174,19 @@ var qRadarConfigData = `
             ca_file /fluentd/etc/tls/qradar.crt
             packet_size 4096
             program fluentd
-          <format>
-            @type single_value
-            message_key message
-          </format>
+            <format>
+                @type single_value
+                message_key message
+            </format>
         </store>
-`
+    </match>`
+
 var elkFilter = `
     <filter icp-audit>
         @type elasticsearch_genid
         hash_id_key _hash
-    </filter>
-`
+    </filter>`
+
 var elkConfigData = `
         @type elasticsearch
         @log_level info
@@ -207,7 +207,7 @@ var elkConfigData = `
             retry_max_interval 30
             retry_forever true
         </buffer>
-`
+    </match>`
 
 var policyControllerMainContainer = corev1.Container{
 	Image:           defaultImageRegistry + defaultPCImageName + ":" + defaultPCImageTag,

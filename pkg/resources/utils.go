@@ -325,8 +325,8 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"splunkHEC.conf"`
 		}
 		dsplunk := DataSplunk{}
-		result = splunkConfigKey + `: |-` + "\n" + buildMatch(tags, splunkConfigData)
-		err = yaml.Unmarshal([]byte(splunkConfigData), &dsplunk)
+		result = splunkConfigKey + `: |-` + buildConfig("match", tags, splunkConfigData)
+		err = yaml.Unmarshal([]byte(result), &dsplunk)
 		if err != nil {
 			reqLogger.Error(err, "Failed to unmarshall data for "+name)
 		}
@@ -336,21 +336,20 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"remoteSyslog.conf"`
 		}
 		dq := DataQRadar{}
-		result = qRadarConfigKey + `: |-` + "\n" + buildMatch(tags, qRadarConfigData)
-		err = yaml.Unmarshal([]byte(qRadarConfigData), &dq)
+		result = qRadarConfigKey + `: |-` + buildConfig("match", tags, qRadarConfigData)
+		err = yaml.Unmarshal([]byte(result), &dq)
 		dataMap[qRadarConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + ELKConfigName:
 		type DataELK struct {
 			Value string `yaml:"elk.conf"`
 		}
 		de := DataELK{}
-		result = elkConfigKey + `: |-` + elkFilter + buildMatch(tags, elkConfigData)
+		result = elkConfigKey + `: |-` + elkFilter + buildConfig("match", tags, elkConfigData)
 		err = yaml.Unmarshal([]byte(result), &de)
 		dataMap[elkConfigKey] = de.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
-	reqLogger.Info(result)
 	if err != nil {
 		reqLogger.Error(err, "Failed to unmarshall data for "+name)
 		return nil, err
@@ -382,13 +381,13 @@ func buildSourceConfig(tags []string, instance *operatorv1alpha1.AuditLogging) s
 		}
 		source = sourceConfigData1
 		source += yamlLine(2, `@id `+sourceID, true) + yamlLine(2, `matches '[{ "SYSLOG_IDENTIFIER": `+t+`}]'`, true) + yamlLine(2, `tag `+t, true)
-		source += yamlLine(2, `path `+jPath, false) + sourceConfigData2 + yamlLine(3, `  path `+sourcePath, false) + sourceConfigData3
+		source += yamlLine(2, `path `+jPath, false) + sourceConfigData2 + yamlLine(3, `path `+sourcePath, false) + sourceConfigData3
 		result += source
 	}
 	if !instance.Spec.Fluentd.CloudPak.FilterJSON {
 		tags = []string{defaultSourceTag}
 	}
-	return result + buildFilter(tags, icpAuditSourceFilter)
+	return result + buildConfig("filter", tags, icpAuditSourceFilter)
 }
 
 func getTags(instance *operatorv1alpha1.AuditLogging) []string {
@@ -399,26 +398,15 @@ func getTags(instance *operatorv1alpha1.AuditLogging) []string {
 	return tags
 }
 
-func buildFilter(tags []string, config string) string {
-	var filters = ""
+func buildConfig(configType string, tags []string, config string) string {
+	var configTags = ``
 	for i, t := range tags {
-		filters += t
+		configTags += t
 		if i < len(tags)-1 {
-			filters += " "
+			configTags += ` `
 		}
 	}
-	return yamlLine(1, `<filter `+filters+`>`, false) + config + yamlLine(1, `</filter>`, false)
-}
-
-func buildMatch(tags []string, config string) string {
-	var matches = ""
-	for i, t := range tags {
-		matches += t
-		if i < len(tags)-1 {
-			matches += " "
-		}
-	}
-	return yamlLine(1, `<match `+matches+`>`, false) + config + yamlLine(1, `</match>`, false)
+	return "\n" + yamlLine(1, `<`+configType+` `+configTags+`>`, false) + config
 }
 
 func yamlLine(tabs int, line string, newline bool) string {
