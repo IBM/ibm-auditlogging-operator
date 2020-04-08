@@ -9,8 +9,8 @@ spec:
     imageTag: v1.6.2-ruby
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
-    elasticsearch: 
-      scheme: http
-    sourceTag: mcm-audit
+    cloudPak:
+      sourceTag: mcm-audit
+      filterJSON: true
   policyController:
     verbosity: "0"

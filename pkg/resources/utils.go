@@ -19,6 +19,7 @@ package resources
 import (
 	"reflect"
 	"strconv"
+	"strings"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -299,7 +300,9 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	dataMap := make(map[string]string)
+	tags := getTags(instance)
 	var err error
+	var result string
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
 		dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
@@ -314,7 +317,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"source.conf"`
 		}
 		ds := DataS{}
-		var result = buildSourceConfig(instance)
+		result = buildSourceConfig(tags, instance)
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[sourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
@@ -322,6 +325,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"splunkHEC.conf"`
 		}
 		dsplunk := DataSplunk{}
+		result = splunkConfigKey + `: |-` + "\n" + buildMatch(tags, splunkConfigData)
 		err = yaml.Unmarshal([]byte(splunkConfigData), &dsplunk)
 		if err != nil {
 			reqLogger.Error(err, "Failed to unmarshall data for "+name)
@@ -332,6 +336,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"remoteSyslog.conf"`
 		}
 		dq := DataQRadar{}
+		result = qRadarConfigKey + `: |-` + "\n" + buildMatch(tags, qRadarConfigData)
 		err = yaml.Unmarshal([]byte(qRadarConfigData), &dq)
 		dataMap[qRadarConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + ELKConfigName:
@@ -339,18 +344,13 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"elk.conf"`
 		}
 		de := DataELK{}
-		var result = elkCongfigData1
-		if instance.Spec.Fluentd.Elasticsearch.Scheme != "" && instance.Spec.Fluentd.Elasticsearch.Scheme == "http" {
-			result += "http" + elkConfigHTTP
-		} else {
-			result += "https" + elkConfigHTTPS
-		}
-		result += elkConfigData2
+		result = elkConfigKey + `: |-` + elkFilter + buildMatch(tags, elkConfigData)
 		err = yaml.Unmarshal([]byte(result), &de)
 		dataMap[elkConfigKey] = de.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
+	reqLogger.Info(result)
 	if err != nil {
 		reqLogger.Error(err, "Failed to unmarshall data for "+name)
 		return nil, err
@@ -366,30 +366,67 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	return cm, nil
 }
 
-func buildSourceConfig(instance *operatorv1alpha1.AuditLogging) string {
-	var result = `source.conf: |-`
-	var jPath = journalPath
+func buildSourceConfig(tags []string, instance *operatorv1alpha1.AuditLogging) string {
+	var result = sourceConfigKey + `: |-`
+	var jPath = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		jPath = instance.Spec.Fluentd.JournalPath
 	}
-	var tags = []string{defaultSourceTag}
-	if instance.Spec.Fluentd.SourceTag != "" {
-		tags = append(tags, instance.Spec.Fluentd.SourceTag)
-	}
 	var source string
-	var sourceID = `input_systemd_icp`
-	var sourcePath = `/icp-audit`
+	var sourceID = defaultSourceID
+	var sourcePath = defaultSourcePath
 	for _, t := range tags {
 		if t != defaultSourceTag {
-			sourceID = `input_systemd_` + t
-			sourcePath = `/icp-audit/` + t
+			sourceID = defaultSourceID + `_` + t
+			sourcePath = defaultSourcePath + `/` + t
 		}
 		source = sourceConfigData1
-		source += `        @id ` + sourceID + "\n" + `        matches '[{ "SYSLOG_IDENTIFIER": ` + t + `}]'` + "\n" + `        tag ` + t + "\n"
-		source += `        path ` + jPath + sourceConfigData2 + `        path ` + sourcePath + sourceConfigData3 + "\n"
+		source += yamlLine(2, `@id `+sourceID, true) + yamlLine(2, `matches '[{ "SYSLOG_IDENTIFIER": `+t+`}]'`, true) + yamlLine(2, `tag `+t, true)
+		source += yamlLine(2, `path `+jPath, false) + sourceConfigData2 + yamlLine(3, `  path `+sourcePath, false) + sourceConfigData3
 		result += source
 	}
-	return result + "\n" + icpAuditSourceFilter
+	if !instance.Spec.Fluentd.CloudPak.FilterJSON {
+		tags = []string{defaultSourceTag}
+	}
+	return result + buildFilter(tags, icpAuditSourceFilter)
+}
+
+func getTags(instance *operatorv1alpha1.AuditLogging) []string {
+	var tags = []string{defaultSourceTag}
+	if instance.Spec.Fluentd.CloudPak != (operatorv1alpha1.LogConfig{}) {
+		tags = append(tags, instance.Spec.Fluentd.CloudPak.SourceTag)
+	}
+	return tags
+}
+
+func buildFilter(tags []string, config string) string {
+	var filters = ""
+	for i, t := range tags {
+		filters += t
+		if i < len(tags)-1 {
+			filters += " "
+		}
+	}
+	return yamlLine(1, `<filter `+filters+`>`, false) + config + yamlLine(1, `</filter>`, false)
+}
+
+func buildMatch(tags []string, config string) string {
+	var matches = ""
+	for i, t := range tags {
+		matches += t
+		if i < len(tags)-1 {
+			matches += " "
+		}
+	}
+	return yamlLine(1, `<match `+matches+`>`, false) + config + yamlLine(1, `</match>`, false)
+}
+
+func yamlLine(tabs int, line string, newline bool) string {
+	spaces := strings.Repeat(`    `, tabs)
+	if !newline {
+		return spaces + line
+	}
+	return spaces + line + "\n"
 }
 
 // BuildDeploymentForPolicyController returns a Deployment object
@@ -586,7 +623,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 
 // BuildCommonVolumeMounts returns an array of VolumeMount objects
 func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}
@@ -640,7 +677,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 
 // BuildCommonVolumes returns an array of Volume objects
 func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}

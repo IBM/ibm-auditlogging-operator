@@ -21,10 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const journalPath = "/run/log/journal"
-const FluentdDaemonSetName = "audit-logging-fluentd-ds"
-const auditLoggingCertSecretName = "audit-certs"
-
 const ConfigName = "config"
 const FluentdConfigName = "main-config"
 const SourceConfigName = "source-config"
@@ -45,6 +41,8 @@ const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 const elkConfigKey = "elk.conf"
 
+const FluentdDaemonSetName = "audit-logging-fluentd-ds"
+const auditLoggingCertSecretName = "audit-certs"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const FluentdName = "fluentd"
@@ -55,7 +53,10 @@ const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
+const defaultJournalPath = "/run/log/journal"
 const defaultSourceTag = "icp-audit"
+const defaultSourcePath = "/icp-audit"
+const defaultSourceID = "input_systemd_icp"
 
 var trueVar = true
 var falseVar = false
@@ -125,24 +126,24 @@ var sourceConfigData1 = `
 var sourceConfigData2 = `
         read_from_head true
         <storage>
-          @type local
-          persistent true
+            @type local
+            persistent true
 `
 var sourceConfigData3 = `
         </storage>
         <entry>
-          fields_strip_underscores true
-          fields_lowercase true
+            fields_strip_underscores true
+            fields_lowercase true
         </entry>
-    </source>`
+    </source>
+`
 
 var icpAuditSourceFilter = `
-    <filter icp-audit>
         @type parser
         format json
         key_name message
         reserve_data true
-    </filter>`
+`
 
 // IBMDEV systemd debug
 /*
@@ -154,73 +155,59 @@ var icpAuditSourceFilter = `
    </match>`
 */
 var splunkConfigData = `
-splunkHEC.conf: |-
-     <match icp-audit>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
         hec_token SPLUNK_HEC_TOKEN
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
-     </match>`
+`
 
 var qRadarConfigData = `
-remoteSyslog.conf: |-
-    <match icp-audit>
         @type copy
         <store>
-          @type remote_syslog
-          host QRADAR_SERVER_HOSTNAME
-          port QRADAR_PORT_FOR_icp-audit
-          hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit
-          protocol tcp
-          tls true
-          ca_file /fluentd/etc/tls/qradar.crt
-          packet_size 4096
-          program fluentd
+            @type remote_syslog
+            host QRADAR_SERVER_HOSTNAME
+            port QRADAR_PORT_FOR_icp-audit
+            hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit
+            protocol tcp
+            tls true
+            ca_file /fluentd/etc/tls/qradar.crt
+            packet_size 4096
+            program fluentd
           <format>
             @type single_value
             message_key message
           </format>
         </store>
-    </match>`
-
-var elkCongfigData1 = `
-elk.conf: |-
+`
+var elkFilter = `
     <filter icp-audit>
-      @type elasticsearch_genid
-      hash_id_key _hash
-    </filter>  
-    <match icp-audit>
-      @type elasticsearch
-      @log_level info
-      type_name fluentd
-      id_key _hash
-      remove_keys _hash
-      logstash_prefix audit
-      scheme `
-var elkConfigHTTP = `
-      host ELASTICSEARCH_SERVER_HOSTNAME
-      port ELASTICSEARCH_PORT
-      user ELASTICSEARCH_USERNAME
-      password ELASTICSEARCH_PASSWORD`
-var elkConfigHTTPS = `
-      host elasticsearch
-      port 9200
-      ssl_version TLSv1_2
-      ca_file /fluentd/etc/tls/ca.crt
-      client_cert /fluentd/etc/tls/tls.crt
-      client_key /fluentd/etc/tls/tls.key`
-var elkConfigData2 = `
-      <buffer>
-        flush_thread_count 2
-        flush_interval 15s
-        chunk_limit_size 2M
-        queue_limit_length 32
-        retry_max_interval 30
-        retry_forever true
-      </buffer>
-    </match>`
+        @type elasticsearch_genid
+        hash_id_key _hash
+    </filter>
+`
+var elkConfigData = `
+        @type elasticsearch
+        @log_level info
+        type_name fluentd
+        id_key _hash
+        remove_keys _hash
+        logstash_prefix audit
+        scheme http
+        host ELASTICSEARCH_SERVER_HOSTNAME
+        port ELASTICSEARCH_PORT
+        user ELASTICSEARCH_USERNAME
+        password ELASTICSEARCH_PASSWORD
+        <buffer>
+            flush_thread_count 2
+            flush_interval 15s
+            chunk_limit_size 2M
+            queue_limit_length 32
+            retry_max_interval 30
+            retry_forever true
+        </buffer>
+`
 
 var policyControllerMainContainer = corev1.Container{
 	Image:           defaultImageRegistry + defaultPCImageName + ":" + defaultPCImageTag,

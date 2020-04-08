@@ -34,14 +34,13 @@ type AuditLoggingSpec struct {
 
 // AuditLoggingSpecFluentd defines the desired state of Fluentd
 type AuditLoggingSpecFluentd struct {
-	EnableAuditLoggingForwarding bool         `json:"enabled,omitempty"`
-	ImageRegistry                string       `json:"imageRegistry,omitempty"`
-	ImageTag                     string       `json:"imageTag,omitempty"`
-	PullPolicy                   string       `json:"pullPolicy,omitempty"`
-	JournalPath                  string       `json:"journalPath,omitempty"`
-	ClusterIssuer                string       `json:"clusterIssuer,omitempty"`
-	Elasticsearch                OutputPlugin `json:"elasticsearch,omitempty"`
-	SourceTag                    string       `json:"sourceTag,omitempty"`
+	EnableAuditLoggingForwarding bool      `json:"enabled,omitempty"`
+	ImageRegistry                string    `json:"imageRegistry,omitempty"`
+	ImageTag                     string    `json:"imageTag,omitempty"`
+	PullPolicy                   string    `json:"pullPolicy,omitempty"`
+	JournalPath                  string    `json:"journalPath,omitempty"`
+	ClusterIssuer                string    `json:"clusterIssuer,omitempty"`
+	CloudPak                     LogConfig `json:"cloudPak,omitempty"`
 }
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec
@@ -53,9 +52,10 @@ type AuditLoggingSpecPolicyController struct {
 	Frequency     string `json:"frequency,omitempty"`
 }
 
-// OutputPlugin defines the fluentd output plugin configuration in the the audit logging spec
-type OutputPlugin struct {
-	Scheme string `json:"scheme,omitempty"`
+// LogConfig defines the config for cloud pak service audit logs
+type LogConfig struct {
+	SourceTag  string `json:"sourceTag"`
+	FilterJSON bool   `json:"filterJSON"`
 }
 
 // AuditLoggingStatus defines the observed state of AuditLogging

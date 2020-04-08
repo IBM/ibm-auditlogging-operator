@@ -37,15 +37,20 @@ spec:
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
+                cloudPak:
+                  description: LogConfig defines the config for cloud pak service
+                    audit logs
+                  properties:
+                    filterJSON:
+                      type: boolean
+                    sourceTag:
+                      type: string
+                  required:
+                  - filterJSON
+                  - sourceTag
+                  type: object
                 clusterIssuer:
                   type: string
-                elasticsearch:
-                  description: OutputPlugin defines the fluentd output plugin configuration
-                    in the the audit logging spec
-                  properties:
-                    scheme:
-                      type: string
-                  type: object
                 enabled:
                   type: boolean
                 imageRegistry:
@@ -55,8 +60,6 @@ spec:
                 journalPath:
                   type: string
                 pullPolicy:
-                  type: string
-                sourceTag:
                   type: string
               type: object
             policyController:
