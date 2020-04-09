@@ -32,7 +32,7 @@ spec:
           description: AuditLoggingSpec defines the desired state of AuditLogging
           properties:
             fluentd:
-              description: 'AuditLoggingSpecFluentd defines the desired state of Fluentd'
+              description: AuditLoggingSpecFluentd defines the desired state of Fluentd
               properties:
                 clusterIssuer:
                   type: string
