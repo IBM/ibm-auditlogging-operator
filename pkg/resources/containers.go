@@ -21,25 +21,31 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const journalPath = "/run/log/journal"
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
-const auditLoggingCertSecretName = "audit-certs"
+const AuditLoggingClientCertSecName = "audit-certs"
+const AuditLoggingHTTPSCertName = "fluentd-https"
+const AuditLoggingServerCertSecName = "audit-server-certs"
+const AuditLoggingCertName = "fluentd"
+const FluentdName = "fluentd"
+
 const ConfigName = "config"
 const FluentdConfigName = "main-config"
 const SourceConfigName = "source-config"
 const QRadarConfigName = "remote-syslog-config"
 const SplunkConfigName = "splunk-hec-config"
+
 const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
+
 const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
+
 const fluentdConfigKey = "fluent.conf"
 const sourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
-const AuditLoggingCertName = "fluentd"
+
 const AuditPolicyControllerDeploy = "audit-policy-controller"
-const FluentdName = "fluentd"
 const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
@@ -47,6 +53,8 @@ const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
+const defaultJournalPath = "/run/log/journal"
+const defaultHTTPPort = 9880
 
 var trueVar = true
 var falseVar = false
@@ -99,7 +107,7 @@ var commonTolerations = []corev1.Toleration{
 
 var fluentdMainConfigData = `
 fluent.conf: |-
-  # Input plugins
+  # Input plugins (Supports Systemd and HTTP)
   @include /fluentd/etc/source.conf
 
   # Output plugins (Only use one output plugin conf file at a time. Comment or remove other files)
@@ -127,6 +135,24 @@ var sourceConfigData2 = `
           fields_strip_underscores true
           fields_lowercase true
         </entry>
+    </source>`
+var sourceConfigData3 = `
+    <source>
+        @type http
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+        port `
+var sourceConfigData4 = `
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /fluentd/etc/https/ca.crt
+          cert_path /fluentd/etc/https/tls.crt
+          private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
     </source>
     <filter icp-audit>
         @type parser
@@ -137,7 +163,7 @@ var sourceConfigData2 = `
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit>
+     <match icp-audit.**>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -148,7 +174,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit>
+    <match icp-audit.**>
         @type copy
         <store>
           @type remote_syslog
@@ -218,46 +244,6 @@ var fluentdMainContainer = corev1.Container{
 	Image:           defaultImageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag,
 	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
-	VolumeMounts: []corev1.VolumeMount{
-		{
-			Name:      FluentdConfigName,
-			MountPath: "/fluentd/etc/" + fluentdConfigKey,
-			SubPath:   fluentdConfigKey,
-		},
-		{
-			Name:      SourceConfigName,
-			MountPath: fluentdInput,
-			SubPath:   sourceConfigKey,
-		},
-		{
-			Name:      QRadarConfigName,
-			MountPath: qRadarOutput,
-			SubPath:   qRadarConfigKey,
-		},
-		{
-			Name:      SplunkConfigName,
-			MountPath: splunkOutput,
-			SubPath:   splunkConfigKey,
-		},
-		{
-			Name:      "journal",
-			MountPath: journalPath,
-			ReadOnly:  true,
-		},
-		{
-			Name:      "shared",
-			MountPath: "/icp-audit",
-		},
-		{
-			Name:      "shared",
-			MountPath: "/tmp",
-		},
-		{
-			Name:      "certs",
-			MountPath: "/fluentd/etc/tls",
-			ReadOnly:  true,
-		},
-	},
 	// CommonEnvVars
 	Env: []corev1.EnvVar{
 		{
@@ -271,7 +257,13 @@ var fluentdMainContainer = corev1.Container{
 				},
 			},
 		},
-	}, //CS??? TODO
+	},
+	Ports: []corev1.ContainerPort{
+		{
+			ContainerPort: defaultHTTPPort,
+			Protocol:      "TCP",
+		},
+	},
 	LivenessProbe: &corev1.Probe{
 		Handler: corev1.Handler{
 			Exec: &corev1.ExecAction{

@@ -38,6 +38,8 @@ spec:
                   type: string
                 enabled:
                   type: boolean
+                httpPort:
+                  type: string
                 imageRegistry:
                   type: string
                 imageTag:

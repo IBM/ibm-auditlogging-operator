@@ -53,6 +53,42 @@ var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
+// BuildAuditService returns a Service object
+func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
+	metaLabels := LabelsForMetadata(FluentdName)
+	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
+
+	var httpPort int32
+	if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
+		httpPort = port
+	} else {
+		httpPort = defaultHTTPPort
+	}
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      auditLoggingComponentName,
+			Namespace: InstanceNamespace,
+			Labels:    metaLabels,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: "ClusterIP",
+			Ports: []corev1.ServicePort{
+				{
+					Name:     auditLoggingComponentName,
+					Protocol: "TCP",
+					Port:     httpPort,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: httpPort,
+					},
+				},
+			},
+			Selector: selectorLabels,
+		},
+	}
+	return service
+}
+
 // BuildAuditPolicyCRD returns a CRD object
 func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
@@ -318,8 +354,15 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		if instance.Spec.Fluentd.JournalPath != "" {
 			result = sourceConfigData1 + instance.Spec.Fluentd.JournalPath + sourceConfigData2
 		} else {
-			result = sourceConfigData1 + journalPath + sourceConfigData2
+			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
 		}
+		var p string
+		if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
+			p = strconv.Itoa(int(port))
+		} else {
+			p = strconv.Itoa(defaultHTTPPort)
+		}
+		result += sourceConfigData3 + p + sourceConfigData4
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[sourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
@@ -443,7 +486,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 }
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string) *certmgr.Certificate {
+func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
@@ -454,19 +497,26 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      AuditLoggingCertName,
+			Name:      name,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
 		Spec: certmgr.CertificateSpec{
-			CommonName: AuditLoggingCertName,
-			SecretName: auditLoggingCertSecretName,
+			CommonName: name,
 			IssuerRef: certmgr.ObjectReference{
 				Name: clusterIssuer,
 				Kind: certmgr.ClusterIssuerKind,
 			},
 		},
 	}
+
+	if name == AuditLoggingHTTPSCertName {
+		certificate.Spec.SecretName = AuditLoggingServerCertSecName
+		certificate.Spec.DNSNames = []string{auditLoggingComponentName}
+	} else {
+		certificate.Spec.SecretName = AuditLoggingClientCertSecName
+	}
+
 	return certificate
 }
 
@@ -506,6 +556,10 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		default:
 			reqLogger.Info("Trying to update PullPolicy", "NOT SUPPORTED", instance.Spec.Fluentd.PullPolicy)
 		}
+	}
+
+	if result, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); result {
+		fluentdMainContainer.Ports[0].ContainerPort = port
 	}
 
 	daemon := &appsv1.DaemonSet{
@@ -551,7 +605,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 
 // BuildCommonVolumeMounts returns an array of VolumeMount objects
 func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}
@@ -590,8 +644,13 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 			MountPath: "/tmp",
 		},
 		{
-			Name:      "certs",
+			Name:      AuditLoggingClientCertSecName,
 			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      AuditLoggingServerCertSecName,
+			MountPath: "/fluentd/etc/https",
 			ReadOnly:  true,
 		},
 	}
@@ -600,7 +659,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 
 // BuildCommonVolumes returns an array of Volume objects
 func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
-	var journal = journalPath
+	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
 	}
@@ -685,15 +744,41 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 			},
 		},
 		{
-			Name: "certs",
+			Name: AuditLoggingClientCertSecName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: auditLoggingCertSecretName,
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
 				},
 			},
 		},
 	}
 	return commonVolumes
+}
+
+func getHTTPPort(port string) (bool, int32) {
+	if port == "" {
+		return false, 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return false, 0
+	}
+	if p > 0 && p <= 65535 {
+		return true, int32(p)
+	}
+	return false, 0
+}
+
+func EqualServices(expected *corev1.Service, found *corev1.Service) bool {
+	return !reflect.DeepEqual(found.Spec.Ports, expected.Spec.Ports)
 }
 
 func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool {
