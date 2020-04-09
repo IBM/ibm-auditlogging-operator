@@ -6,7 +6,7 @@ spec:
   fluentd:
     enabled: true
     imageRegistry: quay.io/opencloudio/
-    imageTag: v1.6.2-ubi7
+    imageTag: v1.6.2-ruby25
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
   policyController:

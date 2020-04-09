@@ -44,7 +44,7 @@ const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "v1.6.2-ubi7"
+const defaultFluentdImageTag = "v1.6.2-ruby25"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
 
