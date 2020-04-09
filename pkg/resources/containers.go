@@ -54,7 +54,7 @@ const defaultFluentdImageTag = "v1.6.2-ubi7"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
 const defaultJournalPath = "/run/log/journal"
-const defaultHTTPPort = 8888
+const defaultHTTPPort = 9880
 
 var trueVar = true
 var falseVar = false
