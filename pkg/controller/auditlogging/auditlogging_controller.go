@@ -80,8 +80,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&corev1.ConfigMap{},
 		&certmgr.Certificate{},
 		&corev1.ServiceAccount{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&extv1beta1.CustomResourceDefinition{},
@@ -163,8 +161,8 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Reconcile the expected ServiceAccount for Audit Policy Controller
-	recResult, recErr = r.createOrUpdateServiceAccounts(instance)
+	// Reconcile the expected ServiceAccount for operands
+	recResult, recErr = r.createOrUpdateServiceAccount(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
@@ -193,19 +191,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Reconcile the expected Role
-	recResult, recErr = r.createOrUpdateRole(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected RoleBinding
-	recResult, recErr = r.createOrUpdateRoleBinding(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected RoleBinding
+	// Reconcile the expected Service
 	recResult, recErr = r.createOrUpdateService(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
@@ -217,7 +203,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Reconcile the expected RoleBinding
+	// Reconcile the expected Status
 	recResult, recErr = r.updateStatus(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr

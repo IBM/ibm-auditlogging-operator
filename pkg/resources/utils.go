@@ -27,7 +27,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -40,11 +39,6 @@ const productName = "IBM Cloud Platform Common Services"
 const productID = "068a62892a1e4db39641342e592daa25"
 const productVersion = "3.3.0"
 const productMetric = "FREE"
-
-const clusterRoleSuffix = "-role"
-const clusterRoleBindingSuffix = "-rolebinding"
-const ServiceAcct = "-svcacct"
-const defaultClusterIssuer = "cs-ca-clusterissuer"
 
 const InstanceNamespace = "ibm-common-services"
 
@@ -193,143 +187,6 @@ func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.Cu
 	return crd
 }
 
-// BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildClusterRoleBindingForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	rb := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + clusterRoleBindingSuffix,
-			Labels: metaLabels,
-		},
-		Subjects: []rbacv1.Subject{{
-			Kind:      "ServiceAccount",
-			Name:      AuditPolicyControllerDeploy + ServiceAcct,
-			Namespace: InstanceNamespace,
-		}},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     AuditPolicyControllerDeploy + clusterRoleSuffix,
-		},
-	}
-	return rb
-}
-
-// BuildClusterRole returns a ClusterRole object
-func BuildClusterRoleForPolicyController(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	cr := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + clusterRoleSuffix,
-			Labels: metaLabels,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{""},
-				Resources: []string{"services"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{""},
-				Resources: []string{"secrets"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"admissionregistration.k8s.io"},
-				Resources: []string{"mutatingwebhookconfigurations", "validatingwebhookconfigurations"},
-			},
-			{
-				Verbs:     []string{"get", "update", "patch"},
-				APIGroups: []string{"audit.policies.ibm.com"},
-				Resources: []string{"auditpolicies/status"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"audit.policies.ibm.com"},
-				Resources: []string{"auditpolicies"},
-			},
-			{
-				Verbs:     []string{"get", "update", "patch"},
-				APIGroups: []string{"apps"},
-				Resources: []string{"deployments/status"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"apps"},
-				Resources: []string{"deployments"},
-			},
-			{
-				Verbs:     []string{"get", "list", "watch"},
-				APIGroups: []string{""},
-				Resources: []string{"pods", "namespaces"},
-			},
-			{
-				Verbs:     []string{"get", "list", "watch", "update"},
-				APIGroups: []string{""},
-				Resources: []string{"configmaps"},
-			},
-			{
-				Verbs:     []string{"create", "get", "update", "patch"},
-				APIGroups: []string{""},
-				Resources: []string{"events"},
-			},
-			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"anyuid"},
-			},
-		},
-	}
-	return cr
-}
-
-// BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
-func BuildRoleBindingForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
-	metaLabels := LabelsForMetadata(FluentdName)
-	rb := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + clusterRoleBindingSuffix,
-			Namespace: InstanceNamespace,
-			Labels:    metaLabels,
-		},
-		Subjects: []rbacv1.Subject{{
-			APIGroup:  "",
-			Kind:      "ServiceAccount",
-			Name:      FluentdDaemonSetName + ServiceAcct,
-			Namespace: InstanceNamespace,
-		}},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     FluentdDaemonSetName + clusterRoleSuffix,
-		},
-	}
-	return rb
-}
-
-// BuildRoleForFluentd returns a Role object for fluentd
-func BuildRoleForFluentd(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
-	metaLabels := LabelsForMetadata(FluentdName)
-	cr := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + clusterRoleSuffix,
-			Namespace: InstanceNamespace,
-			Labels:    metaLabels,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"privileged"},
-			},
-		},
-	}
-	return cr
-}
-
 // BuildConfigMap returns a ConfigMap object
 func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
@@ -463,7 +320,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName:            AuditPolicyControllerDeploy + ServiceAcct,
+					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
@@ -588,7 +445,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName:            FluentdDaemonSetName + ServiceAcct,
+					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
@@ -783,24 +640,6 @@ func EqualServices(expected *corev1.Service, found *corev1.Service) bool {
 
 func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool {
 	return !reflect.DeepEqual(found.Spec, expected.Spec)
-}
-
-func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
-	return !reflect.DeepEqual(found.Rules, expected.Rules)
-}
-
-func EqualClusterRoles(expected *rbacv1.ClusterRole, found *rbacv1.ClusterRole) bool {
-	return !reflect.DeepEqual(found.Rules, expected.Rules)
-}
-
-func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
-	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
-		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
-}
-
-func EqualClusterRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
-	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
-		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
 }
 
 func EqualDeployments(expectedDeployment *appsv1.Deployment, foundDeployment *appsv1.Deployment) bool {
