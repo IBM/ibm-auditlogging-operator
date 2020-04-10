@@ -80,6 +80,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&corev1.ConfigMap{},
 		&certmgr.Certificate{},
 		&corev1.ServiceAccount{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&extv1beta1.CustomResourceDefinition{},
@@ -187,6 +189,18 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 
 	// Reconcile the expected bridge deployment
 	recResult, recErr = r.createOrUpdatePolicyControllerDeployment(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the expected Role
+	recResult, recErr = r.createOrUpdateRole(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+
+	// Reconcile the expected RoleBinding
+	recResult, recErr = r.createOrUpdateRoleBinding(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
