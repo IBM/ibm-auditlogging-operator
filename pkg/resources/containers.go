@@ -42,7 +42,9 @@ const qRadarConfigKey = "remoteSyslog.conf"
 const elkConfigKey = "elk.conf"
 
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
-const auditLoggingCertSecretName = "audit-certs"
+const AuditLoggingClientCertSecName = "audit-certs"
+const AuditLoggingHTTPSCertName = "fluentd-https"
+const AuditLoggingServerCertSecName = "audit-server-certs"
 const AuditLoggingCertName = "fluentd"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const FluentdName = "fluentd"
@@ -50,13 +52,15 @@ const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "v1.6.2-ubi7"
+const defaultFluentdImageTag = "v1.6.2-ruby25"
 const defaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.4.0"
 const defaultJournalPath = "/run/log/journal"
 const defaultSourceTag = "icp-audit"
+const defaultMatchTag = "icp-audit.**"
 const defaultSourcePath = "/icp-audit"
 const defaultSourceID = "input_systemd_icp"
+const defaultHTTPPort = 9880
 
 var trueVar = true
 var falseVar = false
@@ -109,7 +113,7 @@ var commonTolerations = []corev1.Toleration{
 
 var fluentdMainConfigData = `
 fluent.conf: |-
-  # Input plugins
+  # Input plugins (Supports Systemd and HTTP)
   @include /fluentd/etc/source.conf
 
   # Output plugins (Only use one output plugin conf file at a time. Comment or remove other files)
@@ -135,8 +139,25 @@ var sourceConfigData3 = `
             fields_strip_underscores true
             fields_lowercase true
         </entry>
-    </source>`
-
+    </source>
+    <source>
+        @type http
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+`
+var sourceConfigData4 = `
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /fluentd/etc/https/ca.crt
+          cert_path /fluentd/etc/https/tls.crt
+          private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
+    </source>
+`
 var icpAuditSourceFilter = `
         @type parser
         format json
@@ -273,7 +294,13 @@ var fluentdMainContainer = corev1.Container{
 				},
 			},
 		},
-	}, //CS??? TODO
+	},
+	Ports: []corev1.ContainerPort{
+		{
+			ContainerPort: defaultHTTPPort,
+			Protocol:      "TCP",
+		},
+	},
 	LivenessProbe: &corev1.Probe{
 		Handler: corev1.Handler{
 			Exec: &corev1.ExecAction{

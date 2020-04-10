@@ -78,6 +78,45 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	return reconcile.Result{}, nil
 }
 
+func (r *ReconcileAuditLogging) createOrUpdateService(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Service.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
+	expected := res.BuildAuditService(instance)
+	found := &corev1.Service{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Creating a new Service", "Service.Namespace", expected.Namespace, "Service.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new Service", "Service.Namespace", expected.Namespace,
+				"Service.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Service created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get Service")
+		return reconcile.Result{}, err
+	} else if result := res.EqualServices(expected, found); result {
+		// If role permissions are incorrect, update it and requeue
+		reqLogger.Info("Found ports is incorrect", "Found", found.Spec.Ports, "Expected", expected.Spec.Ports)
+		found.Spec.Ports = expected.Spec.Ports
+		err = r.client.Update(context.TODO(), found)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Service", "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		// Updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *ReconcileAuditLogging) createAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("CRD.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildAuditPolicyCRD(instance)
@@ -472,8 +511,22 @@ func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operato
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateAuditCerts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.createOrUpdateAuditCertificate(instance, res.AuditLoggingHTTPSCertName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.createOrUpdateAuditCertificate(instance, res.AuditLoggingCertName)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) createOrUpdateAuditCertificate(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Certificate.Namespace", res.InstanceNamespace, "Instance.Name", instance.Name)
-	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer)
+	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

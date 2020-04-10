@@ -5,8 +5,8 @@ metadata:
 spec:
   fluentd:
     enabled: true
-    imageRegistry: hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/
-    imageTag: v1.6.2-ruby
+    imageRegistry: quay.io/opencloudio/
+    imageTag: v1.6.2-ruby25
     pullPolicy: IfNotPresent
     journalPath: /var/log/journal
     cloudPak:
