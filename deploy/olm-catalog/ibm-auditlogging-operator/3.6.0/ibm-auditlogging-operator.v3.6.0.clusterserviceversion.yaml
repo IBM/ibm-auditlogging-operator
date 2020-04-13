@@ -272,7 +272,7 @@ spec:
         - apiGroups:
           - security.openshift.io
           resourceNames:
-          - anyuid
+          - restricted
           - privileged
           resources:
           - securitycontextconstraints
