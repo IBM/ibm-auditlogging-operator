@@ -116,8 +116,14 @@ lint: lint-all
 # test section
 ############################################################
 
-test:
-	@go test ${TESTARGS} ./...
+test: ## Run unit test
+	@echo "Running the tests for $(IMAGE_NAME) on $(LOCAL_ARCH)..."
+	@go test $(TESTARGS) ./pkg/controller/...
+
+test-e2e: ## Run integration e2e tests
+	@echo ... Running e2e tests ...
+	@echo ... Running locally ...
+	- operator-sdk test local ./test/e2e --verbose --up-local --namespace=${NAMESPACE}
 
 ############################################################
 # coverage section

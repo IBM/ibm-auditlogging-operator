@@ -3,13 +3,14 @@ module github.com/ibm/ibm-auditlogging-operator
 go 1.13
 
 require (
+	cloud.google.com/go v0.54.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/jetstack/cert-manager v0.10.0
+	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-sdk v0.15.1
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.4.0
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
-	golang.org/x/net v0.0.0-20200226051749-491c5fce7268 // indirect
-	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.2
 	k8s.io/apiextensions-apiserver v0.17.2

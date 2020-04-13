@@ -159,4 +159,7 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
   1. `kubectl delete auditloggings example-auditlogging`
 
 #### Operator SDK's Test Framework
+
 - [Running the tests](https://github.com/operator-framework/operator-sdk/blob/master/doc/test-framework/writing-e2e-tests.md#running-the-tests)
+- To run unit tests use `make test`
+- To run e2e tests use `make test-e2e`
