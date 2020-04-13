@@ -26,7 +26,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -146,30 +145,10 @@ func (r *ReconcileAuditLogging) createAuditPolicyCRD(instance *operatorv1alpha1.
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) createOrUpdateServiceAccounts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	var recResult reconcile.Result
-	var recErr error
-	recResult, recErr = r.serviceAccount(instance, res.FluentdDaemonSetName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	recResult, recErr = r.serviceAccount(instance, res.AuditPolicyControllerDeploy)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	return reconcile.Result{}, nil
-}
-
 // IBMDEV serviceAccountForCR returns (reconcile.Result, error)
-func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) createOrUpdateServiceAccount(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("cr.Name", cr.Name)
-
-	expectedRes := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + res.ServiceAcct,
-			Namespace: res.InstanceNamespace,
-		},
-	}
+	expectedRes := res.BuildServiceAccount(cr)
 	// Set CR instance as the owner and controller
 	err := controllerutil.SetControllerReference(cr, expectedRes, r.scheme)
 	if err != nil {
@@ -204,7 +183,7 @@ func (r *ReconcileAuditLogging) serviceAccount(cr *operatorv1alpha1.AuditLogging
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRole.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildClusterRoleForPolicyController(instance)
+	expected := res.BuildClusterRole(instance)
 	found := &rbacv1.ClusterRole{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
@@ -246,7 +225,7 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1al
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildClusterRoleBindingForPolicyController(instance)
+	expected := res.BuildClusterRoleBinding(instance)
 	found := &rbacv1.ClusterRoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
@@ -286,7 +265,7 @@ func (r *ReconcileAuditLogging) createOrUpdateClusterRoleBinding(instance *opera
 
 func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Role.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRoleForFluentd(instance)
+	expected := res.BuildRole(instance)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
@@ -329,7 +308,7 @@ func (r *ReconcileAuditLogging) createOrUpdateRole(instance *operatorv1alpha1.Au
 
 func (r *ReconcileAuditLogging) createOrUpdateRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("RoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRoleBindingForFluentd(instance)
+	expected := res.BuildRoleBinding(instance)
 	found := &rbacv1.RoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
