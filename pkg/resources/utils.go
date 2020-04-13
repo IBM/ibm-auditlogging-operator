@@ -705,6 +705,9 @@ func annotationsForMetering(deploymentName string) map[string]string {
 	if deploymentName == FluentdName {
 		annotations["seccomp.security.alpha.kubernetes.io/pod"] = "docker/default"
 		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
+		annotations["openshift.io/scc"] = "privileged"
+	} else {
+		annotations["openshift.io/scc"] = "restricted"
 	}
 	return annotations
 }
