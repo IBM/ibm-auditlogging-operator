@@ -157,3 +157,6 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 - Delete the CR and the associated resources that were created.
   1. `kubectl delete auditloggings example-auditlogging`
+
+#### Operator SDK's Test Framework
+- [Running the tests](https://github.com/operator-framework/operator-sdk/blob/master/doc/test-framework/writing-e2e-tests.md#running-the-tests)

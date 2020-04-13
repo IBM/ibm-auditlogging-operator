@@ -3,16 +3,20 @@ module github.com/ibm/ibm-auditlogging-operator
 go 1.13
 
 require (
+	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/jetstack/cert-manager v0.10.0
-	github.com/operator-framework/operator-sdk v0.14.0
+	github.com/operator-framework/operator-sdk v0.15.1
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
+	golang.org/x/net v0.0.0-20200226051749-491c5fce7268 // indirect
+	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
 	gopkg.in/yaml.v2 v2.2.4
-	k8s.io/api v0.17.0
-	k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery v0.17.0
+	k8s.io/api v0.17.2
+	k8s.io/apiextensions-apiserver v0.17.2
+	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
-	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/controller-runtime v0.5.0
 )
 
 // Pinned to kubernetes-1.16.2
