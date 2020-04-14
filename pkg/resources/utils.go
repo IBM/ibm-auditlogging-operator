@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const auditLoggingComponentName = "common-audit-logging"
+const AuditLoggingComponentName = "common-audit-logging"
 const auditLoggingReleaseName = "common-audit-logging"
 const auditLoggingCrType = "auditlogging_cr"
 const productName = "IBM Cloud Platform Common Services"
@@ -60,7 +60,7 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 	}
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      auditLoggingComponentName,
+			Name:      AuditLoggingComponentName,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
@@ -68,7 +68,7 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 			Type: "ClusterIP",
 			Ports: []corev1.ServicePort{
 				{
-					Name:     auditLoggingComponentName,
+					Name:     AuditLoggingComponentName,
 					Protocol: "TCP",
 					Port:     httpPort,
 					TargetPort: intstr.IntOrString{
@@ -369,7 +369,7 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 
 	if name == AuditLoggingHTTPSCertName {
 		certificate.Spec.SecretName = AuditLoggingServerCertSecName
-		certificate.Spec.DNSNames = []string{auditLoggingComponentName}
+		certificate.Spec.DNSNames = []string{AuditLoggingComponentName}
 	} else {
 		certificate.Spec.SecretName = AuditLoggingClientCertSecName
 	}
@@ -675,13 +675,13 @@ func GetPodNames(pods []corev1.Pod) []string {
 
 //IBMDEV
 func LabelsForMetadata(name string) map[string]string {
-	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": auditLoggingComponentName,
+	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": AuditLoggingComponentName,
 		"app.kubernetes.io/managed-by": "operator", "app.kubernetes.io/instance": auditLoggingReleaseName, "release": auditLoggingReleaseName}
 }
 
 //IBMDEV
 func LabelsForSelector(name string, crName string) map[string]string {
-	return map[string]string{"app": name, "component": auditLoggingComponentName, auditLoggingCrType: crName}
+	return map[string]string{"app": name, "component": AuditLoggingComponentName, auditLoggingCrType: crName}
 }
 
 //IBMDEV

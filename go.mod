@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go v0.54.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/jetstack/cert-manager v0.10.0
-	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-sdk v0.15.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
