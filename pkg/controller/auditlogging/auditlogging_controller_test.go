@@ -18,31 +18,34 @@ package auditlogging
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
-	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha2"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/apps/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+const journalPath = "/var/log/audit"
+const forwardingBool = true
+const verbosity = "10"
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
 	var (
-		name      = "auditlogging"
+		name      = "example-auditlogging"
 		namespace = res.InstanceNamespace
 	)
 
@@ -67,15 +70,21 @@ func initReconcile(t *testing.T, r ReconcileAuditLogging, req reconcile.Request,
 		t.Error("Reconcile requeued request as not expected")
 	}
 	assert.NoError(err)
-	// cfg, err := config.GetConfig()
-	// assert.NoError(err)
-	// workers := len(cfg.)
+
+	nodeList := &corev1.NodeList{}
+	t.Log(nodeList)
+	opts := []client.ListOption{
+		client.MatchingLabels{"kubernetes.io/hostname": "worker1.audit-op.os.fyre.ibm.com"},
+	}
+	ctx := context.TODO()
+	err = r.client.List(ctx, nodeList, opts...)
+	assert.NoError(err)
 
 	// Retrieve AuditLogging CR
-	retrieveAuditLogging(t, r, req, cr, 3)
+	retrieveAuditLogging(t, r, req, cr, len(nodeList.Items)+1)
 
 	// TODO
-	err = checkAuditLoggingCR(t, r, cr, true, "/var/log/audit", "10")
+	err = checkAuditLoggingCR(t, r, cr, forwardingBool, journalPath, verbosity)
 	assert.NoError(err)
 }
 
@@ -84,7 +93,7 @@ func retrieveAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.R
 	assert := assert.New(t)
 	err := r.client.Get(context.TODO(), req.NamespacedName, cr)
 	assert.NoError(err)
-	assert.Equal(expectedPodNum, len(cr.Status.Nodes), "audit logging status node list should have three elements")
+	assert.Equal(expectedPodNum, len(cr.Status.Nodes), "Audit logging status node list should have "+strconv.Itoa(expectedPodNum)+" elements")
 }
 
 func updateAuditLoggingCR(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
@@ -132,10 +141,7 @@ func auditLogging(name, namespace string) *operatorv1alpha1.AuditLogging {
 func getReconciler(name, namespace string) ReconcileAuditLogging {
 	s := scheme.Scheme
 	v1alpha1.SchemeBuilder.AddToScheme(s)
-	olmv1.SchemeBuilder.AddToScheme(s)
-	olmv1alpha1.SchemeBuilder.AddToScheme(s)
-	v1beta2.SchemeBuilder.AddToScheme(s)
-	v1alpha2.SchemeBuilder.AddToScheme(s)
+	corev1.SchemeBuilder.AddToScheme(s)
 
 	initData := initClientData(name, namespace)
 
