@@ -146,10 +146,11 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 #### Run the operator locally
 
-- `cd /home/ibmadmin/workspace/cs-operators/auditlogging-operator`
-- `oc login...`
-- `export OPERATOR_NAME=auditlogging-operator`
-- `operator-sdk up local --namespace=<namespace>`
+- `cd /home/ibmadmin/workspace/cs-operators/ibm-auditlogging-operator`
+- `oc login... --namespace=ibm-common-services`
+- `export OPERATOR_NAME=ibm-auditlogging-operator`
+- `kubectl create -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml`
+- `operator-sdk run --local`
 
 - Create a CR that is an instance of the CRD.
   1. Edit `deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml`.
