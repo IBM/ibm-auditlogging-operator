@@ -60,7 +60,6 @@ const defaultHTTPPort = 9880
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
-var user100 = int64(100)
 var replicas = int32(1)
 var cpu25 = resource.NewMilliQuantity(25, resource.DecimalSI)          // 25m
 var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
@@ -90,7 +89,6 @@ var policyControllerSecurityContext = corev1.SecurityContext{
 	Privileged:               &falseVar,
 	ReadOnlyRootFilesystem:   &trueVar,
 	RunAsNonRoot:             &trueVar,
-	RunAsUser:                &user100,
 	Capabilities:             &commonCapabilities,
 }
 

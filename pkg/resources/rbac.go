@@ -125,7 +125,7 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"anyuid"},
+				ResourceNames: []string{"restricted"},
 			},
 		},
 	}
