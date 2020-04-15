@@ -162,7 +162,7 @@ var sourceConfigData4 = `
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit.**>
+     <match icp-audit icp-audit.**>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -173,7 +173,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit.**>
+    <match icp-audit icp-audit.**>
         @type copy
         <store>
           @type remote_syslog
