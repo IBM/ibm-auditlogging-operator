@@ -53,7 +53,7 @@ const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
 const defaultPCImageName = "audit-policy-controller"
-const defaultPCImageTag = "3.4.0"
+const defaultPCImageTag = "3.5.0"
 const defaultJournalPath = "/run/log/journal"
 const defaultHTTPPort = 9880
 
