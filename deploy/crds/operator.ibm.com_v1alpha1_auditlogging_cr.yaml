@@ -11,6 +11,6 @@ spec:
     journalPath: /var/log/journal
   policyController:
     imageRegistry: quay.io/opencloudio/
-    imageTag: 3.4.0
+    imageTag: 3.5.0
     pullPolicy: IfNotPresent
     verbosity: "0"
