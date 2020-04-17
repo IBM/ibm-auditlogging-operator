@@ -17,9 +17,9 @@ Red Hat OpenShift Container Platform 4.X
 - ibm-certmanager-operator must be installed
 - Must run in the `ibm-common-services` namespace
 
-## Red Hat OpenShift SCC Requirements
+## SecurityContextConstraits Requirements
 
-The predefined SecurityContextConstraints (SCC) `privileged` and `anyuid` are been verified for this operator's operands, Fluentd, and the Audit logging policy controller.
+The AuditLogging Operator and Policy Controller Operand support running under the OpenShift Container Platform default restricted security context constraints.  The AuditLogging (Fluentd) Operand runs under privileged security constraints.
 
 ## Documentation
 
@@ -29,7 +29,7 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 ### Overview
 
-- Read [Operator Guidelines] (https://github.com/operator-framework/getting-started#getting-started) to learn about more about operators.
+- To learn more about how the IBM AuditLogging Operator was implemented, see [Operator Guidelines](https://github.com/operator-framework/getting-started#getting-started)
 
 - An operator can manage one or more controllers. The controller watches the resources for a particular CR (Custom Resource).
 
