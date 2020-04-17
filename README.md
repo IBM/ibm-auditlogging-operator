@@ -29,8 +29,7 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 ### Overview
 
-- Read [Operator Guidelines](https://github.ibm.com/IBMPrivateCloud/roadmap/blob/master/feature-specs/common-services/operator-guideline/operator-guideline-spec.md)
-  to learn about the guidelines for Common Services operators.
+- Read [Operator Guidelines] (https://github.com/operator-framework/getting-started#getting-started) to learn about more about operators.
 
 - An operator can manage one or more controllers. The controller watches the resources for a particular CR (Custom Resource).
 
@@ -47,7 +46,6 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 - Repositories
   1. <https://github.com/IBM/ibm-auditlogging-operator>
-  1. <https://github.ibm.com/IBMPrivateCloud/audit-logging-operator> - **The code in this repository is deprecated**
 
 - Set the Go environment variables.
 
