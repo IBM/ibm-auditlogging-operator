@@ -158,6 +158,14 @@ var sourceConfigData4 = `
         format json
         key_name message
         reserve_data true
+    </filter>
+    <filter icp-audit.**>
+      @type record_transformer
+      enable_ruby true
+      <record>
+       syslog_identifier ${tag}
+       message ${record}
+      </record>
     </filter>`
 
 var splunkConfigData = `
