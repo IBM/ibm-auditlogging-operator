@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: ibm-auditlogging-operator
   labels:
-    app.kubernetes.io/instance: "ibm-auditlogging-operator"
+    app.kubernetes.io/instance: "common-audit-logging"     
     app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
     app.kubernetes.io/name: "common-audit-logging"
 spec:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         name: ibm-auditlogging-operator
-        app.kubernetes.io/instance: "ibm-auditlogging-operator"
+        app.kubernetes.io/instance: "common-audit-logging"     
         app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
         app.kubernetes.io/name: "common-audit-logging"
       annotations:
