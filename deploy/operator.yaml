@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: "ibm-auditlogging-operator"
     app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
-    app.kubernetes.io/name: "ibm-auditlogging"
+    app.kubernetes.io/name: "common-audit-logging"
 spec:
   replicas: 1
   selector:
@@ -17,7 +17,7 @@ spec:
         name: ibm-auditlogging-operator
         app.kubernetes.io/instance: "ibm-auditlogging-operator"
         app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
-        app.kubernetes.io/name: "ibm-auditlogging"
+        app.kubernetes.io/name: "common-audit-logging"
       annotations:
         productName: IBM Cloud Platform Common Services
         productID: "068a62892a1e4db39641342e592daa25"
@@ -29,7 +29,7 @@ spec:
       containers:
         - name: ibm-auditlogging-operator
           # Replace this with the built image name
-          image: quay.io/opencloudio/ibm-auditlogging-operator:3.6.0 
+          image: quay.io/opencloudio/ibm-auditlogging-operator:latest
           command:
           - ibm-auditlogging-operator
           imagePullPolicy: Always
