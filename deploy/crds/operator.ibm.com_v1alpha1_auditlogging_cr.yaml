@@ -2,6 +2,10 @@ apiVersion: operator.ibm.com/v1alpha1
 kind: AuditLogging
 metadata:
   name: example-auditlogging
+  labels:
+    app.kubernetes.io/instance: "common-audit-logging"     
+    app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
+    app.kubernetes.io/name: "common-audit-logging"
 spec:
   fluentd:
     enabled: true
