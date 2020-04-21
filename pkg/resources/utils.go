@@ -650,7 +650,8 @@ func EqualDeployments(expectedDeployment *appsv1.Deployment, foundDeployment *ap
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy, expectedDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].Args, expectedDeployment.Spec.Template.Spec.Containers[0].Args) ||
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].VolumeMounts, expectedDeployment.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].SecurityContext, expectedDeployment.Spec.Template.Spec.Containers[0].SecurityContext)
+		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].SecurityContext, expectedDeployment.Spec.Template.Spec.Containers[0].SecurityContext) ||
+		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.ServiceAccountName, expectedDeployment.Spec.Template.Spec.ServiceAccountName)
 }
 
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
@@ -659,7 +660,8 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Image, expected.Spec.Template.Spec.Containers[0].Image) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].ImagePullPolicy, expected.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].VolumeMounts, expected.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext)
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
 }
 
 // GetPodNames returns the pod names of the array of pods passed in

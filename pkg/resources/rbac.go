@@ -26,6 +26,8 @@ import (
 )
 
 const OperandRBAC = "ibm-auditlogging-operand"
+const rolePostfix = "-role"
+const roleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
 func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.ServiceAccount {
@@ -45,7 +47,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy,
+			Name:   AuditPolicyControllerDeploy + roleBindingPostfix,
 			Labels: metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
@@ -67,7 +69,7 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy,
+			Name:   AuditPolicyControllerDeploy + rolePostfix,
 			Labels: metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -137,7 +139,7 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName,
+			Name:      FluentdDaemonSetName + roleBindingPostfix,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
@@ -161,7 +163,7 @@ func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName,
+			Name:      FluentdDaemonSetName + rolePostfix,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},

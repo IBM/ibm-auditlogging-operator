@@ -377,6 +377,7 @@ func (r *ReconcileAuditLogging) createOrUpdatePolicyControllerDeployment(instanc
 		reqLogger.Info("Found deployment spec is incorrect", "Found", found.Spec.Template.Spec, "Expected", expected.Spec.Template.Spec)
 		found.Spec.Template.Spec.Volumes = expected.Spec.Template.Spec.Volumes
 		found.Spec.Template.Spec.Containers = expected.Spec.Template.Spec.Containers
+		found.Spec.Template.Spec.ServiceAccountName = expected.Spec.Template.Spec.ServiceAccountName
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Deployment", "Namespace", res.InstanceNamespace, "Name", found.Name)
@@ -474,6 +475,7 @@ func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operato
 		reqLogger.Info("Found daemonset spec is incorrect", "Found", found.Spec.Template.Spec, "Expected", expected.Spec.Template.Spec)
 		found.Spec.Template.Spec.Volumes = expected.Spec.Template.Spec.Volumes
 		found.Spec.Template.Spec.Containers = expected.Spec.Template.Spec.Containers
+		found.Spec.Template.Spec.ServiceAccountName = expected.Spec.Template.Spec.ServiceAccountName
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Daemonset", "Namespace", res.InstanceNamespace, "Name", found.Name)
