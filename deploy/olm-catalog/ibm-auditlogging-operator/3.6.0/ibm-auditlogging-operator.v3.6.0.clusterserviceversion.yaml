@@ -14,7 +14,7 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "v1.6.2ruby25",
+              "imageTag": "v1.6.2-ruby25",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
