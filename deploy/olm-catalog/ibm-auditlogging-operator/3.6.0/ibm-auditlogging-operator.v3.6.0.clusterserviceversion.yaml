@@ -14,7 +14,7 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "v1.6.2-ubi7",
+              "imageTag": "v1.6.2-ruby25",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
@@ -108,6 +108,12 @@ spec:
           name: ''
           version: v1
         - kind: ClusterRoleBinding
+          name: ''
+          version: v1
+        - kind: CustomResourceDefinition
+          name: ''
+          version: v1beta1
+        - kind: Service
           name: ''
           version: v1
   description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
@@ -328,6 +334,9 @@ spec:
                 openshift.io/scc: restricted
               labels:
                 name: ibm-auditlogging-operator
+                app.kubernetes.io/instance: common-audit-logging
+                app.kubernetes.io/managed-by: ibm-auditlogging-operator
+                app.kubernetes.io/name: common-audit-logging
             spec:
               containers:
               - command:
