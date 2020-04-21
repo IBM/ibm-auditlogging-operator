@@ -58,7 +58,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     AuditPolicyControllerDeploy,
+			Name:     AuditPolicyControllerDeploy + rolePostfix,
 		},
 	}
 	return rb
@@ -152,7 +152,7 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     FluentdDaemonSetName,
+			Name:     FluentdDaemonSetName + rolePostfix,
 		},
 	}
 	return rb
