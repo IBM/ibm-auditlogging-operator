@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: ibm-auditlogging-operator
   labels:
-    app.kubernetes.io/instance: "common-audit-logging"     
+    app.kubernetes.io/instance: "common-audit-logging"
     app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
     app.kubernetes.io/name: "common-audit-logging"
 spec:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         name: ibm-auditlogging-operator
-        app.kubernetes.io/instance: "common-audit-logging"     
+        app.kubernetes.io/instance: "common-audit-logging"
         app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
         app.kubernetes.io/name: "common-audit-logging"
       annotations:
@@ -26,6 +26,17 @@ spec:
         openshift.io/scc: restricted
     spec:
       serviceAccountName: ibm-auditlogging-operator
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
       containers:
         - name: ibm-auditlogging-operator
           # Replace this with the built image name
@@ -42,3 +53,16 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ibm-auditlogging-operator"
+          resources:
+            limits:
+              cpu: 25m
+              memory: 90Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
