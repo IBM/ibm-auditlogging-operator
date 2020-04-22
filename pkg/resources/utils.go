@@ -640,12 +640,19 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 }
 
 func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
+	var ports []string
+	var foundPort string
 	re := regexp.MustCompile("port [0-9]+")
-	var match = re.FindStringSubmatch(found.Data[SourceConfigKey])[0]
-	foundPort := strings.Split(match, " ")[1]
-	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])[0]
-	expectedPort := strings.Split(match, " ")[1]
-	return (foundPort != expectedPort), []string{foundPort, expectedPort}
+	var match = re.FindStringSubmatch(found.Data[SourceConfigKey])
+	if len(match) < 1 {
+		foundPort = ""
+	} else {
+		foundPort = strings.Split(match[0], " ")[1]
+	}
+	ports = append(ports, foundPort)
+	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])
+	expectedPort := strings.Split(match[0], " ")[1]
+	return (foundPort != expectedPort), append(ports, expectedPort)
 }
 
 // GetPodNames returns the pod names of the array of pods passed in
