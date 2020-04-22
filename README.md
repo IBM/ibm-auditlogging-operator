@@ -9,6 +9,7 @@ Red Hat OpenShift Container Platform 4.X
 ## Operator versions
 
 3.5.0
+3.6.0
 
 ## Prerequisites
 
