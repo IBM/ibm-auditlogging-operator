@@ -18,7 +18,7 @@ Red Hat OpenShift Container Platform 4.X
 - ibm-certmanager-operator must be installed
 - Must run in the `ibm-common-services` namespace
 
-## SecurityContextConstraits Requirements
+## SecurityContextConstraints Requirements
 
 The AuditLogging Operator and Policy Controller Operand support running under the OpenShift Container Platform default restricted security context constraints.  The AuditLogging (Fluentd) Operand runs under privileged security constraints.
 
