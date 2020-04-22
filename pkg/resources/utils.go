@@ -18,7 +18,9 @@ package resources
 
 import (
 	"reflect"
+	"regexp"
 	"strconv"
+	"strings"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -52,12 +54,6 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 
-	var httpPort int32
-	if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
-		httpPort = port
-	} else {
-		httpPort = defaultHTTPPort
-	}
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      auditLoggingComponentName,
@@ -70,10 +66,10 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 				{
 					Name:     auditLoggingComponentName,
 					Protocol: "TCP",
-					Port:     httpPort,
+					Port:     defaultHTTPPort,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
-						IntVal: httpPort,
+						IntVal: defaultHTTPPort,
 					},
 				},
 			},
@@ -195,7 +191,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	var err error
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
-		dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
+		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
 		type Data struct {
 			Value string `yaml:"fluent.conf"`
 		}
@@ -213,15 +209,10 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		} else {
 			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
 		}
-		var p string
-		if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
-			p = strconv.Itoa(int(port))
-		} else {
-			p = strconv.Itoa(defaultHTTPPort)
-		}
+		p := strconv.Itoa(defaultHTTPPort)
 		result += sourceConfigData3 + p + sourceConfigData4
 		err = yaml.Unmarshal([]byte(result), &ds)
-		dataMap[sourceConfigKey] = ds.Value
+		dataMap[SourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
 		type DataSplunk struct {
 			Value string `yaml:"splunkHEC.conf"`
@@ -415,10 +406,6 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		}
 	}
 
-	if result, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); result {
-		fluentdMainContainer.Ports[0].ContainerPort = port
-	}
-
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
@@ -475,7 +462,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 		{
 			Name:      SourceConfigName,
 			MountPath: fluentdInput,
-			SubPath:   sourceConfigKey,
+			SubPath:   SourceConfigKey,
 		},
 		{
 			Name:      QRadarConfigName,
@@ -555,8 +542,8 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  sourceConfigKey,
-							Path: sourceConfigKey,
+							Key:  SourceConfigKey,
+							Path: SourceConfigKey,
 						},
 					},
 				},
@@ -620,20 +607,6 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 	return commonVolumes
 }
 
-func getHTTPPort(port string) (bool, int32) {
-	if port == "" {
-		return false, 0
-	}
-	p, err := strconv.Atoi(port)
-	if err != nil {
-		return false, 0
-	}
-	if p > 0 && p <= 65535 {
-		return true, int32(p)
-	}
-	return false, 0
-}
-
 func EqualServices(expected *corev1.Service, found *corev1.Service) bool {
 	return !reflect.DeepEqual(found.Spec.Ports, expected.Spec.Ports)
 }
@@ -661,7 +634,22 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].ImagePullPolicy, expected.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].VolumeMounts, expected.Spec.Template.Spec.Containers[0].VolumeMounts) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Ports, expected.Spec.Template.Spec.Containers[0].Ports) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Env, expected.Spec.Template.Spec.Containers[0].Env) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
+}
+
+func EqualConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) bool {
+	return found.Data[EnableAuditLogForwardKey] != expected.Data[EnableAuditLogForwardKey]
+}
+
+func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
+	re := regexp.MustCompile("port [0-9]+")
+	var match = re.FindStringSubmatch(found.Data[SourceConfigKey])[0]
+	foundPort := strings.Split(match, " ")[1]
+	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])[0]
+	expectedPort := strings.Split(match, " ")[1]
+	return (foundPort != expectedPort), []string{foundPort, expectedPort}
 }
 
 // GetPodNames returns the pod names of the array of pods passed in

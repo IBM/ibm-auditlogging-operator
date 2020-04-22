@@ -38,10 +38,10 @@ const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 
-const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
+const EnableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
 
 const fluentdConfigKey = "fluent.conf"
-const sourceConfigKey = "source.conf"
+const SourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 
@@ -254,13 +254,13 @@ var fluentdMainContainer = corev1.Container{
 	// CommonEnvVars
 	Env: []corev1.EnvVar{
 		{
-			Name: enableAuditLogForwardKey,
+			Name: EnableAuditLogForwardKey,
 			ValueFrom: &corev1.EnvVarSource{
 				ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: FluentdDaemonSetName + "-" + ConfigName,
 					},
-					Key: enableAuditLogForwardKey,
+					Key: EnableAuditLogForwardKey,
 				},
 			},
 		},
