@@ -639,10 +639,6 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
 }
 
-func EqualConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) bool {
-	return found.Data[EnableAuditLogForwardKey] != expected.Data[EnableAuditLogForwardKey]
-}
-
 func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
 	re := regexp.MustCompile("port [0-9]+")
 	var match = re.FindStringSubmatch(found.Data[SourceConfigKey])[0]

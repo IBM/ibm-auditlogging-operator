@@ -440,17 +440,6 @@ func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ConfigMap")
 		return reconcile.Result{}, err
-	} else if configName == res.FluentdDaemonSetName+"-"+res.ConfigName {
-		if result := res.EqualConfig(expected, found); result {
-			reqLogger.Info("Found config is incorrect", "Found", found.Data[res.EnableAuditLogForwardKey], "Expected", expected.Data[res.EnableAuditLogForwardKey])
-			err = r.client.Delete(context.TODO(), found)
-			if err != nil {
-				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
-				return reconcile.Result{}, err
-			}
-			// Deleted - return and requeue
-			return reconcile.Result{Requeue: true}, nil
-		}
 	} else if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
 		if result, ports := res.EqualSourceConfig(expected, found); result {
 			reqLogger.Info("Found source config is incorrect", "Found port", ports[0], "Expected port", ports[1])
