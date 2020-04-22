@@ -41,7 +41,7 @@ const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
 
 const fluentdConfigKey = "fluent.conf"
-const sourceConfigKey = "source.conf"
+const SourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 
