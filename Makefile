@@ -24,6 +24,10 @@ BUILD_LOCALLY ?= 1
 # IBMDEV Set image and repo
 IMAGE_NAME ?= ibm-auditlogging-operator
 IMAGE_REPO ?= quay.io/opencloudio
+
+# Hardcoding version for maintenance
+VERSION=3.5.1
+
 CSV_VERSION ?= $(VERSION)
 
 # The namespcethat operator will be deployed in
@@ -188,7 +192,7 @@ images: push-image-amd64 push-image-ppc64le push-image-s390x multiarch-image
 multiarch-image:
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
 	@chmod +x /tmp/manifest-tool
-	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
+	# /tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
 
 
