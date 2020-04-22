@@ -66,3 +66,5 @@ spec:
               drop:
               - ALL
             privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
