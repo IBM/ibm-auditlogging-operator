@@ -24,6 +24,8 @@ import (
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	gorun "runtime"
+
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	yaml "gopkg.in/yaml.v2"
@@ -313,6 +315,24 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{gorun.GOARCH},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes: []corev1.Volume{
@@ -434,6 +454,23 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{gorun.GOARCH},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     commonVolumes,
