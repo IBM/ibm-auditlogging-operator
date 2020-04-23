@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	yaml "gopkg.in/yaml.v2"
@@ -32,6 +30,7 @@ import (
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const auditLoggingComponentName = "common-audit-logging"
@@ -43,6 +42,8 @@ const productVersion = "3.3.0"
 const productMetric = "FREE"
 
 const InstanceNamespace = "ibm-common-services"
+
+var architectureList = []string{"amd64", "ppc64le", "s390x"}
 
 var DefaultStatusForCR = []string{"none"}
 var log = logf.Log.WithName("controller_auditlogging")
@@ -313,6 +314,24 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   architectureList,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes: []corev1.Volume{
@@ -434,6 +453,23 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   architectureList,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     commonVolumes,
