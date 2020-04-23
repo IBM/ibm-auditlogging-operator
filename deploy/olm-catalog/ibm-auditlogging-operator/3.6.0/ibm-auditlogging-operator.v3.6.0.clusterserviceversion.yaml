@@ -336,6 +336,17 @@ spec:
                 app.kubernetes.io/managed-by: ibm-auditlogging-operator
                 app.kubernetes.io/name: common-audit-logging
             spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+                        - ppc64le
+                        - s390x
               containers:
               - command:
                 - ibm-auditlogging-operator
@@ -353,7 +364,21 @@ spec:
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
-                resources: {}
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 300Mi
+                  requests:
+                    cpu: 50m
+                    memory: 150Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  privileged: false
+                  readOnlyRootFilesystem: true
+                  runAsNonRoot: true
               serviceAccountName: ibm-auditlogging-operator
     strategy: deployment
   installModes:
