@@ -55,11 +55,11 @@ spec:
               value: "ibm-auditlogging-operator"
           resources:
             limits:
-              cpu: 25m
-              memory: 90Mi
+              cpu: 100m
+              memory: 300Mi
             requests:
-              cpu: 10m
-              memory: 50Mi
+              cpu: 50m
+              memory: 150Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
