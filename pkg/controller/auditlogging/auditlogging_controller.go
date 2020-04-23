@@ -217,6 +217,10 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
+	// Prior to version 3.6, audit-logging used two seperate service accounts.
+	// Delete service accounts if they were leftover from a previous version.
+	r.checkOldServiceAccounts(instance)
+
 	// Reconcile the expected Status
 	recResult, recErr = r.updateStatus(instance)
 	if recErr != nil || recResult.Requeue {

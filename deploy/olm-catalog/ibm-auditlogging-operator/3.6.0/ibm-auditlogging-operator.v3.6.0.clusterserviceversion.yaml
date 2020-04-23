@@ -14,13 +14,11 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "v1.6.2-ruby25",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
             "policyController": {
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "3.5.0",
               "pullPolicy": "IfNotPresent",
               "verbosity": "0"
             }

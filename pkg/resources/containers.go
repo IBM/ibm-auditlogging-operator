@@ -57,6 +57,8 @@ const defaultPCImageTag = "3.5.0"
 const defaultJournalPath = "/run/log/journal"
 const defaultHTTPPort = 9880
 
+const OutputPluginMatches = "icp-audit icp-audit.**"
+
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
