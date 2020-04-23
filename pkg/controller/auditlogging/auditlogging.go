@@ -189,7 +189,7 @@ func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alph
 			Namespace: res.InstanceNamespace,
 		},
 	}
-	// check if the DaemonSet exists
+	// check if the service account exists
 	err := r.client.Get(context.TODO(),
 		types.NamespacedName{Name: res.FluentdDaemonSetName + "-svcacct", Namespace: res.InstanceNamespace}, fluentdSA)
 	if err == nil {
@@ -211,7 +211,7 @@ func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alph
 			Namespace: res.InstanceNamespace,
 		},
 	}
-	// check if the DaemonSet exists
+	// check if the service account exists
 	err = r.client.Get(context.TODO(),
 		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-svcacct", Namespace: res.InstanceNamespace}, policySA)
 	if err == nil {
