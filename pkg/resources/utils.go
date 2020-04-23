@@ -257,19 +257,12 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
 
-	var tag, imageRegistry string
-	if instance.Spec.PolicyController.ImageRegistry != "" || instance.Spec.PolicyController.ImageTag != "" {
-		if instance.Spec.PolicyController.ImageRegistry != "" {
-			imageRegistry = instance.Spec.PolicyController.ImageRegistry
-		} else {
-			imageRegistry = defaultImageRegistry
+	if instance.Spec.PolicyController.ImageRegistry != "" {
+		imageRegistry := instance.Spec.PolicyController.ImageRegistry
+		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
+			imageRegistry += "/"
 		}
-		if instance.Spec.PolicyController.ImageTag != "" {
-			tag = instance.Spec.PolicyController.ImageTag
-		} else {
-			tag = defaultPCImageTag
-		}
-		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + tag
+		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + defaultPCImageTag
 	}
 
 	if instance.Spec.PolicyController.PullPolicy != "" {
@@ -397,19 +390,12 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 
-	var tag, imageRegistry string
-	if instance.Spec.Fluentd.ImageRegistry != "" || instance.Spec.Fluentd.ImageTag != "" {
-		if instance.Spec.Fluentd.ImageRegistry != "" {
-			imageRegistry = instance.Spec.Fluentd.ImageRegistry
-		} else {
-			imageRegistry = defaultImageRegistry
+	if instance.Spec.Fluentd.ImageRegistry != "" {
+		imageRegistry := instance.Spec.Fluentd.ImageRegistry
+		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
+			imageRegistry += "/"
 		}
-		if instance.Spec.Fluentd.ImageTag != "" {
-			tag = instance.Spec.Fluentd.ImageTag
-		} else {
-			tag = defaultFluentdImageTag
-		}
-		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + tag
+		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag
 	}
 
 	if instance.Spec.Fluentd.PullPolicy != "" {
@@ -673,6 +659,18 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Ports, expected.Spec.Template.Spec.Containers[0].Ports) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Env, expected.Spec.Template.Spec.Containers[0].Env) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
+}
+
+func EqualMatchTags(found *corev1.ConfigMap) bool {
+	var key string
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		key = splunkConfigKey
+	} else {
+		key = qRadarConfigKey
+	}
+	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
+	var match = re.FindStringSubmatch(found.Data[key])
+	return len(match) < 1
 }
 
 func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {

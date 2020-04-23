@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -178,6 +179,53 @@ func (r *ReconcileAuditLogging) createOrUpdateServiceAccount(cr *operatorv1alpha
 
 	// No reconcile was necessary
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alpha1.AuditLogging) {
+	reqLogger := log.WithValues("func", "checkOldServiceAccounts", "instance.Name", instance.Name)
+	fluentdSA := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.FluentdDaemonSetName + "-svcacct",
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err := r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.FluentdDaemonSetName + "-svcacct", Namespace: res.InstanceNamespace}, fluentdSA)
+	if err == nil {
+		// found service account so delete it
+		err := r.client.Delete(context.TODO(), fluentdSA)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old fluentd service account")
+		} else {
+			reqLogger.Info("Deleted old fluentd service account")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old fluentd service account")
+	}
+
+	policySA := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy + "-svcacct",
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err = r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-svcacct", Namespace: res.InstanceNamespace}, policySA)
+	if err == nil {
+		// found service account so delete it
+		err := r.client.Delete(context.TODO(), policySA)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old policy controller service account")
+		} else {
+			reqLogger.Info("Deleted old policy controller service account")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old policy controller service account")
+	}
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
@@ -441,8 +489,22 @@ func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.
 		reqLogger.Error(err, "Failed to get ConfigMap")
 		return reconcile.Result{}, err
 	} else if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
+		// Ensure default port is used
 		if result, ports := res.EqualSourceConfig(expected, found); result {
 			reqLogger.Info("Found source config is incorrect", "Found port", ports[0], "Expected port", ports[1])
+			err = r.client.Delete(context.TODO(), found)
+			if err != nil {
+				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+				return reconcile.Result{}, err
+			}
+			// Deleted - return and requeue
+			return reconcile.Result{Requeue: true}, nil
+		}
+	} else if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName ||
+		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
+		// Ensure match tags are correct
+		if result := res.EqualMatchTags(found); result {
+			reqLogger.Info("Found match tags are incorrect", "ConfigMap.Name", found.Name, "Expected tags", res.OutputPluginMatches)
 			err = r.client.Delete(context.TODO(), found)
 			if err != nil {
 				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
