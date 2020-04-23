@@ -217,7 +217,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		return recResult, recErr
 	}
 
-	// Prior to version 3.6, audit-logging used two seperate service accounts.
+	// Prior to version 3.6, audit-logging used two separate service accounts.
 	// Delete service accounts if they were leftover from a previous version.
 	r.checkOldServiceAccounts(instance)
 

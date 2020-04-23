@@ -632,7 +632,7 @@ func EqualMatchTags(found *corev1.ConfigMap) bool {
 	} else {
 		key = qRadarConfigKey
 	}
-	re := regexp.MustCompile("match icp-audit icp-audit\\.\\*\\*")
+	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
 	var match = re.FindStringSubmatch(found.Data[key])
 	return len(match) < 1
 }
