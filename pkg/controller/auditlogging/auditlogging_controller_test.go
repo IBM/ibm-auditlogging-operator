@@ -41,8 +41,8 @@ import (
 )
 
 const journalPath = "/var/log/audit"
-const forwardingBool = true
 const verbosity = "10"
+const numPods = 4
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
@@ -147,13 +147,7 @@ func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reco
 	assert.NoError(err)
 
 	// Check if Policy Controller Deployment has been created and has the correct arguments
-	foundDep := &appsv1.Deployment{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, foundDep)
-	if err != nil {
-		t.Fatalf("get deployment: (%v)", err)
-	}
-	_, err = r.Reconcile(req)
-	assert.NoError(err)
+	getAuditPolicyController(t, r, req)
 }
 
 func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request, cr *operatorv1alpha1.AuditLogging) {
@@ -187,33 +181,39 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	assert.NoError(err)
 
 	// Check if fluentd DaemonSet is created
-	foundDS := &appsv1.DaemonSet{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: res.InstanceNamespace}, foundDS)
-	if err != nil {
-		t.Fatalf("get daemonset: (%v)", err)
-	}
-	_, err = r.Reconcile(req)
-	assert.NoError(err)
-
-	// TODO
-	updateAuditLoggingCR(t, r, req)
+	getFluentd(t, r, req)
 
 	// Create fake pods in namespace and collect their names to check against Status
-	podLabels := res.LabelsForPodMetadata(res.FluentdName, cr.Name)
-	pod := corev1.Pod{
+	var podLabels = res.LabelsForPodMetadata(res.FluentdName, cr.Name)
+	var pod = corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: res.InstanceNamespace,
 			Labels:    podLabels,
 		},
 	}
-	podNames := make([]string, 3)
-	for i := 0; i < 3; i++ {
-		randInt, _ := rand.Int(rand.Reader, big.NewInt(99999))
+	podNames := make([]string, numPods)
+	var randInt *big.Int
+	var i int
+	for i = 0; i < numPods-1; i++ {
+		randInt, _ = rand.Int(rand.Reader, big.NewInt(99999))
 		pod.ObjectMeta.Name = res.FluentdDaemonSetName + "-" + randInt.String()
 		podNames[i] = pod.ObjectMeta.Name
 		if err = r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
 			t.Fatalf("create pod %d: (%v)", i, err)
 		}
+	}
+	podLabels = res.LabelsForPodMetadata(res.AuditPolicyControllerDeploy, cr.Name)
+	pod = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: res.InstanceNamespace,
+			Labels:    podLabels,
+		},
+	}
+	randInt, _ = rand.Int(rand.Reader, big.NewInt(99999))
+	pod.ObjectMeta.Name = res.AuditPolicyControllerDeploy + "-" + randInt.String()
+	podNames[i] = pod.ObjectMeta.Name
+	if err = r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
+		t.Fatalf("create pod %d: (%v)", i, err)
 	}
 
 	// Reconcile again so Reconcile() checks pods and updates the AuditLogging
@@ -229,26 +229,90 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	// Check status
 
 	// Get the updated AuditLogging object.
-	al := &operatorv1alpha1.AuditLogging{}
-	err = r.client.Get(context.TODO(), req.NamespacedName, al)
-	if err != nil {
-		t.Errorf("get auditlogging: (%v)", err)
-	}
+	al := getAuditLogging(t, r, req)
 	nodes := al.Status.Nodes
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
 	}
 
-	// TODO
-	err = checkAuditLoggingCR(t, r, cr, forwardingBool, journalPath, verbosity)
+	updateAuditLoggingCR(al, t, r, req)
+	checkAuditLogging(t, r, req)
+}
+
+func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
+	assert := assert.New(t)
+	al.Spec.Fluentd.JournalPath = journalPath
+	al.Spec.PolicyController.Verbosity = verbosity
+	err := r.client.Update(context.TODO(), al)
+	if err != nil {
+		t.Fatalf("Failed to update CR: (%v)", err)
+	}
+	// update resources
+	result, err := r.Reconcile(req)
+	if !result.Requeue {
+		t.Error("reconcile did not requeue request as expected")
+	}
 	assert.NoError(err)
 }
 
-func updateAuditLoggingCR(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
+func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
+	policyController := getAuditPolicyController(t, r, req)
+	fluentd := getFluentd(t, r, req)
+	var found = false
+	for _, arg := range policyController.Spec.Template.Spec.Containers[0].Args {
+		if arg == "--v="+verbosity {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Policy controller not updated with verbosity: (%s)", verbosity)
+	}
+	found = false
+	for _, v := range fluentd.Spec.Template.Spec.Containers[0].VolumeMounts {
+		if v.MountPath == journalPath {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Fluentd ds not updated with journal path: (%s)", journalPath)
+	}
 }
 
-func checkAuditLoggingCR(t *testing.T, r ReconcileAuditLogging, cr *operatorv1alpha1.AuditLogging, forward bool, journal string, verbosity string) error {
-	return nil
+func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *operatorv1alpha1.AuditLogging {
+	assert := assert.New(t)
+	al := &operatorv1alpha1.AuditLogging{}
+	err := r.client.Get(context.TODO(), req.NamespacedName, al)
+	if err != nil {
+		t.Fatalf("get auditlogging: (%v)", err)
+	}
+	assert.NoError(err)
+	return al
+}
+
+func getAuditPolicyController(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *appsv1.Deployment {
+	assert := assert.New(t)
+	foundDep := &appsv1.Deployment{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, foundDep)
+	if err != nil {
+		t.Fatalf("get deployment: (%v)", err)
+	}
+	_, err = r.Reconcile(req)
+	assert.NoError(err)
+	return foundDep
+}
+
+func getFluentd(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *appsv1.DaemonSet {
+	assert := assert.New(t)
+	foundDS := &appsv1.DaemonSet{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: res.InstanceNamespace}, foundDS)
+	if err != nil {
+		t.Fatalf("get daemonset: (%v)", err)
+	}
+	_, err = r.Reconcile(req)
+	assert.NoError(err)
+	return foundDS
 }
 
 func buildAuditLogging(name string) *operatorv1alpha1.AuditLogging {
