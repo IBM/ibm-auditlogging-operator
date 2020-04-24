@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const journalPath = "/var/log/audit"
@@ -46,7 +47,8 @@ const verbosity = "10"
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
-	// USE THIS logf.SetLogger(logf.ZapLogger(true))
+	// USE THIS
+	logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
 	)
@@ -75,7 +77,6 @@ func initReconcile(t *testing.T, r ReconcileAuditLogging, req reconcile.Request)
 func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
 	assert := assert.New(t)
 	var err error
-	var result reconcile.Result
 	// Check if ConfigMaps are created and have data
 	foundCM := &corev1.ConfigMap{}
 	configmaps := []string{
@@ -89,12 +90,8 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)
 		}
-		result, err = r.Reconcile(req)
+		_, err = r.Reconcile(req)
 		assert.NoError(err)
-		// Check the result of reconciliation to make sure it has the desired state.
-		if !result.Requeue {
-			t.Error("reconcile did not requeue request as expected")
-		}
 	}
 
 	// Check if Certs are created
@@ -105,12 +102,8 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 		if err != nil {
 			t.Fatalf("get cert: (%v)", err)
 		}
-		result, err = r.Reconcile(req)
+		_, err = r.Reconcile(req)
 		assert.NoError(err)
-		// Check the result of reconciliation to make sure it has the desired state.
-		if !result.Requeue {
-			t.Error("reconcile did not requeue request as expected")
-		}
 	}
 
 	// Check if ServiceAccount is created
@@ -119,42 +112,30 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 	if err != nil {
 		t.Fatalf("get service account: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 }
 
 func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
 	assert := assert.New(t)
 	var err error
-	var result reconcile.Result
 
 	// Check if ClusterRole and ClusterRoleBinding are created
 	foundCR := &rbacv1.ClusterRole{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy}, foundCR)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-role"}, foundCR)
 	if err != nil {
 		t.Fatalf("get clusterrole: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
+
 	foundCRB := &rbacv1.ClusterRoleBinding{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy}, foundCRB)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-rolebinding"}, foundCRB)
 	if err != nil {
 		t.Fatalf("get clusterrolebinding: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 
 	// Check Audit Policy CRD is created
 	foundCRD := &extv1beta1.CustomResourceDefinition{}
@@ -162,12 +143,8 @@ func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reco
 	if err != nil {
 		t.Fatalf("get CRD: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 
 	// Check if Policy Controller Deployment has been created and has the correct arguments
 	foundDep := &appsv1.Deployment{}
@@ -175,42 +152,30 @@ func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reco
 	if err != nil {
 		t.Fatalf("get deployment: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 }
 
 func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request, cr *operatorv1alpha1.AuditLogging) {
 	assert := assert.New(t)
 	var err error
-	var result reconcile.Result
 
 	// Check if Role and Role Binding are created
 	foundRole := &rbacv1.Role{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: res.InstanceNamespace}, foundRole)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName + "-role", Namespace: res.InstanceNamespace}, foundRole)
 	if err != nil {
 		t.Fatalf("get role: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
+
 	foundRB := &rbacv1.RoleBinding{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: res.InstanceNamespace}, foundRB)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName + "-rolebinding", Namespace: res.InstanceNamespace}, foundRB)
 	if err != nil {
 		t.Fatalf("get rolebinding: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 
 	// Check if Service is created
 	foundSvc := &corev1.Service{}
@@ -218,12 +183,8 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	if err != nil {
 		t.Fatalf("get service: (%v)", err)
 	}
-	result, err = r.Reconcile(req)
+	_, err = r.Reconcile(req)
 	assert.NoError(err)
-	// Check the result of reconciliation to make sure it has the desired state.
-	if !result.Requeue {
-		t.Error("reconcile did not requeue request as expected")
-	}
 
 	// Check if fluentd DaemonSet is created
 	foundDS := &appsv1.DaemonSet{}
@@ -231,11 +192,14 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	if err != nil {
 		t.Fatalf("get daemonset: (%v)", err)
 	}
+	_, err = r.Reconcile(req)
+	assert.NoError(err)
 
+	// TODO
 	updateAuditLoggingCR(t, r, req)
 
 	// Create fake pods in namespace and collect their names to check against Status
-	podLabels := res.LabelsForPodMetadata(res.FluentdDaemonSetName, cr.Name)
+	podLabels := res.LabelsForPodMetadata(res.FluentdName, cr.Name)
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: res.InstanceNamespace,
@@ -245,12 +209,23 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	podNames := make([]string, 3)
 	for i := 0; i < 3; i++ {
 		randInt, _ := rand.Int(rand.Reader, big.NewInt(99999))
-		pod.ObjectMeta.Name = res.FluentdDaemonSetName + ".pod." + randInt.String()
+		pod.ObjectMeta.Name = res.FluentdDaemonSetName + "-" + randInt.String()
 		podNames[i] = pod.ObjectMeta.Name
 		if err = r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
 			t.Fatalf("create pod %d: (%v)", i, err)
 		}
 	}
+
+	// Reconcile again so Reconcile() checks pods and updates the AuditLogging
+	// resources' Status.
+	result, err := r.Reconcile(req)
+	if err != nil {
+		t.Fatalf("reconcile: (%v)", err)
+	}
+	if result != (reconcile.Result{}) {
+		t.Error("reconcile did not return an empty Result")
+	}
+
 	// Check status
 
 	// Get the updated AuditLogging object.
@@ -259,8 +234,6 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	if err != nil {
 		t.Errorf("get auditlogging: (%v)", err)
 	}
-
-	// Ensure Reconcile() updated the AuditLogging's Status as expected.
 	nodes := al.Status.Nodes
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
