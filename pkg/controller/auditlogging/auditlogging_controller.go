@@ -152,67 +152,67 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	var recErr error
 
 	// Reconcile the expected configmaps
-	recResult, recErr = r.createOrUpdateAuditConfigMaps(instance)
+	recResult, recErr = r.reconcileAuditConfigMaps(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected cert
-	recResult, recErr = r.createOrUpdateAuditCerts(instance)
+	recResult, recErr = r.reconcileAuditCerts(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected ServiceAccount for operands
-	recResult, recErr = r.createOrUpdateServiceAccount(instance)
+	recResult, recErr = r.reconcileServiceAccount(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected Role
-	recResult, recErr = r.createOrUpdateClusterRole(instance)
+	recResult, recErr = r.reconcileClusterRole(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected RoleBinding
-	recResult, recErr = r.createOrUpdateClusterRoleBinding(instance)
+	recResult, recErr = r.reconcileClusterRoleBinding(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the AuditPolicy CRD
-	recResult, recErr = r.createAuditPolicyCRD(instance)
+	recResult, recErr = r.reconcileAuditPolicyCRD(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected bridge deployment
-	recResult, recErr = r.createOrUpdatePolicyControllerDeployment(instance)
+	recResult, recErr = r.reconcilePolicyControllerDeployment(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected Role
-	recResult, recErr = r.createOrUpdateRole(instance)
+	recResult, recErr = r.reconcileRole(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected RoleBinding
-	recResult, recErr = r.createOrUpdateRoleBinding(instance)
+	recResult, recErr = r.reconcileRoleBinding(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected Service
-	recResult, recErr = r.createOrUpdateService(instance)
+	recResult, recErr = r.reconcileService(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
 
 	// Reconcile the expected daemonset
-	recResult, recErr = r.createOrUpdateFluentdDaemonSet(instance)
+	recResult, recErr = r.reconcileFluentdDaemonSet(instance)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}
