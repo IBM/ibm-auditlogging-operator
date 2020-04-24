@@ -18,9 +18,9 @@ package resources
 
 import (
 	"reflect"
+	"regexp"
 	"strconv"
-
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -30,6 +30,7 @@ import (
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const AuditLoggingComponentName = "common-audit-logging"
@@ -42,6 +43,8 @@ const productMetric = "FREE"
 
 const InstanceNamespace = "ibm-common-services"
 
+var architectureList = []string{"amd64", "ppc64le", "s390x"}
+
 var DefaultStatusForCR = []string{"none"}
 var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
@@ -52,12 +55,6 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 
-	var httpPort int32
-	if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
-		httpPort = port
-	} else {
-		httpPort = defaultHTTPPort
-	}
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditLoggingComponentName,
@@ -70,10 +67,10 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 				{
 					Name:     AuditLoggingComponentName,
 					Protocol: "TCP",
-					Port:     httpPort,
+					Port:     defaultHTTPPort,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
-						IntVal: httpPort,
+						IntVal: defaultHTTPPort,
 					},
 				},
 			},
@@ -213,15 +210,10 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		} else {
 			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
 		}
-		var p string
-		if res, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); res {
-			p = strconv.Itoa(int(port))
-		} else {
-			p = strconv.Itoa(defaultHTTPPort)
-		}
+		p := strconv.Itoa(defaultHTTPPort)
 		result += sourceConfigData3 + p + sourceConfigData4
 		err = yaml.Unmarshal([]byte(result), &ds)
-		dataMap[sourceConfigKey] = ds.Value
+		dataMap[SourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
 		type DataSplunk struct {
 			Value string `yaml:"splunkHEC.conf"`
@@ -265,19 +257,12 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
 
-	var tag, imageRegistry string
-	if instance.Spec.PolicyController.ImageRegistry != "" || instance.Spec.PolicyController.ImageTag != "" {
-		if instance.Spec.PolicyController.ImageRegistry != "" {
-			imageRegistry = instance.Spec.PolicyController.ImageRegistry
-		} else {
-			imageRegistry = defaultImageRegistry
+	if instance.Spec.PolicyController.ImageRegistry != "" {
+		imageRegistry := instance.Spec.PolicyController.ImageRegistry
+		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
+			imageRegistry += "/"
 		}
-		if instance.Spec.PolicyController.ImageTag != "" {
-			tag = instance.Spec.PolicyController.ImageTag
-		} else {
-			tag = defaultPCImageTag
-		}
-		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + tag
+		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + defaultPCImageTag
 	}
 
 	if instance.Spec.PolicyController.PullPolicy != "" {
@@ -322,6 +307,24 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   architectureList,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes: []corev1.Volume{
@@ -387,19 +390,12 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 
-	var tag, imageRegistry string
-	if instance.Spec.Fluentd.ImageRegistry != "" || instance.Spec.Fluentd.ImageTag != "" {
-		if instance.Spec.Fluentd.ImageRegistry != "" {
-			imageRegistry = instance.Spec.Fluentd.ImageRegistry
-		} else {
-			imageRegistry = defaultImageRegistry
+	if instance.Spec.Fluentd.ImageRegistry != "" {
+		imageRegistry := instance.Spec.Fluentd.ImageRegistry
+		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
+			imageRegistry += "/"
 		}
-		if instance.Spec.Fluentd.ImageTag != "" {
-			tag = instance.Spec.Fluentd.ImageTag
-		} else {
-			tag = defaultFluentdImageTag
-		}
-		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + tag
+		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag
 	}
 
 	if instance.Spec.Fluentd.PullPolicy != "" {
@@ -413,10 +409,6 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		default:
 			reqLogger.Info("Trying to update PullPolicy", "NOT SUPPORTED", instance.Spec.Fluentd.PullPolicy)
 		}
-	}
-
-	if result, port := getHTTPPort(instance.Spec.Fluentd.HTTPPort); result {
-		fluentdMainContainer.Ports[0].ContainerPort = port
 	}
 
 	daemon := &appsv1.DaemonSet{
@@ -447,6 +439,23 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            OperandRBAC,
 					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "beta.kubernetes.io/arch",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   architectureList,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     commonVolumes,
@@ -475,7 +484,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 		{
 			Name:      SourceConfigName,
 			MountPath: fluentdInput,
-			SubPath:   sourceConfigKey,
+			SubPath:   SourceConfigKey,
 		},
 		{
 			Name:      QRadarConfigName,
@@ -555,8 +564,8 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  sourceConfigKey,
-							Path: sourceConfigKey,
+							Key:  SourceConfigKey,
+							Path: SourceConfigKey,
 						},
 					},
 				},
@@ -620,20 +629,6 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 	return commonVolumes
 }
 
-func getHTTPPort(port string) (bool, int32) {
-	if port == "" {
-		return false, 0
-	}
-	p, err := strconv.Atoi(port)
-	if err != nil {
-		return false, 0
-	}
-	if p > 0 && p <= 65535 {
-		return true, int32(p)
-	}
-	return false, 0
-}
-
 func EqualServices(expected *corev1.Service, found *corev1.Service) bool {
 	return !reflect.DeepEqual(found.Spec.Ports, expected.Spec.Ports)
 }
@@ -650,7 +645,8 @@ func EqualDeployments(expectedDeployment *appsv1.Deployment, foundDeployment *ap
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy, expectedDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].Args, expectedDeployment.Spec.Template.Spec.Containers[0].Args) ||
 		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].VolumeMounts, expectedDeployment.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].SecurityContext, expectedDeployment.Spec.Template.Spec.Containers[0].SecurityContext)
+		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].SecurityContext, expectedDeployment.Spec.Template.Spec.Containers[0].SecurityContext) ||
+		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.ServiceAccountName, expectedDeployment.Spec.Template.Spec.ServiceAccountName)
 }
 
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
@@ -659,7 +655,38 @@ func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Image, expected.Spec.Template.Spec.Containers[0].Image) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].ImagePullPolicy, expected.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
 		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].VolumeMounts, expected.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext)
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Ports, expected.Spec.Template.Spec.Containers[0].Ports) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Env, expected.Spec.Template.Spec.Containers[0].Env) ||
+		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
+}
+
+func EqualMatchTags(found *corev1.ConfigMap) bool {
+	var key string
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		key = splunkConfigKey
+	} else {
+		key = qRadarConfigKey
+	}
+	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
+	var match = re.FindStringSubmatch(found.Data[key])
+	return len(match) < 1
+}
+
+func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
+	var ports []string
+	var foundPort string
+	re := regexp.MustCompile("port [0-9]+")
+	var match = re.FindStringSubmatch(found.Data[SourceConfigKey])
+	if len(match) < 1 {
+		foundPort = ""
+	} else {
+		foundPort = strings.Split(match[0], " ")[1]
+	}
+	ports = append(ports, foundPort)
+	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])
+	expectedPort := strings.Split(match[0], " ")[1]
+	return (foundPort != expectedPort), append(ports, expectedPort)
 }
 
 // GetPodNames returns the pod names of the array of pods passed in

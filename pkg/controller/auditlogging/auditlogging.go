@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -102,12 +103,11 @@ func (r *ReconcileAuditLogging) createOrUpdateService(instance *operatorv1alpha1
 		reqLogger.Error(err, "Failed to get Service")
 		return reconcile.Result{}, err
 	} else if result := res.EqualServices(expected, found); result {
-		// If role permissions are incorrect, update it and requeue
-		reqLogger.Info("Found ports is incorrect", "Found", found.Spec.Ports, "Expected", expected.Spec.Ports)
-		found.Spec.Ports = expected.Spec.Ports
-		err = r.client.Update(context.TODO(), found)
+		// If ports are incorrect, delete it and requeue
+		reqLogger.Info("Found ports are incorrect", "Found", found.Spec.Ports, "Expected", expected.Spec.Ports)
+		err = r.client.Delete(context.TODO(), found)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Service", "Name", found.Name)
+			reqLogger.Error(err, "Failed to delete Service", "Name", found.Name)
 			return reconcile.Result{}, err
 		}
 		// Updated - return and requeue
@@ -179,6 +179,53 @@ func (r *ReconcileAuditLogging) createOrUpdateServiceAccount(cr *operatorv1alpha
 
 	// No reconcile was necessary
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alpha1.AuditLogging) {
+	reqLogger := log.WithValues("func", "checkOldServiceAccounts", "instance.Name", instance.Name)
+	fluentdSA := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.FluentdDaemonSetName + "-svcacct",
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err := r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.FluentdDaemonSetName + "-svcacct", Namespace: res.InstanceNamespace}, fluentdSA)
+	if err == nil {
+		// found service account so delete it
+		err := r.client.Delete(context.TODO(), fluentdSA)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old fluentd service account")
+		} else {
+			reqLogger.Info("Deleted old fluentd service account")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old fluentd service account")
+	}
+
+	policySA := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy + "-svcacct",
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err = r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-svcacct", Namespace: res.InstanceNamespace}, policySA)
+	if err == nil {
+		// found service account so delete it
+		err := r.client.Delete(context.TODO(), policySA)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old policy controller service account")
+		} else {
+			reqLogger.Info("Deleted old policy controller service account")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old policy controller service account")
+	}
 }
 
 func (r *ReconcileAuditLogging) createOrUpdateClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
@@ -377,6 +424,7 @@ func (r *ReconcileAuditLogging) createOrUpdatePolicyControllerDeployment(instanc
 		reqLogger.Info("Found deployment spec is incorrect", "Found", found.Spec.Template.Spec, "Expected", expected.Spec.Template.Spec)
 		found.Spec.Template.Spec.Volumes = expected.Spec.Template.Spec.Volumes
 		found.Spec.Template.Spec.Containers = expected.Spec.Template.Spec.Containers
+		found.Spec.Template.Spec.ServiceAccountName = expected.Spec.Template.Spec.ServiceAccountName
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Deployment", "Namespace", res.InstanceNamespace, "Name", found.Name)
@@ -413,26 +461,26 @@ func (r *ReconcileAuditLogging) createOrUpdateAuditConfigMaps(instance *operator
 
 func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.AuditLogging, configName string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	configMapFound := &corev1.ConfigMap{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: res.InstanceNamespace}, configMapFound)
+	expected, err := res.BuildConfigMap(instance, configName)
+	if err != nil {
+		reqLogger.Error(err, "Failed to create ConfigMap")
+		return reconcile.Result{}, err
+	}
+	found := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: res.InstanceNamespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new ConfigMap
-		newConfigMap, err := res.BuildConfigMap(instance, configName)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create ConfigMap")
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err := controllerutil.SetControllerReference(instance, newConfigMap, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", newConfigMap.Namespace, "ConfigMap.Name", newConfigMap.Name)
-		err = r.client.Create(context.TODO(), newConfigMap)
+		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", expected.Namespace, "ConfigMap.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", newConfigMap.Namespace,
-				"ConfigMap.Name", newConfigMap.Name)
+			reqLogger.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", expected.Namespace,
+				"ConfigMap.Name", expected.Name)
 			return reconcile.Result{}, err
 		}
 		// ConfigMap created successfully - return and requeue
@@ -440,6 +488,31 @@ func (r *ReconcileAuditLogging) createOrUpdateConfig(instance *operatorv1alpha1.
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ConfigMap")
 		return reconcile.Result{}, err
+	} else if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
+		// Ensure default port is used
+		if result, ports := res.EqualSourceConfig(expected, found); result {
+			reqLogger.Info("Found source config is incorrect", "Found port", ports[0], "Expected port", ports[1])
+			err = r.client.Delete(context.TODO(), found)
+			if err != nil {
+				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+				return reconcile.Result{}, err
+			}
+			// Deleted - return and requeue
+			return reconcile.Result{Requeue: true}, nil
+		}
+	} else if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName ||
+		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
+		// Ensure match tags are correct
+		if result := res.EqualMatchTags(found); result {
+			reqLogger.Info("Found match tags are incorrect", "ConfigMap.Name", found.Name, "Expected tags", res.OutputPluginMatches)
+			err = r.client.Delete(context.TODO(), found)
+			if err != nil {
+				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+				return reconcile.Result{}, err
+			}
+			// Deleted - return and requeue
+			return reconcile.Result{Requeue: true}, nil
+		}
 	}
 	return reconcile.Result{}, nil
 }
@@ -474,6 +547,7 @@ func (r *ReconcileAuditLogging) createOrUpdateFluentdDaemonSet(instance *operato
 		reqLogger.Info("Found daemonset spec is incorrect", "Found", found.Spec.Template.Spec, "Expected", expected.Spec.Template.Spec)
 		found.Spec.Template.Spec.Volumes = expected.Spec.Template.Spec.Volumes
 		found.Spec.Template.Spec.Containers = expected.Spec.Template.Spec.Containers
+		found.Spec.Template.Spec.ServiceAccountName = expected.Spec.Template.Spec.ServiceAccountName
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Daemonset", "Namespace", res.InstanceNamespace, "Name", found.Name)

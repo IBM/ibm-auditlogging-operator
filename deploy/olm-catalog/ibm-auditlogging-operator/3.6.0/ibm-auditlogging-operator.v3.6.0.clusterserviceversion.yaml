@@ -14,16 +14,33 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "v1.6.2-ubi7",
               "journalPath": "/var/log/journal",
               "pullPolicy": "IfNotPresent"
             },
             "policyController": {
               "imageRegistry": "quay.io/opencloudio/",
-              "imageTag": "3.4.0",
               "pullPolicy": "IfNotPresent",
               "verbosity": "0"
             }
+          }
+        },
+        {
+          "apiVersion": "operator.ibm.com/v1alpha1",
+          "kind": "OperandRequest",
+          "metadata": {
+            "name": "ibm-auditlogging-request"
+          },
+          "spec": {
+            "requests": [
+              {
+                "operands": [
+                  {
+                    "name": "ibm-cert-manager-operator"
+                  }
+                ],
+                "registry": "common-service"
+              }
+            ]
           }
         }
       ]
@@ -89,6 +106,12 @@ spec:
           name: ''
           version: v1
         - kind: ClusterRoleBinding
+          name: ''
+          version: v1
+        - kind: CustomResourceDefinition
+          name: ''
+          version: v1beta1
+        - kind: Service
           name: ''
           version: v1
   description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
@@ -309,7 +332,21 @@ spec:
                 openshift.io/scc: restricted
               labels:
                 name: ibm-auditlogging-operator
+                app.kubernetes.io/instance: common-audit-logging
+                app.kubernetes.io/managed-by: ibm-auditlogging-operator
+                app.kubernetes.io/name: common-audit-logging
             spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+                        - ppc64le
+                        - s390x
               containers:
               - command:
                 - ibm-auditlogging-operator
@@ -327,7 +364,21 @@ spec:
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
-                resources: {}
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 300Mi
+                  requests:
+                    cpu: 50m
+                    memory: 150Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  privileged: false
+                  readOnlyRootFilesystem: true
+                  runAsNonRoot: true
               serviceAccountName: ibm-auditlogging-operator
     strategy: deployment
   installModes:

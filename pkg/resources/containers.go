@@ -41,7 +41,7 @@ const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
 
 const fluentdConfigKey = "fluent.conf"
-const sourceConfigKey = "source.conf"
+const SourceConfigKey = "source.conf"
 const splunkConfigKey = "splunkHEC.conf"
 const qRadarConfigKey = "remoteSyslog.conf"
 
@@ -53,9 +53,11 @@ const defaultImageRegistry = "quay.io/opencloudio/"
 const defaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
 const defaultPCImageName = "audit-policy-controller"
-const defaultPCImageTag = "3.4.0"
+const defaultPCImageTag = "3.5.0"
 const defaultJournalPath = "/run/log/journal"
 const defaultHTTPPort = 9880
+
+const OutputPluginMatches = "icp-audit icp-audit.**"
 
 var trueVar = true
 var falseVar = false
@@ -158,11 +160,19 @@ var sourceConfigData4 = `
         format json
         key_name message
         reserve_data true
+    </filter>
+    <filter icp-audit.*>
+        @type record_transformer
+        enable_ruby true
+        <record>
+          tag ${tag}
+          message ${record.to_json}
+        </record>
     </filter>`
 
 var splunkConfigData = `
 splunkHEC.conf: |-
-     <match icp-audit.**>
+     <match icp-audit icp-audit.**>
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
@@ -173,7 +183,7 @@ splunkHEC.conf: |-
 
 var qRadarConfigData = `
 remoteSyslog.conf: |-
-    <match icp-audit.**>
+    <match icp-audit icp-audit.**>
         @type copy
         <store>
           @type remote_syslog
