@@ -637,28 +637,65 @@ func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool 
 	return !reflect.DeepEqual(found.Spec, expected.Spec)
 }
 
-func EqualDeployments(expectedDeployment *appsv1.Deployment, foundDeployment *appsv1.Deployment) bool {
-	return !reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Volumes, expectedDeployment.Spec.Template.Spec.Volumes) ||
-		len(foundDeployment.Spec.Template.Spec.Containers) != len(expectedDeployment.Spec.Template.Spec.Containers) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].Name, expectedDeployment.Spec.Template.Spec.Containers[0].Name) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].Image, expectedDeployment.Spec.Template.Spec.Containers[0].Image) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy, expectedDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].Args, expectedDeployment.Spec.Template.Spec.Containers[0].Args) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].VolumeMounts, expectedDeployment.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.Containers[0].SecurityContext, expectedDeployment.Spec.Template.Spec.Containers[0].SecurityContext) ||
-		!reflect.DeepEqual(foundDeployment.Spec.Template.Spec.ServiceAccountName, expectedDeployment.Spec.Template.Spec.ServiceAccountName)
+func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
+	return EqualPods(expected.Spec.Template, found.Spec.Template)
 }
 
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
-	return len(found.Spec.Template.Spec.Containers) != len(expected.Spec.Template.Spec.Containers) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Name, expected.Spec.Template.Spec.Containers[0].Name) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Image, expected.Spec.Template.Spec.Containers[0].Image) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].ImagePullPolicy, expected.Spec.Template.Spec.Containers[0].ImagePullPolicy) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].VolumeMounts, expected.Spec.Template.Spec.Containers[0].VolumeMounts) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].SecurityContext, expected.Spec.Template.Spec.Containers[0].SecurityContext) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Ports, expected.Spec.Template.Spec.Containers[0].Ports) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.Containers[0].Env, expected.Spec.Template.Spec.Containers[0].Env) ||
-		!reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, expected.Spec.Template.Spec.ServiceAccountName)
+	return EqualPods(expected.Spec.Template, found.Spec.Template)
+}
+
+func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bool {
+	logger := log.WithValues("func", "EqualPods")
+	if !reflect.DeepEqual(found.Spec.ServiceAccountName, expected.Spec.ServiceAccountName) {
+		logger.Info("ServiceAccount not equal", "Found", found.Spec.ServiceAccountName, "Expected", expected.Spec.ServiceAccountName)
+		return false
+	}
+	if len(found.Spec.Containers) != len(expected.Spec.Containers) {
+		logger.Info("Number of containers not equal", "Found", len(found.Spec.Containers), "Expected", len(expected.Spec.Containers))
+		return false
+	}
+	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0]) {
+		return false
+	}
+	return true
+}
+
+func EqualContainers(expected corev1.Container, found corev1.Container) bool {
+	logger := log.WithValues("func", "EqualContainers")
+	if !reflect.DeepEqual(found.Name, expected.Name) {
+		logger.Info("Container name not equal", "Found", found.Name, "Expected", expected.Name)
+		return false
+	}
+	if !reflect.DeepEqual(found.Image, expected.Image) {
+		logger.Info("Image not equal", "Found", found.Image, "Expected", expected.Image)
+		return false
+	}
+	if !reflect.DeepEqual(found.ImagePullPolicy, expected.ImagePullPolicy) {
+		logger.Info("ImagePullPolicy not equal", "Found", found.ImagePullPolicy, "Expected", expected.ImagePullPolicy)
+		return false
+	}
+	if !reflect.DeepEqual(found.VolumeMounts, expected.VolumeMounts) {
+		logger.Info("VolumeMounts not equal", "Found", found.VolumeMounts, "Expected", expected.VolumeMounts)
+		return false
+	}
+	if !reflect.DeepEqual(found.SecurityContext, expected.SecurityContext) {
+		logger.Info("SecurityContext not equal", "Found", found.SecurityContext, "Expected", expected.SecurityContext)
+		return false
+	}
+	if !reflect.DeepEqual(found.Ports, expected.Ports) {
+		logger.Info("Ports not equal", "Found", found.Ports, "Expected", expected.Ports)
+		return false
+	}
+	if !reflect.DeepEqual(found.Args, expected.Args) {
+		logger.Info("Args not equal", "Found", found.Args, "Expected", expected.Args)
+		return false
+	}
+	if !reflect.DeepEqual(found.Env, expected.Env) {
+		logger.Info("Env not equal", "Found", found.Env, "Expected", expected.Env)
+		return false
+	}
+	return true
 }
 
 func EqualMatchTags(found *corev1.ConfigMap) bool {
