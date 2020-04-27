@@ -374,7 +374,7 @@ func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1alpha1.
 			return reconcile.Result{}, err
 		}
 		// RoleBinding created successfully - return and requeue
-		return reconcile.Result{}, nil
+		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get RoleBinding")
 		return reconcile.Result{}, err

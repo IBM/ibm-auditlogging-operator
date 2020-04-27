@@ -8,8 +8,8 @@ Red Hat OpenShift Container Platform 4.X
 
 ## Operator versions
 
-3.5.0
-3.6.0
+- 3.5.0
+- 3.6.0
 
 ## Prerequisites
 
@@ -157,3 +157,10 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
 
 - Delete the CR and the associated resources that were created.
   1. `kubectl delete auditloggings example-auditlogging`
+
+#### Operator SDK's Test Framework
+
+- [Unit Testing](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/unit-testing.md)
+- [E2E Testing](https://github.com/operator-framework/operator-sdk/blob/master/website/content/en/docs/golang/e2e-tests.md)
+- To run unit tests use `make test`
+- To run e2e tests use `make test-e2e`
