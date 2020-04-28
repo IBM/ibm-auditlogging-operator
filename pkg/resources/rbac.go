@@ -19,7 +19,7 @@ package resources
 import (
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +30,7 @@ const rolePostfix = "-role"
 const roleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
-func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.ServiceAccount {
+func BuildServiceAccount(instance *operatorv1.AuditLogging) *corev1.ServiceAccount {
 	metaLabels := LabelsForMetadata(OperandRBAC)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +43,7 @@ func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.Servic
 }
 
 // BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
+func BuildClusterRoleBinding(instance *operatorv1.AuditLogging) *rbacv1.ClusterRoleBinding {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -65,7 +65,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 }
 
 // BuildClusterRole returns a ClusterRole object
-func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
+func BuildClusterRole(instance *operatorv1.AuditLogging) *rbacv1.ClusterRole {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,7 +135,7 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 }
 
 // BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
-func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+func BuildRoleBinding(instance *operatorv1.AuditLogging) *rbacv1.RoleBinding {
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -159,7 +159,7 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 }
 
 // BuildRoleForFluentd returns a Role object for fluentd
-func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
+func BuildRole(instance *operatorv1.AuditLogging) *rbacv1.Role {
 	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{

@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"testing"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -150,7 +150,7 @@ func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reco
 	getAuditPolicyController(t, r, req)
 }
 
-func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request, cr *operatorv1alpha1.AuditLogging) {
+func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request, cr *operatorv1.AuditLogging) {
 	assert := assert.New(t)
 	var err error
 
@@ -239,7 +239,7 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	checkAuditLogging(t, r, req)
 }
 
-func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
+func updateAuditLoggingCR(al *operatorv1.AuditLogging, t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
 	assert := assert.New(t)
 	al.Spec.Fluentd.JournalPath = journalPath
 	al.Spec.PolicyController.Verbosity = verbosity
@@ -280,9 +280,9 @@ func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Requ
 	}
 }
 
-func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *operatorv1alpha1.AuditLogging {
+func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *operatorv1.AuditLogging {
 	assert := assert.New(t)
-	al := &operatorv1alpha1.AuditLogging{}
+	al := &operatorv1.AuditLogging{}
 	err := r.client.Get(context.TODO(), req.NamespacedName, al)
 	if err != nil {
 		t.Fatalf("get auditlogging: (%v)", err)
@@ -315,21 +315,21 @@ func getFluentd(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *a
 	return foundDS
 }
 
-func buildAuditLogging(name string) *operatorv1alpha1.AuditLogging {
-	return &operatorv1alpha1.AuditLogging{
+func buildAuditLogging(name string) *operatorv1.AuditLogging {
+	return &operatorv1.AuditLogging{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: operatorv1alpha1.AuditLoggingSpec{
-			Fluentd:          operatorv1alpha1.AuditLoggingSpecFluentd{},
-			PolicyController: operatorv1alpha1.AuditLoggingSpecPolicyController{},
+		Spec: operatorv1.AuditLoggingSpec{
+			Fluentd:          operatorv1.AuditLoggingSpecFluentd{},
+			PolicyController: operatorv1.AuditLoggingSpecPolicyController{},
 		},
 	}
 }
 
-func getReconciler(cr *operatorv1alpha1.AuditLogging) ReconcileAuditLogging {
+func getReconciler(cr *operatorv1.AuditLogging) ReconcileAuditLogging {
 	s := scheme.Scheme
-	operatorv1alpha1.SchemeBuilder.AddToScheme(s)
+	operatorv1.SchemeBuilder.AddToScheme(s)
 	certmgr.SchemeBuilder.AddToScheme(s)
 	extv1beta1.AddToScheme(s)
 

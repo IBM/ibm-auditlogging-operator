@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"time"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -67,7 +67,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource AuditLogging
-	err = c.Watch(&source.Kind{Type: &operatorv1alpha1.AuditLogging{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &operatorv1.AuditLogging{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		//err = c.Watch(&kind, &handler.EnqueueRequestForOwner{
 		err = c.Watch(&source.Kind{Type: restype}, &handler.EnqueueRequestForOwner{
 			IsController: true,
-			OwnerType:    &operatorv1alpha1.AuditLogging{},
+			OwnerType:    &operatorv1.AuditLogging{},
 		})
 		if err != nil {
 			return err
@@ -125,7 +125,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	reqLogger.Info("Reconciling AuditLogging")
 	// if we need to create several resources, set a flag so we just requeue one time instead of after each create.
 	// Fetch the AuditLogging instance
-	instance := &operatorv1alpha1.AuditLogging{}
+	instance := &operatorv1.AuditLogging{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

@@ -1,0 +1,18 @@
+apiVersion: operator.ibm.com/v1
+kind: AuditLogging
+metadata:
+  name: example-auditlogging
+  labels:
+    app.kubernetes.io/instance: "common-audit-logging"     
+    app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
+    app.kubernetes.io/name: "common-audit-logging"
+spec:
+  fluentd:
+    enabled: true
+    imageRegistry: quay.io/opencloudio/
+    pullPolicy: IfNotPresent
+    journalPath: /var/log/journal
+  policyController:
+    imageRegistry: quay.io/opencloudio/
+    pullPolicy: IfNotPresent
+    verbosity: "0"

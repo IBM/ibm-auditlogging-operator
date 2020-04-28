@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	yaml "gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -51,7 +51,7 @@ var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
 // BuildAuditService returns a Service object
-func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
+func BuildAuditService(instance *operatorv1.AuditLogging) *corev1.Service {
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 
@@ -81,7 +81,7 @@ func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service 
 }
 
 // BuildAuditPolicyCRD returns a CRD object
-func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
+func BuildAuditPolicyCRD(instance *operatorv1.AuditLogging) *extv1beta1.CustomResourceDefinition {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	metaLabels["controller-tools.k8s.io"] = "1.0"
 	crd := &extv1beta1.CustomResourceDefinition{
@@ -185,7 +185,7 @@ func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.Cu
 }
 
 // BuildConfigMap returns a ConfigMap object
-func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
+func BuildConfigMap(instance *operatorv1.AuditLogging, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	dataMap := make(map[string]string)
@@ -250,7 +250,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 }
 
 // BuildDeploymentForPolicyController returns a Deployment object
-func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging) *appsv1.Deployment {
+func BuildDeploymentForPolicyController(instance *operatorv1.AuditLogging) *appsv1.Deployment {
 	reqLogger := log.WithValues("deploymentForPolicyController", "Entry", "instance.Name", instance.Name)
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	selectorLabels := LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
@@ -346,7 +346,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 }
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
+func BuildCertsForAuditLogging(instance *operatorv1.AuditLogging, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
@@ -381,7 +381,7 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 }
 
 // BuildDaemonForFluentd returns a Daemonset object
-func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
+func BuildDaemonForFluentd(instance *operatorv1.AuditLogging) *appsv1.DaemonSet {
 	reqLogger := log.WithValues("dameonForFluentd", "Entry", "instance.Name", instance.Name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
@@ -470,7 +470,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 }
 
 // BuildCommonVolumeMounts returns an array of VolumeMount objects
-func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
+func BuildCommonVolumeMounts(instance *operatorv1.AuditLogging) []corev1.VolumeMount {
 	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
@@ -524,7 +524,7 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 }
 
 // BuildCommonVolumes returns an array of Volume objects
-func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
+func BuildCommonVolumes(instance *operatorv1.AuditLogging) []corev1.Volume {
 	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath

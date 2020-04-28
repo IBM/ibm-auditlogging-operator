@@ -20,7 +20,7 @@ import (
 	"context"
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Namespace", res.InstanceNamespace, "Name", instance.Name)
 
 	podList := &corev1.PodList{}
@@ -78,7 +78,7 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Service.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildAuditService(instance)
 	found := &corev1.Service{}
@@ -116,7 +116,7 @@ func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.Audi
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("CRD.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildAuditPolicyCRD(instance)
 	found := &extv1beta1.CustomResourceDefinition{}
@@ -145,7 +145,7 @@ func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1alph
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("cr.Name", cr.Name)
 	expectedRes := res.BuildServiceAccount(cr)
 	// Set CR instance as the owner and controller
@@ -180,7 +180,7 @@ func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.Aud
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alpha1.AuditLogging) {
+func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1.AuditLogging) {
 	reqLogger := log.WithValues("func", "checkOldServiceAccounts", "instance.Name", instance.Name)
 	fluentdSA := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -227,7 +227,7 @@ func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alph
 	}
 }
 
-func (r *ReconcileAuditLogging) reconcileClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileClusterRole(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRole.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildClusterRole(instance)
 	found := &rbacv1.ClusterRole{}
@@ -269,7 +269,7 @@ func (r *ReconcileAuditLogging) reconcileClusterRole(instance *operatorv1alpha1.
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileClusterRoleBinding(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildClusterRoleBinding(instance)
 	found := &rbacv1.ClusterRoleBinding{}
@@ -309,7 +309,7 @@ func (r *ReconcileAuditLogging) reconcileClusterRoleBinding(instance *operatorv1
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Role.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildRole(instance)
 	found := &rbacv1.Role{}
@@ -352,7 +352,7 @@ func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLo
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("RoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildRoleBinding(instance)
 	found := &rbacv1.RoleBinding{}
@@ -392,7 +392,7 @@ func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1alpha1.
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Deployment.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 
 	expected := res.BuildDeploymentForPolicyController(instance)
@@ -432,7 +432,7 @@ func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *op
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
 	recResult, recErr = r.reconcileConfig(instance, res.FluentdDaemonSetName+"-"+res.ConfigName)
@@ -455,7 +455,7 @@ func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1alp
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.AuditLogging, configName string) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1.AuditLogging, configName string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected, err := res.BuildConfigMap(instance, configName)
 	if err != nil {
@@ -513,7 +513,7 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Daemonset.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
 	expected := res.BuildDaemonForFluentd(instance)
 	found := &appsv1.DaemonSet{}
@@ -552,7 +552,7 @@ func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1al
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditCerts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileAuditCerts(instance *operatorv1.AuditLogging) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
 	recResult, recErr = r.reconcileAuditCertificate(instance, res.AuditLoggingHTTPSCertName)
@@ -566,7 +566,7 @@ func (r *ReconcileAuditLogging) reconcileAuditCerts(instance *operatorv1alpha1.A
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditCertificate(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
+func (r *ReconcileAuditLogging) reconcileAuditCertificate(instance *operatorv1.AuditLogging, name string) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Certificate.Namespace", res.InstanceNamespace, "Instance.Name", instance.Name)
 	expectedCert := res.BuildCertsForAuditLogging(instance, instance.Spec.Fluentd.ClusterIssuer, name)
 	foundCert := &certmgr.Certificate{}
