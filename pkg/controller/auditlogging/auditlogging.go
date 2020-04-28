@@ -501,12 +501,22 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		// Ensure match tags are correct
 		if result := res.EqualMatchTags(found); result {
 			reqLogger.Info("Found match tags are incorrect", "ConfigMap.Name", found.Name, "Expected tags", res.OutputPluginMatches)
-			err = r.client.Delete(context.TODO(), found)
+			data, err := res.BuildWithSIEMCreds(found)
 			if err != nil {
-				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+				reqLogger.Error(err, "Failed to get SIEM creds", "Name", found.Name)
 				return reconcile.Result{}, err
 			}
-			// Deleted - return and requeue
+			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
+				found.Data[res.SplunkConfigKey] = data
+			} else {
+				found.Data[res.QRadarConfigKey] = data
+			}
+			err = r.client.Update(context.TODO(), found)
+			if err != nil {
+				reqLogger.Error(err, "Failed to update ConfigMap", "Name", found.Name)
+				return reconcile.Result{}, err
+			}
+			// Updated - return and requeue
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
