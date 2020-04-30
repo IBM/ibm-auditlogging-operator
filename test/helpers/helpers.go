@@ -26,7 +26,7 @@ import (
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	"github.com/ibm/ibm-auditlogging-operator/test/config"
 )
 

@@ -78,7 +78,7 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
   operator-sdk add api --api-version=operator.ibm.com/v1alpha1 --kind=auditlogging
   ```
 
-  1. Generates `pkg/apis/operator/v1alpha1/auditlogging_types.go`.
+  1. Generates `pkg/apis/operator/v1/auditlogging_types.go`.
   1. Generates `deploy/crds/operator.ibm.com_auditloggings_crd.yaml`.
   1. Generates `deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml`.
   1. The operator can manage more than one `kind`.
@@ -98,7 +98,7 @@ For installation and configuration, see the [IBM Cloud Platform Common Services 
   ```
 
   1. Updates `operator.ibm.com_auditloggings_crd.yaml`.
-  1. `openapi-gen --logtostderr=true -o "" -i ./pkg/apis/operator/v1alpha1 -O zz_generated.openapi -p ./pkg/apis/operator/v1alpha1 -h hack/boilerplate.go.txt -r "-"`
+  1. `openapi-gen --logtostderr=true -o "" -i ./pkg/apis/operator/v1 -O zz_generated.openapi -p ./pkg/apis/operator/v1 -h hack/boilerplate.go.txt -r "-"`
   1. Creates `zz_generated.openapi.go`.
   1. If you need to build `openapi-gen`, follow these steps. The binary is built in `$GOPATH/bin`.
 

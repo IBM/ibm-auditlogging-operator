@@ -23,7 +23,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 
 	apis "github.com/ibm/ibm-auditlogging-operator/pkg/apis"
-	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	"github.com/ibm/ibm-auditlogging-operator/test/config"
 	"github.com/ibm/ibm-auditlogging-operator/test/helpers"
 	testgroups "github.com/ibm/ibm-auditlogging-operator/test/testgroups"
