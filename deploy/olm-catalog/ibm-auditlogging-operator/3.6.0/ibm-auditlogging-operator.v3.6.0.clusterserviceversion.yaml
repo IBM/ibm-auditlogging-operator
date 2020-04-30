@@ -5,10 +5,15 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "operator.ibm.com/v1alpha1",
+          "apiVersion": "operator.ibm.com/v1",
           "kind": "AuditLogging",
           "metadata": {
-            "name": "example-auditlogging"
+            "name": "example-auditlogging",
+            "labels": {
+              "app.kubernetes.io/instance": "common-audit-logging",
+              "app.kubernetes.io/managed-by": "ibm-auditlogging-operator",
+              "app.kubernetes.io/name": "common-audit-logging"
+            }
           },
           "spec": {
             "fluentd": {
@@ -25,7 +30,7 @@ metadata:
           }
         },
         {
-          "apiVersion": "operator.ibm.com/v1alpha1",
+          "apiVersion": "operator.ibm.com/v1",
           "kind": "OperandRequest",
           "metadata": {
             "name": "ibm-auditlogging-request"
@@ -48,7 +53,7 @@ metadata:
     categories: Security
     certified: "false"
     containerImage: quay.io/opencloudio/ibm-auditlogging-operator:latest
-    createdAt: "2020-02-11T15:30:00Z"
+    createdAt: "2020-04-02T11:28:16Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     repository: https://github.com/IBM/ibm-auditlogging-operator
     support: IBM
@@ -61,7 +66,7 @@ spec:
     - description: AuditLogging is the Schema for the auditloggings API
       kind: AuditLogging
       name: auditloggings.operator.ibm.com
-      version: v1alpha1
+      version: v1
       displayName: AuditLogging
       specDescriptors:
         - description: Operator version
