@@ -129,8 +129,8 @@ test-e2e: ## Run integration e2e tests
 # coverage section
 ############################################################
 
-coverage:
-	@common/scripts/codecov.sh ${BUILD_LOCALLY}
+coverage: ## Run code coverage test
+	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
 
 ############################################################
 # install operator sdk section
