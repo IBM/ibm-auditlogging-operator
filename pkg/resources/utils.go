@@ -709,7 +709,7 @@ func EqualMatchTags(found *corev1.ConfigMap) bool {
 	}
 	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
 	var match = re.FindStringSubmatch(found.Data[key])
-	return len(match) < 1
+	return len(match) >= 1
 }
 
 func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
@@ -725,7 +725,11 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 	ports = append(ports, foundPort)
 	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])
 	expectedPort := strings.Split(match[0], " ")[1]
-	return (foundPort != expectedPort), append(ports, expectedPort)
+	return (foundPort == expectedPort), append(ports, expectedPort)
+}
+
+func EqualLabels(found map[string]string, expected map[string]string) bool {
+	return reflect.DeepEqual(found, expected)
 }
 
 func BuildWithSIEMCreds(found *corev1.ConfigMap) (string, error) {
