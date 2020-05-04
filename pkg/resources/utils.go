@@ -701,6 +701,7 @@ func EqualContainers(expected corev1.Container, found corev1.Container) bool {
 }
 
 func EqualMatchTags(found *corev1.ConfigMap) bool {
+	logger := log.WithValues("func", "EqualMatchTags")
 	var key string
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
 		key = SplunkConfigKey
@@ -709,6 +710,10 @@ func EqualMatchTags(found *corev1.ConfigMap) bool {
 	}
 	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
 	var match = re.FindStringSubmatch(found.Data[key])
+	if len(match) < 1 {
+		logger.Info("Match tags not equal", "Expected", OutputPluginMatches)
+		return false
+	}
 	return len(match) >= 1
 }
 
@@ -729,7 +734,12 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 }
 
 func EqualLabels(found map[string]string, expected map[string]string) bool {
-	return reflect.DeepEqual(found, expected)
+	logger := log.WithValues("func", "EqualLabels")
+	if !reflect.DeepEqual(found, expected) {
+		logger.Info("Labels not equal", "Found", found, "Expected", expected)
+		return false
+	}
+	return true
 }
 
 func BuildWithSIEMCreds(found *corev1.ConfigMap) (string, error) {

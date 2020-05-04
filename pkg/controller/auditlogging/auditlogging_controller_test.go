@@ -21,12 +21,14 @@ import (
 	"crypto/rand"
 	"math/big"
 	"reflect"
+	"regexp"
 	"testing"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	yaml "gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -43,6 +45,19 @@ import (
 const journalPath = "/var/log/audit"
 const verbosity = "10"
 const numPods = 4
+const dummyHost = "hec_host master"
+const dummyPort = "hec_port 8088"
+const dummyToken = "hec_token abc-123"
+const dummySplunkConfig = `
+splunkHEC.conf: |-
+     <match icp-audit k8s-audit>
+        @type splunk_hec
+        hec_host master
+        hec_port 8088
+        hec_token abc-123
+        ca_file /fluentd/etc/tls/splunkCA.pem
+        source ${tag}
+     </match>`
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
@@ -61,6 +76,7 @@ func TestAuditLoggingController(t *testing.T) {
 	checkMountAndRBACPreReqs(t, r, req)
 	checkPolicyControllerConfig(t, r, req)
 	checkFluentdConfig(t, r, req, cr)
+	checkInPlaceUpdate(t, r, req)
 }
 
 // Init reconcile the AuditLogging CR
@@ -278,6 +294,55 @@ func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Requ
 	if !found {
 		t.Fatalf("Fluentd ds not updated with journal path: (%s)", journalPath)
 	}
+}
+
+func checkInPlaceUpdate(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
+	var err error
+	var emptyLabels map[string]string
+	assert := assert.New(t)
+
+	foundCM := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+		res.SplunkConfigName, Namespace: res.InstanceNamespace}, foundCM)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	var ds res.DataSplunk
+	err = yaml.Unmarshal([]byte(dummySplunkConfig), &ds)
+	assert.NoError(err)
+	foundCM.Data[res.SplunkConfigKey] = ds.Value
+	foundCM.ObjectMeta.Labels = emptyLabels
+	err = r.client.Update(context.TODO(), foundCM)
+	if err != nil {
+		t.Fatalf("Failed to update CR: (%v)", err)
+	}
+	// update splunk configmap
+	result, err := r.Reconcile(req)
+	if !result.Requeue {
+		t.Error("reconcile did not requeue request as expected")
+	}
+	assert.NoError(err)
+
+	updatedCM := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+		res.SplunkConfigName, Namespace: res.InstanceNamespace}, updatedCM)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	reHost := regexp.MustCompile(`hec_host .*`)
+	host := reHost.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0]
+	rePort := regexp.MustCompile(`hec_port .*`)
+	port := rePort.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0]
+	reToken := regexp.MustCompile(`hec_token .*`)
+	token := reToken.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0]
+	if host != dummyHost || port != dummyPort || token != dummyToken {
+		t.Fatalf("SIEM creds not retained: found host = (%s), found port = (%s), found token = (%s)", host, port, token)
+	}
+	if !reflect.DeepEqual(updatedCM.ObjectMeta.Labels, res.LabelsForMetadata(res.FluentdName)) {
+		t.Fatalf("Labels not correct")
+	}
+	_, err = r.Reconcile(req)
+	assert.NoError(err)
 }
 
 func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *operatorv1alpha1.AuditLogging {

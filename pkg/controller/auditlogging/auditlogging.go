@@ -502,7 +502,6 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 	}
 	var update = false
 	if !res.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
-		reqLogger.Info("Found labels incorrect", "Found labels", found.ObjectMeta.Labels, "Expected labels", expected.ObjectMeta.Labels)
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		update = true
 	}
@@ -510,7 +509,6 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
 		// Ensure match tags are correct
 		if !res.EqualMatchTags(found) {
-			reqLogger.Info("Found match tags are incorrect", "ConfigMap.Name", found.Name, "Expected tags", res.OutputPluginMatches)
 			// Keep customer SIEM creds
 			data, err := res.BuildWithSIEMCreds(found)
 			if err != nil {
