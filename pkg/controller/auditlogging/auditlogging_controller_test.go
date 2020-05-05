@@ -56,6 +56,9 @@ splunkHEC.conf: |-
         hec_token abc-123
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
+        <buffer>
+          # ...
+        </buffer>
      </match>`
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
@@ -334,11 +337,16 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	port := rePort.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0]
 	reToken := regexp.MustCompile(`hec_token .*`)
 	token := reToken.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0]
+	reBuffer := regexp.MustCompile(`buffer`)
+	buffer := reBuffer.FindAllString(updatedCM.Data[res.SplunkConfigKey], -1)
 	if host != dummyHost || port != dummyPort || token != dummyToken {
-		t.Fatalf("SIEM creds not retained: found host = (%s), found port = (%s), found token = (%s)", host, port, token)
+		t.Fatalf("SIEM creds not preserved: found host = (%s), found port = (%s), found token = (%s)", host, port, token)
 	}
 	if !reflect.DeepEqual(updatedCM.ObjectMeta.Labels, res.LabelsForMetadata(res.FluentdName)) {
 		t.Fatalf("Labels not correct")
+	}
+	if len(buffer) < 2 {
+		t.Fatalf("Buffer config not preserved. Found: (%s)", buffer)
 	}
 	_, err = r.Reconcile(req)
 	assert.NoError(err)

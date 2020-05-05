@@ -509,10 +509,10 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
 		// Ensure match tags are correct
 		if !res.EqualMatchTags(found) {
-			// Keep customer SIEM creds
-			data, err := res.BuildWithSIEMCreds(found)
+			// Keep customer SIEM configs
+			data, err := res.BuildWithSIEMConfigs(found)
 			if err != nil {
-				reqLogger.Error(err, "Failed to get SIEM creds", "Name", found.Name)
+				reqLogger.Error(err, "Failed to get SIEM configs", "Name", found.Name)
 				return reconcile.Result{}, err
 			}
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {

@@ -172,28 +172,27 @@ var sourceConfigData4 = `
 
 var splunkConfigData1 = `
 splunkHEC.conf: |-
-     <match icp-audit icp-audit.**>
-        @type splunk_hec`
+    <match icp-audit icp-audit.**>`
 var splunkDefaults = `
+        @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
-        hec_token SPLUNK_HEC_TOKEN`
-var splunkConfigData2 = `
+        hec_token SPLUNK_HEC_TOKEN
         ca_file /fluentd/etc/tls/splunkCA.pem
-        source ${tag}
-     </match>`
+        source ${tag}`
+var splunkConfigData2 = `
+    </match>`
 
 var qRadarConfigData1 = `
 remoteSyslog.conf: |-
-    <match icp-audit icp-audit.**>
+    <match icp-audit icp-audit.**>`
+var qRadarDefaults = `
         @type copy
         <store>
-            @type remote_syslog`
-var qRadarDefaults = `
+            @type remote_syslog
             host QRADAR_SERVER_HOSTNAME
             port QRADAR_PORT_FOR_icp-audit
-            hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`
-var qRadarConfigData2 = `
+            hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit
             protocol tcp
             tls true
             ca_file /fluentd/etc/tls/qradar.crt
@@ -203,7 +202,8 @@ var qRadarConfigData2 = `
                 @type single_value
                 message_key message
             </format>
-        </store>
+        </store>`
+var qRadarConfigData2 = `
     </match>`
 
 var policyControllerMainContainer = corev1.Container{
