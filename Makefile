@@ -229,6 +229,23 @@ uninstall: ## Uninstall all that all performed in the $ make install
 	- kubectl delete -f deploy/service_account.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/role.yaml -n ${NAMESPACE}
 
+install-local: ## Install operator using local controller instead of operator deployment
+	@echo ....... Installing .......
+	@echo ....... Applying CRD and Operator .......
+	- kubectl apply -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
+	@echo ....... Creating AuditLogging CR .......
+	- kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+	@echo ....... Running Operator .......
+	- operator-sdk run --local
+
+uninstall-local: ## Uninstall all that all performed in the $ make install-local
+	@echo ....... Uninstalling .......
+	@echo ....... Deleting CRs .......
+	- kubectl get auditpolicy -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete auditpolicy -n ${NAMESPACE}
+	- kubectl delete -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+	@echo ....... Deleting CRD.......
+	- kubectl delete -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
+
 ############################################################
 # CSV section
 ############################################################
