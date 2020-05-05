@@ -50,6 +50,14 @@ var log = logf.Log.WithName("controller_auditlogging")
 var seconds30 int64 = 30
 var commonVolumes = []corev1.Volume{}
 
+type DataSplunk struct {
+	Value string `yaml:"splunkHEC.conf"`
+}
+
+type DataQRadar struct {
+	Value string `yaml:"remoteSyslog.conf"`
+}
+
 // BuildAuditService returns a Service object
 func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
 	metaLabels := LabelsForMetadata(FluentdName)
@@ -215,22 +223,16 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		err = yaml.Unmarshal([]byte(result), &ds)
 		dataMap[SourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
-		type DataSplunk struct {
-			Value string `yaml:"splunkHEC.conf"`
-		}
 		dsplunk := DataSplunk{}
-		err = yaml.Unmarshal([]byte(splunkConfigData), &dsplunk)
+		err = yaml.Unmarshal([]byte(splunkConfigData1+splunkDefaults+splunkConfigData2), &dsplunk)
 		if err != nil {
 			reqLogger.Error(err, "Failed to unmarshall data for "+name)
 		}
-		dataMap[splunkConfigKey] = dsplunk.Value
+		dataMap[SplunkConfigKey] = dsplunk.Value
 	case FluentdDaemonSetName + "-" + QRadarConfigName:
-		type DataQRadar struct {
-			Value string `yaml:"remoteSyslog.conf"`
-		}
 		dq := DataQRadar{}
-		err = yaml.Unmarshal([]byte(qRadarConfigData), &dq)
-		dataMap[qRadarConfigKey] = dq.Value
+		err = yaml.Unmarshal([]byte(qRadarConfigData1+qRadarDefaults+qRadarConfigData2), &dq)
+		dataMap[QRadarConfigKey] = dq.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
@@ -489,12 +491,12 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 		{
 			Name:      QRadarConfigName,
 			MountPath: qRadarOutput,
-			SubPath:   qRadarConfigKey,
+			SubPath:   QRadarConfigKey,
 		},
 		{
 			Name:      SplunkConfigName,
 			MountPath: splunkOutput,
-			SubPath:   splunkConfigKey,
+			SubPath:   SplunkConfigKey,
 		},
 		{
 			Name:      "journal",
@@ -580,8 +582,8 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  qRadarConfigKey,
-							Path: qRadarConfigKey,
+							Key:  QRadarConfigKey,
+							Path: QRadarConfigKey,
 						},
 					},
 				},
@@ -596,8 +598,8 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  splunkConfigKey,
-							Path: splunkConfigKey,
+							Key:  SplunkConfigKey,
+							Path: SplunkConfigKey,
 						},
 					},
 				},
@@ -699,15 +701,20 @@ func EqualContainers(expected corev1.Container, found corev1.Container) bool {
 }
 
 func EqualMatchTags(found *corev1.ConfigMap) bool {
+	logger := log.WithValues("func", "EqualMatchTags")
 	var key string
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
-		key = splunkConfigKey
+		key = SplunkConfigKey
 	} else {
-		key = qRadarConfigKey
+		key = QRadarConfigKey
 	}
 	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\*`)
 	var match = re.FindStringSubmatch(found.Data[key])
-	return len(match) < 1
+	if len(match) < 1 {
+		logger.Info("Match tags not equal", "Expected", OutputPluginMatches)
+		return false
+	}
+	return len(match) >= 1
 }
 
 func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (bool, []string) {
@@ -723,7 +730,57 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 	ports = append(ports, foundPort)
 	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])
 	expectedPort := strings.Split(match[0], " ")[1]
-	return (foundPort != expectedPort), append(ports, expectedPort)
+	return (foundPort == expectedPort), append(ports, expectedPort)
+}
+
+func EqualLabels(found map[string]string, expected map[string]string) bool {
+	logger := log.WithValues("func", "EqualLabels")
+	if !reflect.DeepEqual(found, expected) {
+		logger.Info("Labels not equal", "Found", found, "Expected", expected)
+		return false
+	}
+	return true
+}
+
+func BuildWithSIEMCreds(found *corev1.ConfigMap) (string, error) {
+	var key string
+	var creds string
+	var result string
+	var err error
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		key = SplunkConfigKey
+		reHost := regexp.MustCompile(`hec_host .*`)
+		host := reHost.FindStringSubmatch(found.Data[key])[0]
+		rePort := regexp.MustCompile(`hec_port .*`)
+		port := rePort.FindStringSubmatch(found.Data[key])[0]
+		reToken := regexp.MustCompile(`hec_token .*`)
+		token := reToken.FindStringSubmatch(found.Data[key])[0]
+		creds = yamlLine(2, host, true) + yamlLine(2, port, true) + yamlLine(2, token, false)
+		ds := DataSplunk{}
+		err = yaml.Unmarshal([]byte(splunkConfigData1+"\n"+creds+splunkConfigData2), &ds)
+		result = ds.Value
+	} else {
+		key = QRadarConfigKey
+		reHost := regexp.MustCompile(`host .*`)
+		host := reHost.FindStringSubmatch(found.Data[key])[0]
+		rePort := regexp.MustCompile(`port .*`)
+		port := rePort.FindStringSubmatch(found.Data[key])[0]
+		reHostname := regexp.MustCompile(`hostname .*`)
+		hostname := reHostname.FindStringSubmatch(found.Data[key])[0]
+		creds = yamlLine(3, host, true) + yamlLine(3, port, true) + yamlLine(3, hostname, false)
+		dq := DataQRadar{}
+		err = yaml.Unmarshal([]byte(qRadarConfigData1+"\n"+creds+qRadarConfigData2), &dq)
+		result = dq.Value
+	}
+	return result, err
+}
+
+func yamlLine(tabs int, line string, newline bool) string {
+	spaces := strings.Repeat(`    `, tabs)
+	if !newline {
+		return spaces + line
+	}
+	return spaces + line + "\n"
 }
 
 // GetPodNames returns the pod names of the array of pods passed in
