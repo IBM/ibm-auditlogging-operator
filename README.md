@@ -54,7 +54,7 @@ If, as a developer, you are looking to build and test this operator to try out a
 
 ### Overview
 
-- To learn more about how the IBM AuditLogging Operator was implemented, see [Operator Guidelines](https://github.com/operator-framework/getting-started#getting-started)
+- To learn more about how the IBM AuditLogging Operator was implemented, see [Operator Guidelines](https://github.com/operator-framework/getting-started#getting-started) and [Operator SDK](https://sdk.operatorframework.io/docs/)
 
 - An operator can manage one or more controllers. The controller watches the resources for a particular CR (Custom Resource).
 
@@ -69,9 +69,7 @@ If, as a developer, you are looking to build and test this operator to try out a
 - These steps are based on [Operator Framework: Getting Started](https://github.com/operator-framework/getting-started#getting-started)
   and [Creating an App Operator](https://github.com/operator-framework/operator-sdk#create-and-deploy-an-app-operator).
 
-- Repositories
-  1. <https://github.com/IBM/ibm-auditlogging-operator>
-
+- Repositories: [AuditLogging Operator](https://github.com/IBM/ibm-auditlogging-operator)
 - Set the Go environment variables.
 
   `export GOPATH=/home/<username>/go`
@@ -184,7 +182,7 @@ If, as a developer, you are looking to build and test this operator to try out a
 
 #### Operator SDK's Test Framework
 
-- [Unit Testing](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/unit-testing.md)
+- [Unit Testing](https://github.com/operator-framework/operator-sdk/blob/master/website/content/en/docs/golang/unit-testing.md)
 - [E2E Testing](https://github.com/operator-framework/operator-sdk/blob/master/website/content/en/docs/golang/e2e-tests.md)
 - To run unit tests use `make test`
 - To run e2e tests use `make test-e2e`
