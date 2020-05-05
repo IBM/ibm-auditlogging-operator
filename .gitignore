@@ -21,3 +21,4 @@ build/_test/
 bak/
 
 .DS_Store
+.vscode
