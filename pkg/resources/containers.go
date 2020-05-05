@@ -42,8 +42,8 @@ const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
 
 const fluentdConfigKey = "fluent.conf"
 const SourceConfigKey = "source.conf"
-const splunkConfigKey = "splunkHEC.conf"
-const qRadarConfigKey = "remoteSyslog.conf"
+const SplunkConfigKey = "splunkHEC.conf"
+const QRadarConfigKey = "remoteSyslog.conf"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
@@ -170,35 +170,39 @@ var sourceConfigData4 = `
         </record>
     </filter>`
 
-var splunkConfigData = `
+var splunkConfigData1 = `
 splunkHEC.conf: |-
      <match icp-audit icp-audit.**>
-        @type splunk_hec
+        @type splunk_hec`
+var splunkDefaults = `
         hec_host SPLUNK_SERVER_HOSTNAME
         hec_port SPLUNK_PORT
-        hec_token SPLUNK_HEC_TOKEN
+        hec_token SPLUNK_HEC_TOKEN`
+var splunkConfigData2 = `
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
      </match>`
 
-var qRadarConfigData = `
+var qRadarConfigData1 = `
 remoteSyslog.conf: |-
     <match icp-audit icp-audit.**>
         @type copy
         <store>
-          @type remote_syslog
-          host QRADAR_SERVER_HOSTNAME
-          port QRADAR_PORT_FOR_icp-audit
-          hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit
-          protocol tcp
-          tls true
-          ca_file /fluentd/etc/tls/qradar.crt
-          packet_size 4096
-          program fluentd
-          <format>
-            @type single_value
-            message_key message
-          </format>
+            @type remote_syslog`
+var qRadarDefaults = `
+            host QRADAR_SERVER_HOSTNAME
+            port QRADAR_PORT_FOR_icp-audit
+            hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`
+var qRadarConfigData2 = `
+            protocol tcp
+            tls true
+            ca_file /fluentd/etc/tls/qradar.crt
+            packet_size 4096
+            program fluentd
+            <format>
+                @type single_value
+                message_key message
+            </format>
         </store>
     </match>`
 

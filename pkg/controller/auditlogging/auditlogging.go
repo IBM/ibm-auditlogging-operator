@@ -484,9 +484,12 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ConfigMap")
 		return reconcile.Result{}, err
-	} else if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
+	}
+	// ConfigMap was found, check for expected values
+
+	if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
 		// Ensure default port is used
-		if result, ports := res.EqualSourceConfig(expected, found); result {
+		if result, ports := res.EqualSourceConfig(expected, found); !result {
 			reqLogger.Info("Found source config is incorrect", "Found port", ports[0], "Expected port", ports[1])
 			err = r.client.Delete(context.TODO(), found)
 			if err != nil {
@@ -496,19 +499,38 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			// Deleted - return and requeue
 			return reconcile.Result{Requeue: true}, nil
 		}
-	} else if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName ||
+	}
+	var update = false
+	if !res.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+		update = true
+	}
+	if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName ||
 		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
 		// Ensure match tags are correct
-		if result := res.EqualMatchTags(found); result {
-			reqLogger.Info("Found match tags are incorrect", "ConfigMap.Name", found.Name, "Expected tags", res.OutputPluginMatches)
-			err = r.client.Delete(context.TODO(), found)
+		if !res.EqualMatchTags(found) {
+			// Keep customer SIEM creds
+			data, err := res.BuildWithSIEMCreds(found)
 			if err != nil {
-				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+				reqLogger.Error(err, "Failed to get SIEM creds", "Name", found.Name)
 				return reconcile.Result{}, err
 			}
-			// Deleted - return and requeue
-			return reconcile.Result{Requeue: true}, nil
+			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
+				found.Data[res.SplunkConfigKey] = data
+			} else {
+				found.Data[res.QRadarConfigKey] = data
+			}
+			update = true
 		}
+	}
+	if update {
+		err = r.client.Update(context.TODO(), found)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update ConfigMap", "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		// Updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
 }
