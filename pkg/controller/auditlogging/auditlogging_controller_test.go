@@ -39,7 +39,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const journalPath = "/var/log/audit"
@@ -63,7 +62,7 @@ splunkHEC.conf: |-
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
 	// USE THIS
-	logf.SetLogger(logf.ZapLogger(true))
+	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
 	)
