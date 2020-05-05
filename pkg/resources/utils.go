@@ -17,6 +17,7 @@
 package resources
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -742,37 +743,56 @@ func EqualLabels(found map[string]string, expected map[string]string) bool {
 	return true
 }
 
-func BuildWithSIEMCreds(found *corev1.ConfigMap) (string, error) {
-	var key string
-	var creds string
+func BuildWithSIEMConfigs(found *corev1.ConfigMap) (string, error) {
 	var result string
 	var err error
+	var siemConfig string
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
-		key = SplunkConfigKey
-		reHost := regexp.MustCompile(`hec_host .*`)
-		host := reHost.FindStringSubmatch(found.Data[key])[0]
-		rePort := regexp.MustCompile(`hec_port .*`)
-		port := rePort.FindStringSubmatch(found.Data[key])[0]
-		reToken := regexp.MustCompile(`hec_token .*`)
-		token := reToken.FindStringSubmatch(found.Data[key])[0]
-		creds = yamlLine(2, host, true) + yamlLine(2, port, true) + yamlLine(2, token, false)
+		siemConfig, err = getConfig(found.Data[SplunkConfigKey])
+		if err != nil {
+			return "", err
+		}
 		ds := DataSplunk{}
-		err = yaml.Unmarshal([]byte(splunkConfigData1+"\n"+creds+splunkConfigData2), &ds)
+		err = yaml.Unmarshal([]byte(splunkConfigData1+"\n"+siemConfig+splunkConfigData2), &ds)
 		result = ds.Value
 	} else {
-		key = QRadarConfigKey
-		reHost := regexp.MustCompile(`host .*`)
-		host := reHost.FindStringSubmatch(found.Data[key])[0]
-		rePort := regexp.MustCompile(`port .*`)
-		port := rePort.FindStringSubmatch(found.Data[key])[0]
-		reHostname := regexp.MustCompile(`hostname .*`)
-		hostname := reHostname.FindStringSubmatch(found.Data[key])[0]
-		creds = yamlLine(3, host, true) + yamlLine(3, port, true) + yamlLine(3, hostname, false)
+		data := removeK8sAudit(found.Data[QRadarConfigKey])
+		siemConfig, err = getConfig(data)
+		if err != nil {
+			return "", err
+		}
 		dq := DataQRadar{}
-		err = yaml.Unmarshal([]byte(qRadarConfigData1+"\n"+creds+qRadarConfigData2), &dq)
+		err = yaml.Unmarshal([]byte(qRadarConfigData1+"\n"+siemConfig+qRadarConfigData2), &dq)
 		result = dq.Value
 	}
 	return result, err
+}
+
+func getConfig(data string) (string, error) {
+	var siemConfig string
+	// >([^]]+)< retrieves all data between match tags
+	regex := `>\n([^]]+)\n<`
+	reConfig := regexp.MustCompile(regex)
+	matches := reConfig.FindStringSubmatch(data)
+	if len(matches) < 2 {
+		return "", errors.New("output plugin config misformatted")
+	}
+	config := matches[1]
+	lines := strings.Split(config, "\n")
+	var tabs = 1
+	for i, line := range lines {
+		if i < len(lines)-1 {
+			siemConfig += yamlLine(tabs, line, true)
+		} else {
+			siemConfig += yamlLine(tabs, line, false)
+		}
+	}
+	return siemConfig, nil
+}
+
+func removeK8sAudit(data string) string {
+	// K8s auditing was deprecated in CS 3.2.4 and removed in CS 3.3
+	return strings.Split(data, "<match kube-audit>")[0]
 }
 
 func yamlLine(tabs int, line string, newline bool) string {
