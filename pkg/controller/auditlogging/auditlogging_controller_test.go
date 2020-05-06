@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/rand"
 	"math/big"
+	"os"
 	"reflect"
 	"regexp"
 	"testing"
@@ -60,6 +61,8 @@ splunkHEC.conf: |-
           # ...
         </buffer>
      </match>`
+const dummyFluentdSHA = "sha256:abc"
+const dummyPolicyControllerTag = "3.4.0"
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
@@ -69,6 +72,9 @@ func TestAuditLoggingController(t *testing.T) {
 	var (
 		name = "example-auditlogging"
 	)
+
+	os.Setenv(res.FluentdEnvVar, dummyFluentdSHA)
+	os.Setenv(res.PolicyConrtollerEnvVar, dummyPolicyControllerTag)
 
 	req := getReconcileRequest(name)
 	cr := buildAuditLogging(name)
@@ -164,8 +170,12 @@ func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reco
 	_, err = r.Reconcile(req)
 	assert.NoError(err)
 
-	// Check if Policy Controller Deployment has been created and has the correct arguments
-	getAuditPolicyController(t, r, req)
+	// Check if Policy Controller Deployment has been created
+	pc := getAuditPolicyController(t, r, req)
+	image := res.DefaultImageRegistry + res.DefaultPCImageName + ":" + dummyPolicyControllerTag
+	if pc.Spec.Template.Spec.Containers[0].Image != image {
+		t.Fatalf("Incorrect policy controller image. Found: (%s), Expected: (%s)", pc.Spec.Template.Spec.Containers[0].Image, image)
+	}
 }
 
 func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request, cr *operatorv1alpha1.AuditLogging) {
@@ -199,7 +209,11 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	assert.NoError(err)
 
 	// Check if fluentd DaemonSet is created
-	getFluentd(t, r, req)
+	ds := getFluentd(t, r, req)
+	image := res.DefaultImageRegistry + res.DefaultFluentdImageName + "@" + dummyFluentdSHA
+	if ds.Spec.Template.Spec.Containers[0].Image != image {
+		t.Fatalf("Incorrect fluentd image. Found: (%s), Expected: (%s)", ds.Spec.Template.Spec.Containers[0].Image, image)
+	}
 
 	// Create fake pods in namespace and collect their names to check against Status
 	var podLabels = res.LabelsForPodMetadata(res.FluentdName, cr.Name)

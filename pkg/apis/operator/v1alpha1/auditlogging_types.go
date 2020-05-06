@@ -36,10 +36,11 @@ type AuditLoggingSpec struct {
 type AuditLoggingSpecFluentd struct {
 	EnableAuditLoggingForwarding bool   `json:"enabled,omitempty"`
 	ImageRegistry                string `json:"imageRegistry,omitempty"`
-	ImageTag                     string `json:"imageTag,omitempty"`
-	PullPolicy                   string `json:"pullPolicy,omitempty"`
-	JournalPath                  string `json:"journalPath,omitempty"`
-	ClusterIssuer                string `json:"clusterIssuer,omitempty"`
+	// ImageTag deprecated. Define image sha or tag in operator.yaml
+	ImageTag      string `json:"imageTag,omitempty"`
+	PullPolicy    string `json:"pullPolicy,omitempty"`
+	JournalPath   string `json:"journalPath,omitempty"`
+	ClusterIssuer string `json:"clusterIssuer,omitempty"`
 }
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec

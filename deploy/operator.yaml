@@ -53,6 +53,11 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ibm-auditlogging-operator"
+            # DO NOT DELETE. Add image SHAs here. See get_image_sha.sh
+            - name: POLICY_CTRL_TAG_OR_SHA
+              value: "sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409"
+            - name: FLUENTD_TAG_OR_SHA
+              value: "sha256:d9bbc6c3f8dc0299abd0927285c40b8f61878aafaae3928340991ce0436ff854"
           resources:
             limits:
               cpu: 100m
