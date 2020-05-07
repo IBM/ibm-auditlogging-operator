@@ -263,6 +263,7 @@ func (r *ReconcileAuditLogging) reconcileClusterRole(instance *operatorv1alpha1.
 			reqLogger.Error(err, "Failed to update role", "Name", found.Name)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Updating ClusterRole", "ClusterRole.Name", found.Name)
 		// Updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
@@ -346,6 +347,7 @@ func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLo
 			reqLogger.Error(err, "Failed to update role", "Name", found.Name)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Updating Role", "Role.Name", found.Name)
 		// Updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
@@ -426,6 +428,7 @@ func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *op
 			reqLogger.Error(err, "Failed to update Deployment", "Namespace", res.InstanceNamespace, "Name", found.Name)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)
 		// Spec updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
@@ -530,6 +533,7 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			return reconcile.Result{}, err
 		}
 		// Updated - return and requeue
+		reqLogger.Info("Updating ConfigMap", "ConfigMap.Name", found.Name)
 		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
@@ -568,6 +572,7 @@ func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1al
 			reqLogger.Error(err, "Failed to update Daemonset", "Namespace", res.InstanceNamespace, "Name", found.Name)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Updating Fluentd DaemonSet", "Daemonset.Name", found.Name)
 		// Spec updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
@@ -624,6 +629,7 @@ func (r *ReconcileAuditLogging) reconcileAuditCertificate(instance *operatorv1al
 			reqLogger.Error(err, "Failed to update Certificate", "Namespace", foundCert.ObjectMeta.Namespace, "Name", foundCert.Name)
 			return reconcile.Result{}, err
 		}
+		reqLogger.Info("Updating Fluentd Certificate", "Certificate.Name", foundCert.Name)
 		// Spec updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
