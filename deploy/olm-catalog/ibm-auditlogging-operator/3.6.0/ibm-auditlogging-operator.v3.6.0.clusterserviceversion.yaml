@@ -364,7 +364,7 @@ spec:
                 - name: POLICY_CTRL_TAG_OR_SHA
                   value: 3.5.0
                 - name: FLUENTD_TAG_OR_SHA
-                  value: v1.6.2
+                  value: v1.6.2-ruby25
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
