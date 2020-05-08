@@ -39,16 +39,16 @@ echo "Pulling image $IMAGE"
 docker pull "$IMAGE" &>/dev/null
 
 # get the SHA for the image
-DIGEST="$(docker image inspect --format='{{index .RepoDigests 0}}' "$IMAGE" )"
+DIGEST="$(docker images --digests "$REGISTRY"/"$NAME" | grep "$TAG" | awk 'FNR==1{print $3}')"
 
-# DIGEST should look like this: quay.io/opencloudio/fluentd@sha256:nnnnnnnnnnnn
-IFS='@'; read -r -a ARRAY <<< "$DIGEST"; unset IFS
-if [[ ${#ARRAY[@]} -lt 2 ]]
+# DIGEST should look like this: eg: sha256:10a844ffaf7733176e927e6c4faa04c2bc4410cf4d4ef61b9ae5240aa62d1456
+if [[ $DIGEST != sha256* ]]
 then
-   echo "Cannot find SHA (@sha256:nnnnnnnnnnnn) in digest: $DIGEST"
-   exit 1
+    echo "Cannot find SHA (sha256:<DIGEST_SOME_HEX_VALUE>) in digest: $DIGEST"
+    exit 1
 fi
-SHA=${ARRAY[1]}
+
+SHA=$DIGEST
 echo "SHA=$SHA"
 
 # delete the "name" and "value" lines for the old SHA
