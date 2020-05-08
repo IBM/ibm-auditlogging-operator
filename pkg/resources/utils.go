@@ -18,6 +18,7 @@ package resources
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -259,14 +260,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 	selectorLabels := LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
 	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
-
-	if instance.Spec.PolicyController.ImageRegistry != "" {
-		imageRegistry := instance.Spec.PolicyController.ImageRegistry
-		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
-			imageRegistry += "/"
-		}
-		policyControllerMainContainer.Image = imageRegistry + defaultPCImageName + ":" + defaultPCImageTag
-	}
+	policyControllerMainContainer.Image = getImageID(instance.Spec.PolicyController.ImageRegistry, DefaultPCImageName, PolicyConrtollerEnvVar)
 
 	if instance.Spec.PolicyController.PullPolicy != "" {
 		switch instance.Spec.PolicyController.PullPolicy {
@@ -392,14 +386,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	annotations := annotationsForMetering(FluentdName)
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
-
-	if instance.Spec.Fluentd.ImageRegistry != "" {
-		imageRegistry := instance.Spec.Fluentd.ImageRegistry
-		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
-			imageRegistry += "/"
-		}
-		fluentdMainContainer.Image = imageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag
-	}
+	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
 
 	if instance.Spec.Fluentd.PullPolicy != "" {
 		switch instance.Spec.Fluentd.PullPolicy {
@@ -801,6 +788,43 @@ func yamlLine(tabs int, line string, newline bool) string {
 		return spaces + line
 	}
 	return spaces + line + "\n"
+}
+
+func getImageID(imageRegistry, imageName, envVarName string) string {
+	// determine if the image registry has been overridden by the CR
+	var imageReg = DefaultImageRegistry
+	var imageID string
+	if imageRegistry != "" {
+		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
+			imageRegistry += "/"
+		}
+		imageReg = imageRegistry
+	}
+	// determine if an image SHA or tag has been set in an env var.
+	// if not, use the default tag (mainly used during development).
+	imageTagOrSHA := os.Getenv(envVarName)
+	if len(imageTagOrSHA) > 0 {
+		// use the value from the env var to build the image ID.
+		// a SHA value looks like "sha256:nnnn".
+		// a tag value looks like "3.5.0".
+		if strings.HasPrefix(imageTagOrSHA, "sha256:") {
+			// use the SHA value
+			imageID = imageReg + imageName + "@" + imageTagOrSHA
+		} else {
+			// use the tag value
+			imageID = imageReg + imageName + ":" + imageTagOrSHA
+		}
+	} else {
+		var tag string
+		if imageName == DefaultPCImageName {
+			tag = defaultPCImageTag
+		} else {
+			tag = defaultFluentdImageTag
+		}
+		// use the default tag to build the image ID
+		imageID = imageReg + imageName + ":" + tag
+	}
+	return imageID
 }
 
 // GetPodNames returns the pod names of the array of pods passed in

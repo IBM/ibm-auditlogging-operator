@@ -49,13 +49,16 @@ const AuditPolicyControllerDeploy = "audit-policy-controller"
 const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 const defaultClusterIssuer = "cs-ca-clusterissuer"
-const defaultImageRegistry = "quay.io/opencloudio/"
-const defaultFluentdImageName = "fluentd"
+const DefaultImageRegistry = "quay.io/opencloudio/"
+const DefaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
-const defaultPCImageName = "audit-policy-controller"
+const DefaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.5.0"
 const defaultJournalPath = "/run/log/journal"
 const defaultHTTPPort = 9880
+
+const FluentdEnvVar = "FLUENTD_TAG_OR_SHA"
+const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"
 
 const OutputPluginMatches = "icp-audit icp-audit.**"
 
@@ -207,7 +210,7 @@ var qRadarConfigData2 = `
     </match>`
 
 var policyControllerMainContainer = corev1.Container{
-	Image:           defaultImageRegistry + defaultPCImageName + ":" + defaultPCImageTag,
+	Image:           DefaultImageRegistry + DefaultPCImageName + ":" + defaultPCImageTag,
 	Name:            AuditPolicyControllerDeploy,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	VolumeMounts: []corev1.VolumeMount{
@@ -254,7 +257,7 @@ var policyControllerMainContainer = corev1.Container{
 }
 
 var fluentdMainContainer = corev1.Container{
-	Image:           defaultImageRegistry + defaultFluentdImageName + ":" + defaultFluentdImageTag,
+	Image:           DefaultImageRegistry + DefaultFluentdImageName + ":" + defaultFluentdImageTag,
 	Name:            FluentdName,
 	ImagePullPolicy: corev1.PullIfNotPresent,
 	// CommonEnvVars

@@ -53,6 +53,11 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ibm-auditlogging-operator"
+            # DO NOT DELETE. Add image SHAs here. See get_image_sha.sh
+            - name: POLICY_CTRL_TAG_OR_SHA
+              value: 3.5.0
+            - name: FLUENTD_TAG_OR_SHA
+              value: v1.6.2-ruby25
           resources:
             limits:
               cpu: 100m

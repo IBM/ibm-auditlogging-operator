@@ -20,11 +20,16 @@
 BUILD_LOCALLY ?= 1
 
 # Image URL to use all building/pushing image targets;
-# Use your own docker registry and image name for dev/test by overridding the IMG and REGISTRY environment variable.
+# Use your own docker registry and image name for dev/test by overridding the IMGAGE_NAMe and IMAGE_REPO environment variable.
 # IBMDEV Set image and repo
 IMAGE_NAME ?= ibm-auditlogging-operator
 IMAGE_REPO ?= quay.io/opencloudio
 CSV_VERSION ?= 3.6.0
+
+# Set the registry and tag for the operand/operator images
+OPERAND_REGISTRY ?= $(IMAGE_REPO)
+FLUENTD_TAG ?= v1.6.2-ruby25
+POLICY_CTRL_TAG ?= 3.5.0
 
 # The namespcethat operator will be deployed in
 NAMESPACE=ibm-common-services
@@ -197,6 +202,23 @@ multiarch-image:
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
 
+############################################################
+# SHA section
+############################################################
+
+.PHONY: get-all-image-sha
+get-all-image-sha: get-fluentd-image-sha get-audit-policy-controller-image-sha
+	@echo Got SHAs for all operand images
+
+.PHONY: get-fluentd-image-sha
+get-fluentd-image-sha:
+	@echo Get SHA for fluentd:$(FLUENTD_OPERAND_TAG)
+	@common/scripts/get_image_sha.sh $(OPERAND_REGISTRY) fluentd $(FLUENTD_TAG) FLUENTD_TAG_OR_SHA
+
+.PHONY: get-audit-policy-controller-image-sha
+get-audit-policy-controller-image-sha:
+	@echo Get SHA for audit-policy-controller:$(POLICY_CTRL_TAG)
+	@common/scripts/get_image_sha.sh $(OPERAND_REGISTRY) audit-policy-controller $(POLICY_CTRL_TAG) POLICY_CTRL_TAG_OR_SHA
 
 ############################################################
 # local testing section
