@@ -10,7 +10,7 @@ Red Hat OpenShift Container Platform 4.2 or newer installed on one of the follow
 
 - Linux x86_64
 - Linux on Power (ppc64le)
-- Linux on IBM Z
+- Linux on IBM Z and LinuxONE
 
 ## Operator versions
 
