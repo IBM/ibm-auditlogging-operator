@@ -422,6 +422,7 @@ func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *op
 		return reconcile.Result{}, err
 	} else if !res.EqualDeployments(expected, found) {
 		// If spec is incorrect, update it and requeue
+		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		found.Spec = expected.Spec
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
@@ -566,6 +567,7 @@ func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1al
 		return reconcile.Result{}, err
 	} else if !res.EqualDaemonSets(expected, found) {
 		// If spec is incorrect, update it and requeue
+		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		found.Spec = expected.Spec
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
