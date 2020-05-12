@@ -628,15 +628,33 @@ func EqualCerts(expected *certmgr.Certificate, found *certmgr.Certificate) bool 
 }
 
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
-	return EqualPods(expected.Spec.Template, found.Spec.Template)
+	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+		return false
+	}
+	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+		return false
+	}
+	return true
 }
 
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
-	return EqualPods(expected.Spec.Template, found.Spec.Template)
+	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+		return false
+	}
+	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+		return false
+	}
+	return true
 }
 
 func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bool {
 	logger := log.WithValues("func", "EqualPods")
+	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+		return false
+	}
+	if !EqualAnnotations(found.ObjectMeta.Annotations, expected.ObjectMeta.Annotations) {
+		return false
+	}
 	if !reflect.DeepEqual(found.Spec.ServiceAccountName, expected.Spec.ServiceAccountName) {
 		logger.Info("ServiceAccount not equal", "Found", found.Spec.ServiceAccountName, "Expected", expected.Spec.ServiceAccountName)
 		return false
@@ -725,6 +743,15 @@ func EqualLabels(found map[string]string, expected map[string]string) bool {
 	logger := log.WithValues("func", "EqualLabels")
 	if !reflect.DeepEqual(found, expected) {
 		logger.Info("Labels not equal", "Found", found, "Expected", expected)
+		return false
+	}
+	return true
+}
+
+func EqualAnnotations(found map[string]string, expected map[string]string) bool {
+	logger := log.WithValues("func", "EqualAnnotations")
+	if !reflect.DeepEqual(found, expected) {
+		logger.Info("Annotations not equal", "Found", found, "Expected", expected)
 		return false
 	}
 	return true
