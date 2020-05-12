@@ -12,9 +12,9 @@ metadata:
           },
           "spec": {
             "fluentd": {
-              "enabled": true,
+              "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
-              "journalPath": "/var/log/journal",
+              "journalPath": "/run/log/journal",
               "pullPolicy": "IfNotPresent"
             },
             "policyController": {
