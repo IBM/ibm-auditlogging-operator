@@ -19,6 +19,7 @@ package auditlogging
 import (
 	"context"
 	"reflect"
+	"sort"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
@@ -65,6 +66,8 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	for _, pod := range podList.Items {
 		podNames = append(podNames, pod.Name)
 	}
+
+	sort.Strings(podNames)
 
 	// Update status.Nodes if needed
 	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
