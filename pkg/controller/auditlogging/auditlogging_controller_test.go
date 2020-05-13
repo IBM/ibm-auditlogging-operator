@@ -23,6 +23,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"testing"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
@@ -263,6 +264,7 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	// Get the updated AuditLogging object.
 	al := getAuditLogging(t, r, req)
 	nodes := al.Status.Nodes
+	sort.Strings(podNames)
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
 	}
