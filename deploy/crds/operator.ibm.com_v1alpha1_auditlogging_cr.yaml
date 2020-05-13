@@ -8,11 +8,13 @@ metadata:
     app.kubernetes.io/name: "common-audit-logging"
 spec:
   fluentd:
-    enabled: true
+    enabled: false
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
-    journalPath: /var/log/journal
+    journalPath: /run/log/journal
+    clusterIssuer: cs-ca-clusterissuer
   policyController:
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
     verbosity: "0"
+    frequency: "10"

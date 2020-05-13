@@ -12,15 +12,17 @@ metadata:
           },
           "spec": {
             "fluentd": {
-              "enabled": true,
+              "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
-              "journalPath": "/var/log/journal",
-              "pullPolicy": "IfNotPresent"
+              "journalPath": "/run/log/journal",
+              "pullPolicy": "IfNotPresent",
+              "clusterIssuer": "cs-ca-clusterissuer"
             },
             "policyController": {
               "imageRegistry": "quay.io/opencloudio/",
               "pullPolicy": "IfNotPresent",
-              "verbosity": "0"
+              "verbosity": "0",
+              "frequency" "10"
             }
           }
         },

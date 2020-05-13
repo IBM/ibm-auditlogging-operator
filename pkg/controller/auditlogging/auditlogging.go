@@ -602,17 +602,15 @@ func (r *ReconcileAuditLogging) reconcileAuditCertificate(instance *operatorv1al
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {
 		// Set Audit Logging instance as the owner and controller of the Certificate
-		err := controllerutil.SetControllerReference(instance, expectedCert, r.scheme)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to set owner for Certificate")
+		if err := controllerutil.SetControllerReference(instance, expectedCert, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
 		reqLogger.Info("Creating a new Fluentd Certificate", "Certificate.Namespace", expectedCert.Namespace, "Certificate.Name", expectedCert.Name)
 		err = r.client.Create(context.TODO(), expectedCert)
-		if err != nil {
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
 			reqLogger.Error(err, "Failed to create new Fluentd Certificate", "Certificate.Namespace", expectedCert.Namespace,
 				"Certificate.Name", expectedCert.Name)
 			return reconcile.Result{}, err
