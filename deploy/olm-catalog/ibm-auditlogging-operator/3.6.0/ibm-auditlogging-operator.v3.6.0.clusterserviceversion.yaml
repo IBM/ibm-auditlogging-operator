@@ -15,12 +15,14 @@ metadata:
               "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
               "journalPath": "/run/log/journal",
-              "pullPolicy": "IfNotPresent"
+              "pullPolicy": "IfNotPresent",
+              "clusterIssuer": "cs-ca-clusterissuer"
             },
             "policyController": {
               "imageRegistry": "quay.io/opencloudio/",
               "pullPolicy": "IfNotPresent",
-              "verbosity": "0"
+              "verbosity": "0",
+              "frequency" "10"
             }
           }
         },
