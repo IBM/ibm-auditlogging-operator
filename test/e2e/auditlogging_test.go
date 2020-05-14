@@ -18,7 +18,6 @@ package e2e
 import (
 	"testing"
 
-	"github.com/operator-framework/operator-sdk/pkg/test"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 
@@ -46,9 +45,9 @@ func TestAuditLoggingOperator(t *testing.T) {
 	t.Run("TestAuditLogging", testgroups.TestAuditLogging)
 }
 
-func deployOperator(t *testing.T, ctx *test.TestCtx) error {
+func deployOperator(t *testing.T, ctx *framework.TestCtx) error {
 	err := ctx.InitializeClusterResources(
-		&test.CleanupOptions{
+		&framework.CleanupOptions{
 			TestContext:   ctx,
 			Timeout:       config.CleanupTimeout,
 			RetryInterval: config.CleanupRetry,
@@ -67,7 +66,7 @@ func deployOperator(t *testing.T, ctx *test.TestCtx) error {
 
 	return e2eutil.WaitForOperatorDeployment(
 		t,
-		test.Global.KubeClient,
+		framework.Global.KubeClient,
 		namespace,
 		config.TestOperatorName,
 		1,
