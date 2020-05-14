@@ -22,7 +22,7 @@ metadata:
               "imageRegistry": "quay.io/opencloudio/",
               "pullPolicy": "IfNotPresent",
               "verbosity": "0",
-              "frequency" "10"
+              "frequency" "10",
             }
           }
         },
