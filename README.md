@@ -32,9 +32,61 @@ Before you install this operator, you need to first install the operator depende
 
 ## SecurityContextConstraints Requirements
 
-The AuditLogging Operator and Policy Controller Operand support running under the OpenShift Container Platform default restricted security context constraints.  The AuditLogging (Fluentd) Operand runs under privileged security constraints.
+The IBM certificate manager service supports running with the OpenShift Container Platform 4.3 default restricted Security Context Constraints (SCCs).
 
-For more information about the OpenShift Container Platform Security Context Constraints, see Managing Security Context Constraints.
+For more information about the OpenShift Container Platform Security Context Constraints, see [Managing Security Context Constraints](https://docs.openshift.com/container-platform/4.3/authentication/managing-security-context-constraints.html).
+
+OCP 4.3 restricted SCC:
+
+```yaml
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: false
+allowedCapabilities: null
+apiVersion: security.openshift.io/v1
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+groups:
+- system:authenticated
+kind: SecurityContextConstraints
+metadata:
+  annotations:
+    kubernetes.io/description: restricted denies access to all host features and requires
+      pods to be run with a UID, and SELinux context that are allocated to the namespace.  This
+      is the most restrictive SCC and it is used by default for authenticated users.
+  creationTimestamp: "2020-03-27T15:01:00Z"
+  generation: 1
+  name: restricted
+  resourceVersion: "6365"
+  selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/restricted
+  uid: 6a77775c-a6d8-4341-b04c-bd826a67f67e
+priority: null
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+- KILL
+- MKNOD
+- SETUID
+- SETGID
+runAsUser:
+  type: MustRunAsRange
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+users: []
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+```
 
 ## Documentation
 
