@@ -32,7 +32,7 @@ Before you install this operator, you need to first install the operator depende
 
 ## SecurityContextConstraints Requirements
 
-The IBM certificate manager service supports running with the OpenShift Container Platform 4.3 default restricted Security Context Constraints (SCCs).
+The ibm-auditlogging-operator supports running with the OpenShift Container Platform 4.3 default restricted Security Context Constraints (SCCs).
 
 For more information about the OpenShift Container Platform Security Context Constraints, see [Managing Security Context Constraints](https://docs.openshift.com/container-platform/4.3/authentication/managing-security-context-constraints.html).
 
