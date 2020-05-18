@@ -29,7 +29,7 @@ else
 fi
 
 cp -p deploy/olm-catalog/ibm-auditlogging-operator/ibm-auditlogging-operator.package.yaml bundle/
-cp -p deploy/olm-catalog/ibm-auditlogging-operator/3.6.0/*.yaml bundle/
+cp -p deploy/olm-catalog/ibm-auditlogging-operator/3.6.1/*.yaml bundle/
 
 cd bundle || exit
 zip ibm-auditlogging-metadata ./*.yaml
