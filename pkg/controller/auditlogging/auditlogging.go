@@ -571,7 +571,10 @@ func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1al
 	} else if !res.EqualDaemonSets(expected, found) {
 		// If spec is incorrect, update it and requeue
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+		// Keep hostAliases
+		temp := found.Spec.Template.Spec.HostAliases
 		found.Spec = expected.Spec
+		found.Spec.Template.Spec.HostAliases = temp
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Daemonset", "Namespace", res.InstanceNamespace, "Name", found.Name)
