@@ -16,8 +16,9 @@ Red Hat OpenShift Container Platform 4.2 or newer installed on one of the follow
 
 - 3.5.0
 - 3.6.0
+- 3.6.1
 
-  Technology Preview - Included in version 3.6.0, support for sending audit log records
+  Technology Preview - Included in version 3.6.0 and 3.6.1, support for sending audit log records
   over HTTP.
 
 ## Prerequisites
@@ -167,18 +168,9 @@ As a developer, if you want to build and test this operator to try out and learn
 
 #### Run the operator locally
 
-- `cd /home/ibmadmin/workspace/cs-operators/ibm-auditlogging-operator`
-- `oc login... --namespace=ibm-common-services`
-- `export OPERATOR_NAME=ibm-auditlogging-operator`
-- `kubectl create -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml`
-- `operator-sdk run --local`
-
-- Create a CR that is an instance of the CRD.
-  1. Edit `deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml`.
-  1. `kubectl create -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml`
-
-- Delete the CR and the associated resources that were created.
-  1. `kubectl delete auditloggings example-auditlogging`
+- `make install-local`
+- Run tests on the cluster.
+- `make uninstall-local`
 
 #### Operator SDK's Test Framework
 
