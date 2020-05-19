@@ -65,6 +65,13 @@ splunkHEC.conf: |-
 const dummyFluentdSHA = "sha256:abc"
 const dummyPolicyControllerTag = "3.4.0"
 
+var dummyHostAliases = []corev1.HostAlias{
+	{
+		IP:        "9.12.34.56",
+		Hostnames: []string{"test.fyre.ibm.com"},
+	},
+}
+
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
@@ -364,8 +371,23 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	if len(buffer) < 2 {
 		t.Fatalf("Buffer config not preserved. Found: (%s)", buffer)
 	}
+
+	// add hostaliases
+	fluentd := getFluentd(t, r, req)
+	fluentd.Spec.Template.Spec.HostAliases = dummyHostAliases
+	// trigger found != expected
+	fluentd.ObjectMeta.Labels = map[string]string{}
+	err = r.client.Update(context.TODO(), fluentd)
+	if err != nil {
+		t.Fatalf("Failed to update fluentd daemonset: (%v)", err)
+	}
 	_, err = r.Reconcile(req)
 	assert.NoError(err)
+
+	fluentd = getFluentd(t, r, req)
+	if !reflect.DeepEqual(fluentd.Spec.Template.Spec.HostAliases, dummyHostAliases) {
+		t.Fatalf("HostAliases not saved. Found: (%v). Expected: (%v)", fluentd.Spec.Template.Spec.HostAliases, dummyHostAliases)
+	}
 }
 
 func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) *operatorv1alpha1.AuditLogging {
