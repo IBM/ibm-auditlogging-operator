@@ -25,16 +25,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const OperandRBAC = "ibm-auditlogging-operand"
+// OperandServiceAccount defines the name of the operands' ServiceAccount
+const OperandServiceAccount = "ibm-auditlogging-operand"
 const rolePostfix = "-role"
 const roleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
 func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.ServiceAccount {
-	metaLabels := LabelsForMetadata(OperandRBAC)
+	metaLabels := LabelsForMetadata(OperandServiceAccount)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      OperandRBAC,
+			Name:      OperandServiceAccount,
 			Namespace: InstanceNamespace,
 			Labels:    metaLabels,
 		},
@@ -52,7 +53,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 		},
 		Subjects: []rbacv1.Subject{{
 			Kind:      "ServiceAccount",
-			Name:      OperandRBAC,
+			Name:      OperandServiceAccount,
 			Namespace: InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
@@ -134,7 +135,7 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 	return cr
 }
 
-// BuildRoleBindingForFluentd returns a RoleBinding object for fluentd
+// BuildRoleBinding returns a RoleBinding object for fluentd
 func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
@@ -146,7 +147,7 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
-			Name:      OperandRBAC,
+			Name:      OperandServiceAccount,
 			Namespace: InstanceNamespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
@@ -158,7 +159,7 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 	return rb
 }
 
-// BuildRoleForFluentd returns a Role object for fluentd
+// BuildRole returns a Role object for fluentd
 func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
@@ -179,19 +180,23 @@ func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 	return cr
 }
 
+// EqualRoles returns a Boolean
 func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
 	return !reflect.DeepEqual(found.Rules, expected.Rules)
 }
 
+// EqualClusterRoles returns a Boolean
 func EqualClusterRoles(expected *rbacv1.ClusterRole, found *rbacv1.ClusterRole) bool {
 	return !reflect.DeepEqual(found.Rules, expected.Rules)
 }
 
+// EqualRoleBindings returns a Boolean
 func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
 }
 
+// EqualClusterRoleBindings returns a Boolean
 func EqualClusterRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)

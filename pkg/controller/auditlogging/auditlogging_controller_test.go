@@ -140,7 +140,7 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 
 	// Check if ServiceAccount is created
 	foundSA := &corev1.ServiceAccount{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.OperandRBAC, Namespace: res.InstanceNamespace}, foundSA)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.OperandServiceAccount, Namespace: res.InstanceNamespace}, foundSA)
 	if err != nil {
 		t.Fatalf("get service account: (%v)", err)
 	}
