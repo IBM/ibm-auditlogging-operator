@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const defaultHTTPPort = 9880
+
 // BuildAuditService returns a Service object
 func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
 	metaLabels := LabelsForMetadata(FluentdName)

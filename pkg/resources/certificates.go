@@ -24,6 +24,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const AuditLoggingClientCertSecName = "audit-certs"
+const AuditLoggingHTTPSCertName = "fluentd-https"
+const AuditLoggingServerCertSecName = "audit-server-certs"
+const AuditLoggingCertName = "fluentd"
+const defaultClusterIssuer = "cs-ca-clusterissuer"
+
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)

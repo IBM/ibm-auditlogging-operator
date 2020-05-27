@@ -26,8 +26,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+var commonVolumes = []corev1.Volume{}
 var architectureList = []string{"amd64", "ppc64le", "s390x"}
 var seconds30 int64 = 30
+
+const FluentdDaemonSetName = "audit-logging-fluentd-ds"
+const FluentdName = "fluentd"
+
+const fluentdInput = "/fluentd/etc/source.conf"
+const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
+const splunkOutput = "/fluentd/etc/splunkHEC.conf"
+
+const defaultJournalPath = "/run/log/journal"
+
+const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 // BuildDeploymentForPolicyController returns a Deployment object
 func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging) *appsv1.Deployment {
@@ -198,6 +210,166 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 		},
 	}
 	return daemon
+}
+
+// BuildCommonVolumes returns an array of Volume objects
+func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
+	var journal = defaultJournalPath
+	if instance.Spec.Fluentd.JournalPath != "" {
+		journal = instance.Spec.Fluentd.JournalPath
+	}
+	commonVolumes := []corev1.Volume{
+		{
+			Name: "journal",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: journal,
+					Type: nil,
+				},
+			},
+		},
+		{
+			Name: FluentdConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + ConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  fluentdConfigKey,
+							Path: fluentdConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SourceConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SourceConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SourceConfigKey,
+							Path: SourceConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: QRadarConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + QRadarConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  QRadarConfigKey,
+							Path: QRadarConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SplunkConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SplunkConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SplunkConfigKey,
+							Path: SplunkConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "shared",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: AuditLoggingClientCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
+				},
+			},
+		},
+	}
+	return commonVolumes
+}
+
+// BuildCommonVolumeMounts returns an array of VolumeMount objects
+func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
+	var journal = defaultJournalPath
+	if instance.Spec.Fluentd.JournalPath != "" {
+		journal = instance.Spec.Fluentd.JournalPath
+	}
+	commonVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      FluentdConfigName,
+			MountPath: "/fluentd/etc/" + fluentdConfigKey,
+			SubPath:   fluentdConfigKey,
+		},
+		{
+			Name:      SourceConfigName,
+			MountPath: fluentdInput,
+			SubPath:   SourceConfigKey,
+		},
+		{
+			Name:      QRadarConfigName,
+			MountPath: qRadarOutput,
+			SubPath:   QRadarConfigKey,
+		},
+		{
+			Name:      SplunkConfigName,
+			MountPath: splunkOutput,
+			SubPath:   SplunkConfigKey,
+		},
+		{
+			Name:      "journal",
+			MountPath: journal,
+			ReadOnly:  true,
+		},
+		{
+			Name:      "shared",
+			MountPath: "/icp-audit",
+		},
+		{
+			Name:      "shared",
+			MountPath: "/tmp",
+		},
+		{
+			Name:      AuditLoggingClientCertSecName,
+			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      AuditLoggingServerCertSecName,
+			MountPath: "/fluentd/etc/https",
+			ReadOnly:  true,
+		},
+	}
+	return commonVolumeMounts
 }
 
 // EqualDeployments returns a Boolean

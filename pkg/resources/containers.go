@@ -23,28 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const FluentdDaemonSetName = "audit-logging-fluentd-ds"
-const AuditLoggingClientCertSecName = "audit-certs"
-const AuditLoggingHTTPSCertName = "fluentd-https"
-const AuditLoggingServerCertSecName = "audit-server-certs"
-const AuditLoggingCertName = "fluentd"
-const FluentdName = "fluentd"
-
-const fluentdInput = "/fluentd/etc/source.conf"
-const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
-const splunkOutput = "/fluentd/etc/splunkHEC.conf"
-
-const AuditPolicyControllerDeploy = "audit-policy-controller"
-const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
-
-const defaultClusterIssuer = "cs-ca-clusterissuer"
 const DefaultImageRegistry = "quay.io/opencloudio/"
 const DefaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
 const DefaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.5.0"
-const defaultJournalPath = "/run/log/journal"
-const defaultHTTPPort = 9880
 
 const FluentdEnvVar = "FLUENTD_TAG_OR_SHA"
 const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"

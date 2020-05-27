@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
+
 // BuildAuditPolicyCRD returns a CRD object
 func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
