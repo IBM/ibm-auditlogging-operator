@@ -157,7 +157,7 @@ var qRadarDefaults = `
             </format>
         </store>`
 var qRadarConfigData2 = `
-	</match>`
+    </match>`
 
 // DataSplunk defines the struct for splunk-hec-config
 type DataSplunk struct {
