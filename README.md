@@ -17,6 +17,7 @@ Red Hat OpenShift Container Platform 4.2 or newer installed on one of the follow
 - 3.5.0
 - 3.6.0
 - 3.6.1
+- 3.6.2
 
   Technology Preview - Included in version 3.6.0 and 3.6.1, support for sending audit log records
   over HTTP.
