@@ -24,7 +24,7 @@ BUILD_LOCALLY ?= 1
 # IBMDEV Set image and repo
 IMAGE_NAME ?= ibm-auditlogging-operator
 IMAGE_REPO ?= quay.io/opencloudio
-CSV_VERSION ?= 3.6.1
+CSV_VERSION ?= 3.6.2
 
 # Set the registry and tag for the operand/operator images
 OPERAND_REGISTRY ?= $(IMAGE_REPO)

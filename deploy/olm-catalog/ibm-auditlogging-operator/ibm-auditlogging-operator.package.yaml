@@ -1,7 +1,7 @@
 channels:
-- currentCSV: ibm-auditlogging-operator.v3.6.1
+- currentCSV: ibm-auditlogging-operator.v3.6.2
   name: dev
-- currentCSV: ibm-auditlogging-operator.v3.6.0
+- currentCSV: ibm-auditlogging-operator.v3.6.1
   name: beta
 - currentCSV: ibm-auditlogging-operator.v3.5.0
   name: stable-v1

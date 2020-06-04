@@ -42,8 +42,8 @@ var cpu200 = resource.NewMilliQuantity(200, resource.DecimalSI)        // 200m
 var cpu300 = resource.NewMilliQuantity(300, resource.DecimalSI)        // 300m
 var memory100 = resource.NewQuantity(100*1024*1024, resource.BinarySI) // 100Mi
 var memory150 = resource.NewQuantity(150*1024*1024, resource.BinarySI) // 150Mi
-var memory300 = resource.NewQuantity(300*1024*1024, resource.BinarySI) // 300Mi
 var memory400 = resource.NewQuantity(400*1024*1024, resource.BinarySI) // 400Mi
+var memory450 = resource.NewQuantity(450*1024*1024, resource.BinarySI) // 450Mi
 
 var commonCapabilities = corev1.Capabilities{
 	Drop: []corev1.Capability{
@@ -118,7 +118,7 @@ var policyControllerMainContainer = corev1.Container{
 	Resources: corev1.ResourceRequirements{
 		Limits: map[corev1.ResourceName]resource.Quantity{
 			corev1.ResourceCPU:    *cpu200,
-			corev1.ResourceMemory: *memory300},
+			corev1.ResourceMemory: *memory450},
 		Requests: map[corev1.ResourceName]resource.Quantity{
 			corev1.ResourceCPU:    *cpu100,
 			corev1.ResourceMemory: *memory150},
