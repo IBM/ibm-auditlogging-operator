@@ -3,7 +3,7 @@ channels:
   name: dev
 - currentCSV: ibm-auditlogging-operator.v3.6.2
   name: beta
-- currentCSV: ibm-auditlogging-operator.v3.5.0
+- currentCSV: ibm-auditlogging-operator.v3.6.2
   name: stable-v1
 defaultChannel: stable-v1
 packageName: ibm-auditlogging-operator-app
