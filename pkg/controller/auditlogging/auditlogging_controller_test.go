@@ -99,13 +99,7 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 	var err error
 	// Check if ConfigMaps are created and have data
 	foundCM := &corev1.ConfigMap{}
-	configmaps := []string{
-		res.FluentdDaemonSetName + "-" + res.ConfigName,
-		res.FluentdDaemonSetName + "-" + res.SourceConfigName,
-		res.FluentdDaemonSetName + "-" + res.SplunkConfigName,
-		res.FluentdDaemonSetName + "-" + res.QRadarConfigName,
-	}
-	for _, cm := range configmaps {
+	for _, cm := range res.FluentdConfigMaps {
 		err = r.client.Get(context.TODO(), types.NamespacedName{Name: cm, Namespace: res.InstanceNamespace}, foundCM)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)

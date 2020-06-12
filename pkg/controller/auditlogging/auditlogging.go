@@ -144,22 +144,12 @@ func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *op
 func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
-	recResult, recErr = r.reconcileConfig(instance, res.FluentdDaemonSetName+"-"+res.ConfigName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	// FIX
-	recResult, recErr = r.reconcileConfig(instance, res.FluentdDaemonSetName+"-"+res.SourceConfigName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	recResult, recErr = r.reconcileConfig(instance, res.FluentdDaemonSetName+"-"+res.SplunkConfigName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	recResult, recErr = r.reconcileConfig(instance, res.FluentdDaemonSetName+"-"+res.QRadarConfigName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
+
+	for _, cm := range res.FluentdConfigMaps {
+		recResult, recErr = r.reconcileConfig(instance, cm)
+		if recErr != nil || recResult.Requeue {
+			return recResult, recErr
+		}
 	}
 	return reconcile.Result{}, nil
 }
