@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    olm.skipRange: '>=3.5.0 <3.6.2'
+    olm.skipRange: '>=3.5.0 <3.7.0'
     alm-examples: |-
       [
         {
@@ -50,12 +50,12 @@ metadata:
     capabilities: Basic Install
     categories: Security
     certified: "false"
-    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.6.2
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.7.0
     createdAt: "2020-02-11T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     repository: https://github.com/IBM/ibm-auditlogging-operator
     support: IBM
-  name: ibm-auditlogging-operator.v3.6.2
+  name: ibm-auditlogging-operator.v3.7.0
   namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
@@ -368,7 +368,7 @@ spec:
                   value: "sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409"
                 - name: FLUENTD_TAG_OR_SHA
                   value: "sha256:d9bbc6c3f8dc0299abd0927285c40b8f61878aafaae3928340991ce0436ff854"
-                image: quay.io/opencloudio/ibm-auditlogging-operator@sha256:500afc7e93fef68d2d9b346956805979f5a87b1618e0c082fae4d69101149832
+                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources:
@@ -413,5 +413,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-auditlogging-operator.v3.6.1
-  version: 3.6.2
+  replaces: ibm-auditlogging-operator.v3.6.2
+  version: 3.7.0
