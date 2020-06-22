@@ -95,11 +95,9 @@ func getImageID(imageRegistry, imageName, envVarName string) string {
 
 // GetPodNames returns the pod names of the array of pods passed in
 func GetPodNames(pods []corev1.Pod) []string {
-	reqLogger := log.WithValues("func", "getPodNames")
 	var podNames []string
 	for _, pod := range pods {
 		podNames = append(podNames, pod.Name)
-		reqLogger.Info("CS??? pod name=" + pod.Name)
 	}
 	return podNames
 }

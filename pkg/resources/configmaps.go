@@ -18,6 +18,7 @@ package resources
 
 import (
 	"errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
+const EnableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
 
 // ConfigName defines the name of the config configmap
 const ConfigName = "config"
@@ -45,7 +46,8 @@ const QRadarConfigName = "remote-syslog-config"
 // SplunkConfigName defines the name of the splunk-hec-config configmap
 const SplunkConfigName = "splunk-hec-config"
 
-const fluentdConfigKey = "fluent.conf"
+// FluentdConfigKey defines the key for the config configmap
+const FluentdConfigKey = "fluent.conf"
 
 // SourceConfigKey defines the key for the source-config configmap
 const SourceConfigKey = "source.conf"
@@ -177,13 +179,13 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	var err error
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
-		dataMap[enableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
+		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
 		type Data struct {
 			Value string `yaml:"fluent.conf"`
 		}
 		d := Data{}
 		err = yaml.Unmarshal([]byte(fluentdMainConfigData), &d)
-		dataMap[fluentdConfigKey] = d.Value
+		dataMap[FluentdConfigKey] = d.Value
 	case FluentdDaemonSetName + "-" + SourceConfigName:
 		type DataS struct {
 			Value string `yaml:"source.conf"`
@@ -322,4 +324,14 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 	match = re.FindStringSubmatch(expected.Data[SourceConfigKey])
 	expectedPort := strings.Split(match[0], " ")[1]
 	return (foundPort == expectedPort), append(ports, expectedPort)
+}
+
+// EqualConfig returns a Boolean
+func EqualConfig(found *corev1.ConfigMap, expected *corev1.ConfigMap, key string) bool {
+	logger := log.WithValues("func", "EqualConfig")
+	if !reflect.DeepEqual(found.Data[key], expected.Data[key]) {
+		logger.Info("Found config is incorrect", "Key", key)
+		return false
+	}
+	return true
 }

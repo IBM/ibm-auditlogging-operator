@@ -265,10 +265,8 @@ func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r Rec
 }
 
 func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
-	policyController := getAuditPolicyController(t, r)
 	reconcileResources(t, r, req, true)
-	fluentd := getFluentd(t, r)
-	reconcileResources(t, r, req, false)
+	policyController := getAuditPolicyController(t, r)
 	var found = false
 	for _, arg := range policyController.Spec.Template.Spec.Containers[0].Args {
 		if arg == "--v="+verbosity {
@@ -279,6 +277,8 @@ func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Requ
 	if !found {
 		t.Fatalf("Policy controller not updated with verbosity: (%s)", verbosity)
 	}
+	reconcileResources(t, r, req, false)
+	fluentd := getFluentd(t, r)
 	found = false
 	for _, v := range fluentd.Spec.Template.Spec.Containers[0].VolumeMounts {
 		if v.MountPath == journalPath {
