@@ -76,6 +76,7 @@ var dummyHostAliases = []corev1.HostAlias{
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
 	// USE THIS
+	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
@@ -259,10 +260,10 @@ func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r Rec
 }
 
 func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
-	policyController := getAuditPolicyController(t, r)
 	reconcileResources(t, r, req, true)
-	fluentd := getFluentd(t, r)
+	policyController := getAuditPolicyController(t, r)
 	reconcileResources(t, r, req, false)
+	fluentd := getFluentd(t, r)
 	var found = false
 	for _, arg := range policyController.Spec.Template.Spec.Containers[0].Args {
 		if arg == "--v="+verbosity {
