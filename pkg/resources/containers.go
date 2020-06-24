@@ -17,50 +17,20 @@
 package resources
 
 import (
+	"reflect"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const FluentdDaemonSetName = "audit-logging-fluentd-ds"
-const AuditLoggingClientCertSecName = "audit-certs"
-const AuditLoggingHTTPSCertName = "fluentd-https"
-const AuditLoggingServerCertSecName = "audit-server-certs"
-const AuditLoggingCertName = "fluentd"
-const FluentdName = "fluentd"
-
-const ConfigName = "config"
-const FluentdConfigName = "main-config"
-const SourceConfigName = "source-config"
-const QRadarConfigName = "remote-syslog-config"
-const SplunkConfigName = "splunk-hec-config"
-
-const fluentdInput = "/fluentd/etc/source.conf"
-const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
-const splunkOutput = "/fluentd/etc/splunkHEC.conf"
-
-const enableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
-
-const fluentdConfigKey = "fluent.conf"
-const SourceConfigKey = "source.conf"
-const SplunkConfigKey = "splunkHEC.conf"
-const QRadarConfigKey = "remoteSyslog.conf"
-
-const AuditPolicyControllerDeploy = "audit-policy-controller"
-const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
-
-const defaultClusterIssuer = "cs-ca-clusterissuer"
 const DefaultImageRegistry = "quay.io/opencloudio/"
 const DefaultFluentdImageName = "fluentd"
 const defaultFluentdImageTag = "v1.6.2-ruby25"
 const DefaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.5.0"
-const defaultJournalPath = "/run/log/journal"
-const defaultHTTPPort = 9880
 
 const FluentdEnvVar = "FLUENTD_TAG_OR_SHA"
 const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"
-
-const OutputPluginMatches = "icp-audit icp-audit.**"
 
 var trueVar = true
 var falseVar = false
@@ -108,106 +78,6 @@ var commonTolerations = []corev1.Toleration{
 		Operator: corev1.TolerationOpExists,
 	},
 }
-
-var fluentdMainConfigData = `
-fluent.conf: |-
-  # Input plugins (Supports Systemd and HTTP)
-  @include /fluentd/etc/source.conf
-
-  # Output plugins (Only use one output plugin conf file at a time. Comment or remove other files)
-  #@include /fluentd/etc/remoteSyslog.conf
-  #@include /fluentd/etc/splunkHEC.conf
-`
-
-var sourceConfigData1 = `
-source.conf: |-
-    <source>
-        @type systemd
-        @id input_systemd_icp
-        @log_level info
-        tag icp-audit
-        path `
-var sourceConfigData2 = `
-        matches '[{ "SYSLOG_IDENTIFIER": "icp-audit" }]'
-        read_from_head true
-        <storage>
-          @type local
-          persistent true
-          path /icp-audit
-        </storage>
-        <entry>
-          fields_strip_underscores true
-          fields_lowercase true
-        </entry>
-    </source>`
-var sourceConfigData3 = `
-    <source>
-        @type http
-        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
-        port `
-var sourceConfigData4 = `
-        bind 0.0.0.0
-        body_size_limit 32m
-        keepalive_timeout 10s
-        <transport tls>
-          ca_path /fluentd/etc/https/ca.crt
-          cert_path /fluentd/etc/https/tls.crt
-          private_key_path /fluentd/etc/https/tls.key
-        </transport>
-        <parse>
-          @type json
-        </parse>
-    </source>
-    <filter icp-audit>
-        @type parser
-        format json
-        key_name message
-        reserve_data true
-    </filter>
-    <filter icp-audit.*>
-        @type record_transformer
-        enable_ruby true
-        <record>
-          tag ${tag}
-          message ${record.to_json}
-        </record>
-    </filter>`
-
-var splunkConfigData1 = `
-splunkHEC.conf: |-
-    <match icp-audit icp-audit.**>`
-var splunkDefaults = `
-        @type splunk_hec
-        hec_host SPLUNK_SERVER_HOSTNAME
-        hec_port SPLUNK_PORT
-        hec_token SPLUNK_HEC_TOKEN
-        ca_file /fluentd/etc/tls/splunkCA.pem
-        source ${tag}`
-var splunkConfigData2 = `
-    </match>`
-
-var qRadarConfigData1 = `
-remoteSyslog.conf: |-
-    <match icp-audit icp-audit.**>`
-var qRadarDefaults = `
-        @type copy
-        <store>
-            @type remote_syslog
-            host QRADAR_SERVER_HOSTNAME
-            port QRADAR_PORT_FOR_icp-audit
-            hostname QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit
-            protocol tcp
-            tls true
-            ca_file /fluentd/etc/tls/qradar.crt
-            packet_size 4096
-            program fluentd
-            <format>
-                @type single_value
-                message_key message
-            </format>
-        </store>`
-var qRadarConfigData2 = `
-    </match>`
 
 var policyControllerMainContainer = corev1.Container{
 	Image:           DefaultImageRegistry + DefaultPCImageName + ":" + defaultPCImageTag,
@@ -320,4 +190,42 @@ var fluentdMainContainer = corev1.Container{
 			corev1.ResourceMemory: *memory100},
 	},
 	SecurityContext: &fluentdSecurityContext,
+}
+
+// EqualContainers returns a Boolean
+func EqualContainers(expected corev1.Container, found corev1.Container) bool {
+	logger := log.WithValues("func", "EqualContainers")
+	if !reflect.DeepEqual(found.Name, expected.Name) {
+		logger.Info("Container name not equal", "Found", found.Name, "Expected", expected.Name)
+		return false
+	}
+	if !reflect.DeepEqual(found.Image, expected.Image) {
+		logger.Info("Image not equal", "Found", found.Image, "Expected", expected.Image)
+		return false
+	}
+	if !reflect.DeepEqual(found.ImagePullPolicy, expected.ImagePullPolicy) {
+		logger.Info("ImagePullPolicy not equal", "Found", found.ImagePullPolicy, "Expected", expected.ImagePullPolicy)
+		return false
+	}
+	if !reflect.DeepEqual(found.VolumeMounts, expected.VolumeMounts) {
+		logger.Info("VolumeMounts not equal", "Found", found.VolumeMounts, "Expected", expected.VolumeMounts)
+		return false
+	}
+	if !reflect.DeepEqual(found.SecurityContext, expected.SecurityContext) {
+		logger.Info("SecurityContext not equal", "Found", found.SecurityContext, "Expected", expected.SecurityContext)
+		return false
+	}
+	if !reflect.DeepEqual(found.Ports, expected.Ports) {
+		logger.Info("Ports not equal", "Found", found.Ports, "Expected", expected.Ports)
+		return false
+	}
+	if !reflect.DeepEqual(found.Args, expected.Args) {
+		logger.Info("Args not equal", "Found", found.Args, "Expected", expected.Args)
+		return false
+	}
+	if !reflect.DeepEqual(found.Env, expected.Env) {
+		logger.Info("Env not equal", "Found", found.Env, "Expected", expected.Env)
+		return false
+	}
+	return true
 }

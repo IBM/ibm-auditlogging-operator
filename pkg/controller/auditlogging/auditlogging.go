@@ -519,7 +519,7 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			// Keep customer SIEM configs
 			data, err := res.BuildWithSIEMConfigs(found)
 			if err != nil {
-				reqLogger.Error(err, "Failed to get SIEM configs", "Name", found.Name)
+				reqLogger.Error(err, "Failed to get SIEM configs", "Name", found.Name, "Found output config", data)
 				return reconcile.Result{}, err
 			}
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
