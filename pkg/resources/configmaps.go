@@ -244,7 +244,7 @@ func getConfig(data string) (string, error) {
 	reConfig := regexp.MustCompile(regex)
 	matches := reConfig.FindStringSubmatch(data)
 	if len(matches) < 2 {
-		return "", errors.New("output plugin config misformatted")
+		return data, errors.New("output plugin config misformatted")
 	}
 	config := matches[1]
 	lines := strings.Split(config, "\n")
@@ -280,7 +280,7 @@ func BuildWithSIEMConfigs(found *corev1.ConfigMap) (string, error) {
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
 		siemConfig, err = getConfig(found.Data[SplunkConfigKey])
 		if err != nil {
-			return "", err
+			return siemConfig, err
 		}
 		ds := DataSplunk{}
 		err = yaml.Unmarshal([]byte(splunkConfigData1+"\n"+siemConfig+splunkConfigData2), &ds)
@@ -289,7 +289,7 @@ func BuildWithSIEMConfigs(found *corev1.ConfigMap) (string, error) {
 		data := removeK8sAudit(found.Data[QRadarConfigKey])
 		siemConfig, err = getConfig(data)
 		if err != nil {
-			return "", err
+			return siemConfig, err
 		}
 		dq := DataQRadar{}
 		err = yaml.Unmarshal([]byte(qRadarConfigData1+"\n"+siemConfig+qRadarConfigData2), &dq)
