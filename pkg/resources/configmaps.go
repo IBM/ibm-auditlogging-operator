@@ -183,6 +183,9 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		}
 		d := Data{}
 		err = yaml.Unmarshal([]byte(fluentdMainConfigData), &d)
+		if err != nil {
+			break
+		}
 		dataMap[fluentdConfigKey] = d.Value
 	case FluentdDaemonSetName + "-" + SourceConfigName:
 		type DataS struct {
@@ -198,17 +201,23 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		p := strconv.Itoa(defaultHTTPPort)
 		result += sourceConfigData3 + p + sourceConfigData4
 		err = yaml.Unmarshal([]byte(result), &ds)
+		if err != nil {
+			break
+		}
 		dataMap[SourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
 		dsplunk := DataSplunk{}
 		err = yaml.Unmarshal([]byte(splunkConfigData1+splunkDefaults+splunkConfigData2), &dsplunk)
 		if err != nil {
-			reqLogger.Error(err, "Failed to unmarshall data for "+name)
+			break
 		}
 		dataMap[SplunkConfigKey] = dsplunk.Value
 	case FluentdDaemonSetName + "-" + QRadarConfigName:
 		dq := DataQRadar{}
 		err = yaml.Unmarshal([]byte(qRadarConfigData1+qRadarDefaults+qRadarConfigData2), &dq)
+		if err != nil {
+			break
+		}
 		dataMap[QRadarConfigKey] = dq.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
