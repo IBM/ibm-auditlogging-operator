@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -185,27 +186,26 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		return reconcile.Result{}, err
 	}
 	// ConfigMap was found, check for expected values
-
-	if configName == res.FluentdDaemonSetName+"-"+res.SourceConfigName {
-		// Ensure default port is used
-		if result, ports := res.EqualSourceConfig(expected, found); !result {
-			reqLogger.Info("Found source config is incorrect", "Found port", ports[0], "Expected port", ports[1])
-			err = r.client.Delete(context.TODO(), found)
-			if err != nil {
-				reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
-				return reconcile.Result{}, err
-			}
-			// Deleted - return and requeue
-			return reconcile.Result{Requeue: true}, nil
-		}
-	}
 	var update = false
 	if !res.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		update = true
 	}
-	if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName ||
-		configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
+	switch configName {
+	case res.FluentdDaemonSetName + "-" + res.ConfigName:
+		if !res.EqualConfig(found, expected, res.EnableAuditLogForwardKey) {
+			found.Data[res.EnableAuditLogForwardKey] = expected.Data[res.EnableAuditLogForwardKey]
+			update = true
+		}
+	case res.FluentdDaemonSetName + "-" + res.SourceConfigName:
+		if !res.EqualConfig(found, expected, res.SourceConfigKey) {
+			found.Data[res.SourceConfigKey] = expected.Data[res.SourceConfigKey]
+			update = true
+		}
+	case res.FluentdDaemonSetName + "-" + res.SplunkConfigName:
+		reqLogger.Info("Checking output configs")
+		fallthrough
+	case res.FluentdDaemonSetName + "-" + res.QRadarConfigName:
 		// Ensure match tags are correct
 		if !res.EqualMatchTags(found) {
 			// Keep customer SIEM configs
@@ -221,6 +221,8 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			}
 			update = true
 		}
+	default:
+		reqLogger.Info("Unknown ConfigMap name", "Name", configName)
 	}
 	if update {
 		err = r.client.Update(context.TODO(), found)
@@ -230,9 +232,36 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		}
 		// Updated - return and requeue
 		reqLogger.Info("Updating ConfigMap", "ConfigMap.Name", found.Name)
+		err = restartFluentdPods(r, instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to restart fluentd pods")
+		}
 		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
+}
+
+func restartFluentdPods(r *ReconcileAuditLogging, instance *operatorv1alpha1.AuditLogging) error {
+	reqLogger := log.WithValues("func", "restartFluentdPods")
+	podList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(res.InstanceNamespace),
+		client.MatchingLabels(res.LabelsForSelector(res.FluentdName, instance.Name)),
+	}
+	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
+		reqLogger.Error(err, "Failed to list pods")
+		return err
+	}
+	for _, pod := range podList.Items {
+		p := pod
+		err := r.client.Delete(context.TODO(), &p)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete pod", "Pod.Name", pod.Name)
+			return err
+		}
+	}
+	reqLogger.Info("Restarted pods", "Pods", res.GetPodNames(podList.Items))
+	return nil
 }
 
 func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {

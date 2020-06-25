@@ -237,8 +237,8 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  fluentdConfigKey,
-							Path: fluentdConfigKey,
+							Key:  FluentdConfigKey,
+							Path: FluentdConfigKey,
 						},
 					},
 				},
@@ -327,8 +327,8 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 	commonVolumeMounts := []corev1.VolumeMount{
 		{
 			Name:      FluentdConfigName,
-			MountPath: "/fluentd/etc/" + fluentdConfigKey,
-			SubPath:   fluentdConfigKey,
+			MountPath: "/fluentd/etc/" + FluentdConfigKey,
+			SubPath:   FluentdConfigKey,
 		},
 		{
 			Name:      SourceConfigName,

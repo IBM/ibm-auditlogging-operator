@@ -133,13 +133,13 @@ var fluentdMainContainer = corev1.Container{
 	// CommonEnvVars
 	Env: []corev1.EnvVar{
 		{
-			Name: enableAuditLogForwardKey,
+			Name: EnableAuditLogForwardKey,
 			ValueFrom: &corev1.EnvVarSource{
 				ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: FluentdDaemonSetName + "-" + ConfigName,
 					},
-					Key: enableAuditLogForwardKey,
+					Key: EnableAuditLogForwardKey,
 				},
 			},
 		},
