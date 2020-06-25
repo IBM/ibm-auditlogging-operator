@@ -19,6 +19,7 @@ package auditlogging
 import (
 	"context"
 	"reflect"
+	"sort"
 	"time"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
@@ -146,85 +147,78 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	var recResult reconcile.Result
 	var recErr error
 
-	// Reconcile the expected configmaps
-	recResult, recErr = r.reconcileAuditConfigMaps(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
+	reconcilers := []func(*operatorv1alpha1.AuditLogging) (reconcile.Result, error){
+		r.reconcileAuditConfigMaps,
+		r.reconcileAuditCerts,
+		r.reconcileServiceAccount,
+		r.reconcileClusterRole,
+		r.reconcileClusterRoleBinding,
+		r.reconcileAuditPolicyCRD,
+		r.reconcilePolicyControllerDeployment,
+		r.reconcileRole,
+		r.reconcileRoleBinding,
+		r.reconcileService,
+		r.reconcileFluentdDaemonSet,
+		r.updateStatus,
 	}
-
-	// Reconcile the expected cert
-	recResult, recErr = r.reconcileAuditCerts(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected ServiceAccount for operands
-	recResult, recErr = r.reconcileServiceAccount(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected Role
-	recResult, recErr = r.reconcileClusterRole(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected RoleBinding
-	recResult, recErr = r.reconcileClusterRoleBinding(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the AuditPolicy CRD
-	recResult, recErr = r.reconcileAuditPolicyCRD(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected bridge deployment
-	recResult, recErr = r.reconcilePolicyControllerDeployment(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected Role
-	recResult, recErr = r.reconcileRole(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected RoleBinding
-	recResult, recErr = r.reconcileRoleBinding(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected Service
-	recResult, recErr = r.reconcileService(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
-	// Reconcile the expected daemonset
-	recResult, recErr = r.reconcileFluentdDaemonSet(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
+	for _, rec := range reconcilers {
+		recResult, recErr = rec(instance)
+		if recErr != nil || recResult.Requeue {
+			return recResult, recErr
+		}
 	}
 
 	// Prior to version 3.6, audit-logging used two separate service accounts.
 	// Delete service accounts if they were leftover from a previous version.
 	r.checkOldServiceAccounts(instance)
 
-	// Reconcile the expected Status
-	recResult, recErr = r.updateStatus(instance)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
 
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Namespace", res.InstanceNamespace, "Name", instance.Name)
+
+	podList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(res.InstanceNamespace),
+		client.MatchingLabels(res.LabelsForSelector(res.FluentdName, instance.Name)),
+	}
+	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
+		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
+		return reconcile.Result{}, err
+	}
+	podNames := []string{}
+	for _, pod := range podList.Items {
+		podNames = append(podNames, pod.Name)
+	}
+
+	// Get audit-policy-controller pod too
+	listOpts = []client.ListOption{
+		client.InNamespace(res.InstanceNamespace),
+		client.MatchingLabels(res.LabelsForSelector(res.AuditPolicyControllerDeploy, instance.Name)),
+	}
+	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
+		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
+		return reconcile.Result{}, err
+	}
+	for _, pod := range podList.Items {
+		podNames = append(podNames, pod.Name)
+	}
+
+	sort.Strings(podNames)
+
+	// Update status.Nodes if needed
+	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
+		instance.Status.Nodes = podNames
+		reqLogger.Info("Updating Audit Logging status", "Name", instance.Name)
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 	return reconcile.Result{}, nil
 }

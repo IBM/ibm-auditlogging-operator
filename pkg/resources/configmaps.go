@@ -159,6 +159,14 @@ var qRadarDefaults = `
 var qRadarConfigData2 = `
     </match>`
 
+// FluentdConfigMaps defines the names of the fluentd configmaps
+var FluentdConfigMaps = []string{
+	FluentdDaemonSetName + "-" + ConfigName,
+	FluentdDaemonSetName + "-" + SourceConfigName,
+	FluentdDaemonSetName + "-" + SplunkConfigName,
+	FluentdDaemonSetName + "-" + QRadarConfigName,
+}
+
 // DataSplunk defines the struct for splunk-hec-config
 type DataSplunk struct {
 	Value string `yaml:"splunkHEC.conf"`
