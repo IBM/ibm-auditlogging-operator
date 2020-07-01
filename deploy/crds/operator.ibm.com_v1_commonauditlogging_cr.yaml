@@ -1,0 +1,13 @@
+apiVersion: operator.ibm.com/v1
+kind: CommonAuditLogging
+metadata:
+  name: example-commonauditlogging
+  labels:
+    app.kubernetes.io/instance: "common-audit-logging"     
+    app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
+    app.kubernetes.io/name: "common-audit-logging"
+spec:
+  enabled: true
+  imageRegistry: quay.io/opencloudio/
+  pullPolicy: IfNotPresent
+  clusterIssuer: cs-ca-clusterissuer

@@ -31,12 +31,12 @@ const rolePostfix = "-role"
 const roleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
-func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.ServiceAccount {
+func BuildServiceAccount(namespace string) *corev1.ServiceAccount {
 	metaLabels := LabelsForMetadata(OperandServiceAccount)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      OperandServiceAccount,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 	}
@@ -136,19 +136,19 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 }
 
 // BuildRoleBinding returns a RoleBinding object for fluentd
-func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + roleBindingPostfix,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      OperandServiceAccount,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -160,12 +160,12 @@ func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBindi
 }
 
 // BuildRole returns a Role object for fluentd
-func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
+func BuildRole(namespace string) *rbacv1.Role {
 	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName + rolePostfix,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{

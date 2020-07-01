@@ -1,0 +1,115 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: commonauditloggings.operator.ibm.com
+spec:
+  group: operator.ibm.com
+  names:
+    kind: CommonAuditLogging
+    listKind: CommonAuditLoggingList
+    plural: commonauditloggings
+    singular: commonauditlogging
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: CommonAuditLogging is the Schema for the commonauditloggings API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CommonAuditLoggingSpec defines the desired state of CommonAuditLogging
+          properties:
+            clusterIssuer:
+              type: string
+            enabled:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              type: boolean
+            imageRegistry:
+              type: string
+            output:
+              description: CommonAuditLoggingSpecOutput defines the configurations
+                for forwarding audit logs to Splunk or QRadar
+              properties:
+                hostAlias:
+                  items:
+                    description: CommonAuditLoggingSpecHostAlias defines the host
+                      alias for an SIEM
+                    properties:
+                      hostIP:
+                        type: string
+                      hostname:
+                        type: string
+                    required:
+                    - hostIP
+                    - hostname
+                    type: object
+                  type: array
+                qradar:
+                  description: CommonAuditLoggingSpecQRadar defines the configurations
+                    for forwarding audit logs to QRadar
+                  properties:
+                    host:
+                      type: string
+                    hostname:
+                      type: string
+                    port:
+                      type: integer
+                  required:
+                  - host
+                  - hostname
+                  - port
+                  type: object
+                splunk:
+                  description: CommonAuditLoggingSpecSplunk defines the configurations
+                    for forwarding audit logs to Splunk
+                  properties:
+                    host:
+                      type: string
+                    port:
+                      type: integer
+                    token:
+                      type: string
+                  required:
+                  - host
+                  - port
+                  - token
+                  type: object
+              type: object
+            pullPolicy:
+              type: string
+          type: object
+        status:
+          description: CommonAuditLoggingStatus defines the observed state of CommonAuditLogging
+          properties:
+            nodes:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              items:
+                type: string
+              type: array
+          required:
+          - nodes
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true

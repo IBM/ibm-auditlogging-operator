@@ -33,7 +33,7 @@ import (
 
 func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("cr.Name", cr.Name)
-	expectedRes := res.BuildServiceAccount(cr)
+	expectedRes := res.BuildServiceAccount(res.InstanceNamespace)
 	// Set CR instance as the owner and controller
 	err := controllerutil.SetControllerReference(cr, expectedRes, r.scheme)
 	if err != nil {
@@ -198,7 +198,7 @@ func (r *ReconcileAuditLogging) reconcileClusterRoleBinding(instance *operatorv1
 
 func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Role.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRole(instance)
+	expected := res.BuildRole(res.InstanceNamespace)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
@@ -242,7 +242,7 @@ func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLo
 
 func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("RoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRoleBinding(instance)
+	expected := res.BuildRoleBinding(res.InstanceNamespace)
 	found := &rbacv1.RoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)

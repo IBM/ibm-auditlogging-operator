@@ -19,7 +19,6 @@ package resources
 import (
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,7 +30,7 @@ const AuditLoggingCertName = "fluentd"
 const defaultClusterIssuer = "cs-ca-clusterissuer"
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
+func BuildCertsForAuditLogging(namespace string, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
@@ -43,7 +42,7 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Spec: certmgr.CertificateSpec{
