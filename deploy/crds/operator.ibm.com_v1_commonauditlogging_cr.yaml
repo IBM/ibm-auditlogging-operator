@@ -11,3 +11,12 @@ spec:
   imageRegistry: quay.io/opencloudio/
   pullPolicy: IfNotPresent
   clusterIssuer: cs-ca-clusterissuer
+  output:
+    splunk:
+      host: master
+      port: 8088
+      token: abc-123
+    hostAliases:
+    - hostIP: 9.12.34.56
+      hostnames:
+      - test.fyre.ibm.com

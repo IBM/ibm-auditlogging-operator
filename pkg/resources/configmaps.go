@@ -71,16 +71,17 @@ fluent.conf: |-
   #@include /fluentd/etc/remoteSyslog.conf
   #@include /fluentd/etc/splunkHEC.conf
 `
-
-var sourceConfigData1 = `
+var sourceConfigDataKey = `
 source.conf: |-
+`
+var sourceConfigDataSystemd1 = `
     <source>
         @type systemd
         @id input_systemd_icp
         @log_level info
         tag icp-audit
         path `
-var sourceConfigData2 = `
+var sourceConfigDataSystemd2 = `
         matches '[{ "SYSLOG_IDENTIFIER": "icp-audit" }]'
         read_from_head true
         <storage>
@@ -237,9 +238,11 @@ var regexHostname = regexp.MustCompile(hostname + `.*`)
 var qradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
 var splunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
 
+const matchTags = `<match icp-audit icp-audit.**>`
+
 // BuildFluentdConfigMap returns a ConfigMap object
 func BuildFluentdConfigMap(instance *operatorv1.CommonAuditLogging, name string) (*corev1.ConfigMap, error) {
-	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
+	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Namespace, "ConfigMap.Name", name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	dataMap := make(map[string]string)
 	var err error
@@ -253,6 +256,9 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAuditLogging, name string)
 		d := Data{}
 		data = buildFluentdConfig(instance)
 		err = yaml.Unmarshal([]byte(data), &d)
+		if err != nil {
+			break
+		}
 		dataMap[FluentdConfigKey] = d.Value
 	case FluentdDaemonSetName + "-" + SourceConfigName:
 		type DataS struct {
@@ -261,21 +267,27 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAuditLogging, name string)
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP
+		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP
 		err = yaml.Unmarshal([]byte(result), &ds)
+		if err != nil {
+			break
+		}
 		dataMap[SourceConfigKey] = ds.Value
 	case FluentdDaemonSetName + "-" + SplunkConfigName:
 		dsplunk := DataSplunk{}
 		data = buildFluentdSplunkConfig(instance)
 		err = yaml.Unmarshal([]byte(data), &dsplunk)
 		if err != nil {
-			reqLogger.Error(err, "Failed to unmarshall data for "+name)
+			break
 		}
 		dataMap[SplunkConfigKey] = dsplunk.Value
 	case FluentdDaemonSetName + "-" + QRadarConfigName:
 		dq := DataQRadar{}
 		data = buildFluentdQRadarConfig(instance)
 		err = yaml.Unmarshal([]byte(data), &dq)
+		if err != nil {
+			break
+		}
 		dataMap[QRadarConfigKey] = dq.Value
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
@@ -287,7 +299,7 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAuditLogging, name string)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: InstanceNamespace,
+			Namespace: instance.Namespace,
 			Labels:    metaLabels,
 		},
 		Data: dataMap,
@@ -299,7 +311,8 @@ func buildFluentdConfig(instance *operatorv1.CommonAuditLogging) string {
 	var result = fluentdMainConfigV1Data
 	if instance.Spec.Output.Splunk != (operatorv1.CommonAuditLoggingSpecSplunk{}) {
 		result += yamlLine(1, splunkPlugin, true)
-	} else if instance.Spec.Output.QRadar != (operatorv1.CommonAuditLoggingSpecQRadar{}) {
+	}
+	if instance.Spec.Output.QRadar != (operatorv1.CommonAuditLoggingSpecQRadar{}) {
 		result += yamlLine(1, qradarPlugin, true)
 	}
 	return result
@@ -403,6 +416,18 @@ func EqualSIEMConfig(instance *operatorv1.CommonAuditLogging, found *corev1.Conf
 	return true
 }
 
+// UpdateMatchTags returns a String
+func UpdateMatchTags(found *corev1.ConfigMap) string {
+	var data string
+	re := regexp.MustCompile(`<match.*>`)
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		data = found.Data[SplunkConfigKey]
+	} else {
+		data = found.Data[QRadarConfigKey]
+	}
+	return re.ReplaceAllString(removeK8sAudit(data), matchTags)
+}
+
 // BuildConfigMap returns a ConfigMap object
 func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", InstanceNamespace, "ConfigMap.Name", name)
@@ -426,12 +451,13 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"source.conf"`
 		}
 		ds := DataS{}
-		var result string
+		var result = sourceConfigDataKey + sourceConfigDataSystemd1
 		if instance.Spec.Fluentd.JournalPath != "" {
-			result = sourceConfigData1 + instance.Spec.Fluentd.JournalPath + sourceConfigData2
+			result += instance.Spec.Fluentd.JournalPath
 		} else {
-			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
+			result += defaultJournalPath
 		}
+		result += sourceConfigDataSystemd2
 		p := strconv.Itoa(defaultHTTPPort)
 		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterJournal + filterHTTP
 		err = yaml.Unmarshal([]byte(result), &ds)

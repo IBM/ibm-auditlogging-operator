@@ -45,18 +45,20 @@ spec:
               description: CommonAuditLoggingSpecOutput defines the configurations
                 for forwarding audit logs to Splunk or QRadar
               properties:
-                hostAlias:
+                hostAliases:
                   items:
-                    description: CommonAuditLoggingSpecHostAlias defines the host
+                    description: CommonAuditLoggingSpecHostAliases defines the host
                       alias for an SIEM
                     properties:
                       hostIP:
                         type: string
-                      hostname:
-                        type: string
+                      hostnames:
+                        items:
+                          type: string
+                        type: array
                     required:
                     - hostIP
-                    - hostname
+                    - hostnames
                     type: object
                   type: array
                 qradar:
@@ -92,6 +94,31 @@ spec:
               type: object
             pullPolicy:
               type: string
+            replicas:
+              type: integer
+            resources:
+              description: CommonAuditLoggingSpecResources defines the resources for
+                the fluentd deployment
+              properties:
+                limits:
+                  description: CommonAuditLoggingSpecRequirements defines cpu and
+                    memory
+                  properties:
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                  type: object
+                requests:
+                  description: CommonAuditLoggingSpecRequirements defines cpu and
+                    memory
+                  properties:
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                  type: object
+              type: object
           type: object
         status:
           description: CommonAuditLoggingStatus defines the observed state of CommonAuditLogging

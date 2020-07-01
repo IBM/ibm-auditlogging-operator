@@ -125,6 +125,10 @@ func (r *ReconcileCommonAuditLogging) reconcileConfig(instance *operatorv1.Commo
 			found.Data[res.EnableAuditLogForwardKey] = expected.Data[res.EnableAuditLogForwardKey]
 			update = true
 		}
+		if !res.EqualConfig(found, expected, res.FluentdConfigKey) {
+			found.Data[res.FluentdConfigKey] = expected.Data[res.FluentdConfigKey]
+			update = true
+		}
 	case res.FluentdDaemonSetName + "-" + res.SourceConfigName:
 		if !res.EqualConfig(found, expected, res.SourceConfigKey) {
 			found.Data[res.SourceConfigKey] = expected.Data[res.SourceConfigKey]
@@ -136,12 +140,16 @@ func (r *ReconcileCommonAuditLogging) reconcileConfig(instance *operatorv1.Commo
 	case res.FluentdDaemonSetName + "-" + res.QRadarConfigName:
 		// Ensure match tags are correct
 		if !res.EqualMatchTags(found) {
-			// Keep customer SIEM configs
-			data, err := res.BuildWithSIEMConfigs(found)
-			if err != nil {
-				reqLogger.Error(err, "Failed to get SIEM configs", "Name", found.Name, "Found output config", data)
-				return reconcile.Result{}, err
+			data := res.UpdateMatchTags(found)
+			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
+				found.Data[res.SplunkConfigKey] = data
+			} else {
+				found.Data[res.QRadarConfigKey] = data
 			}
+			update = true
+		}
+		if !res.EqualSIEMConfig(instance, found) {
+			data := res.UpdateSIEMConfig(instance, found)
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
 				found.Data[res.SplunkConfigKey] = data
 			} else {
@@ -220,10 +228,7 @@ func (r *ReconcileCommonAuditLogging) reconcileFluentdDeployment(instance *opera
 	} else if !res.EqualDeployments(expected, found) {
 		// If spec is incorrect, update it and requeue
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
-		// Keep hostAliases
-		temp := found.Spec.Template.Spec.HostAliases
 		found.Spec = expected.Spec
-		found.Spec.Template.Spec.HostAliases = temp
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Deployment", "Namespace", instance.Namespace, "Name", found.Name)

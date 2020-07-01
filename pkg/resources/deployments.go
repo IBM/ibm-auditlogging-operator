@@ -43,7 +43,7 @@ const defaultJournalPath = "/run/log/journal"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
-// BuildDeploymentForPolicyController returns a Deployment object
+// BuildDeploymentForFluentd returns a Deployment object
 func BuildDeploymentForFluentd(instance *operatorv1.CommonAuditLogging) *appsv1.Deployment {
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
@@ -57,7 +57,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAuditLogging) *appsv1.
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDeploymentName,
-			Namespace: InstanceNamespace,
+			Namespace: instance.Namespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -101,11 +101,13 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAuditLogging) *appsv1.
 		},
 	}
 
-	var hostAliases = []corev1.HostAlias{}
-	for _, hostAlias := range instance.Spec.Output.HostAliases {
-		hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: []string{hostAlias.Hostname}})
+	if len(instance.Spec.Output.HostAliases) > 0 {
+		var hostAliases = []corev1.HostAlias{}
+		for _, hostAlias := range instance.Spec.Output.HostAliases {
+			hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
+		}
+		deploy.Spec.Template.Spec.HostAliases = hostAliases
 	}
-	deploy.Spec.Template.Spec.HostAliases = hostAliases
 
 	return deploy
 }
@@ -580,12 +582,34 @@ func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bo
 		logger.Info("ServiceAccount not equal", "Found", found.Spec.ServiceAccountName, "Expected", expected.Spec.ServiceAccountName)
 		return false
 	}
+	if !equalHostAliases(found.Spec.HostAliases, expected.Spec.HostAliases) {
+		logger.Info("HostAliases not equal", "Found", found.Spec.HostAliases, "Expected", expected.Spec.HostAliases)
+		return false
+	}
 	if len(found.Spec.Containers) != len(expected.Spec.Containers) {
 		logger.Info("Number of containers not equal", "Found", len(found.Spec.Containers), "Expected", len(expected.Spec.Containers))
 		return false
 	}
 	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0]) {
 		return false
+	}
+	return true
+}
+
+func equalHostAliases(found []corev1.HostAlias, expected []corev1.HostAlias) bool {
+	if (found == nil) != (expected == nil) {
+		return false
+	}
+	if len(found) != len(expected) {
+		return false
+	}
+	for i := range found {
+		if found[i].IP != expected[i].IP {
+			return false
+		}
+		if !reflect.DeepEqual(found[i].Hostnames, expected[i].Hostnames) {
+			return false
+		}
 	}
 	return true
 }

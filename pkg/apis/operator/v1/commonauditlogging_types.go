@@ -28,18 +28,32 @@ type CommonAuditLoggingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	EnableAuditLoggingForwarding bool                         `json:"enabled,omitempty"`
-	ImageRegistry                string                       `json:"imageRegistry,omitempty"`
-	PullPolicy                   string                       `json:"pullPolicy,omitempty"`
-	ClusterIssuer                string                       `json:"clusterIssuer,omitempty"`
-	Output                       CommonAuditLoggingSpecOutput `json:"output,omitempty"`
+	EnableAuditLoggingForwarding bool                            `json:"enabled,omitempty"`
+	ImageRegistry                string                          `json:"imageRegistry,omitempty"`
+	PullPolicy                   string                          `json:"pullPolicy,omitempty"`
+	ClusterIssuer                string                          `json:"clusterIssuer,omitempty"`
+	Replicas                     int                             `json:"replicas,omitempty"`
+	Resources                    CommonAuditLoggingSpecResources `json:"resources,omitempty"`
+	Output                       CommonAuditLoggingSpecOutput    `json:"output,omitempty"`
+}
+
+// CommonAuditLoggingSpecResources defines the resources for the fluentd deployment
+type CommonAuditLoggingSpecResources struct {
+	Requests CommonAuditLoggingSpecRequirements `json:"requests,omitempty"`
+	Limits   CommonAuditLoggingSpecRequirements `json:"limits,omitempty"`
+}
+
+// CommonAuditLoggingSpecRequirements defines cpu and memory
+type CommonAuditLoggingSpecRequirements struct {
+	CPU    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
 }
 
 // CommonAuditLoggingSpecOutput defines the configurations for forwarding audit logs to Splunk or QRadar
 type CommonAuditLoggingSpecOutput struct {
-	Splunk      CommonAuditLoggingSpecSplunk      `json:"splunk,omitempty"`
-	QRadar      CommonAuditLoggingSpecQRadar      `json:"qradar,omitempty"`
-	HostAliases []CommonAuditLoggingSpecHostAlias `json:"hostAlias,omitempty"`
+	Splunk      CommonAuditLoggingSpecSplunk        `json:"splunk,omitempty"`
+	QRadar      CommonAuditLoggingSpecQRadar        `json:"qradar,omitempty"`
+	HostAliases []CommonAuditLoggingSpecHostAliases `json:"hostAliases,omitempty"`
 }
 
 // CommonAuditLoggingSpecSplunk defines the configurations for forwarding audit logs to Splunk
@@ -56,10 +70,10 @@ type CommonAuditLoggingSpecQRadar struct {
 	Hostname string `json:"hostname"`
 }
 
-// CommonAuditLoggingSpecHostAlias defines the host alias for an SIEM
-type CommonAuditLoggingSpecHostAlias struct {
-	HostIP   string `json:"hostIP"`
-	Hostname string `json:"hostname"`
+// CommonAuditLoggingSpecHostAliases defines the host alias for an SIEM
+type CommonAuditLoggingSpecHostAliases struct {
+	HostIP    string   `json:"hostIP"`
+	Hostnames []string `json:"hostnames"`
 }
 
 // CommonAuditLoggingStatus defines the observed state of CommonAuditLogging
