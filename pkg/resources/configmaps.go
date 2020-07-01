@@ -597,7 +597,7 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 func EqualConfig(found *corev1.ConfigMap, expected *corev1.ConfigMap, key string) bool {
 	logger := log.WithValues("func", "EqualConfig")
 	if !reflect.DeepEqual(found.Data[key], expected.Data[key]) {
-		logger.Info("Found config is incorrect", "Key", key)
+		logger.Info("Found config is incorrect", "Key", key, "Found", found.Data[key], "Expected", expected.Data[key])
 		return false
 	}
 	return true
