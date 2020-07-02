@@ -27,6 +27,7 @@ import (
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -73,7 +74,7 @@ func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.Audi
 
 func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("CRD.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildAuditPolicyCRD(instance)
+	expected := res.BuildAuditPolicyCRD()
 	found := &extv1beta1.CustomResourceDefinition{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
 	if err != nil && errors.IsNotFound(err) {
@@ -81,14 +82,13 @@ func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1alph
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Creating a new Audit Policy CRD", "CRD.Namespace", expected.Namespace, "CRD.Name", expected.Name)
+		reqLogger.Info("Creating a new Audit Policy CRD", "CRD.Name", expected.Name)
 		err = r.client.Create(context.TODO(), expected)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new CRD", "CRD.Namespace", expected.Namespace,
-				"CRD.Name", expected.Name)
+			reqLogger.Error(err, "Failed to create new CRD", "CRD.Name", expected.Name)
 			return reconcile.Result{}, err
 		}
 		// CRD created successfully - return and requeue
@@ -100,44 +100,31 @@ func (r *ReconcileAuditLogging) reconcileAuditPolicyCRD(instance *operatorv1alph
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcilePolicyControllerDeployment(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Deployment.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-
-	expected := res.BuildDeploymentForPolicyController(instance)
-	found := &appsv1.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Deployment
-		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Creating a new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace, "Deployment.Name", expected.Name)
-		err = r.client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace,
-				"Deployment.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// Deployment created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get Deployment")
-		return reconcile.Result{}, err
-	} else if !res.EqualDeployments(expected, found) {
-		// If spec is incorrect, update it and requeue
-		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
-		found.Spec = expected.Spec
-		err = r.client.Update(context.TODO(), found)
+func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	// Policy controller container has been moved to operator pod in 3.7, remove redundant deployment
+	reqLogger := log.WithValues("func", "removeOldPolicyControllerDeploy", "instance.Name", instance.Name)
+	policyDeploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy,
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the deployment exists
+	err := r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, policyDeploy)
+	if err == nil {
+		// found deployment so delete it
+		err := r.client.Delete(context.TODO(), policyDeploy)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Deployment", "Namespace", res.InstanceNamespace, "Name", found.Name)
+			reqLogger.Error(err, "Failed to delete old policy controller deployment")
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)
-		// Spec updated - return and requeue
+		reqLogger.Info("Deleted old policy controller deployment")
 		return reconcile.Result{Requeue: true}, nil
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old policy controller deployment")
+		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }

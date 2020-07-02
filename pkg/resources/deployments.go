@@ -44,7 +44,7 @@ const defaultJournalPath = "/run/log/journal"
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 // BuildDeploymentForFluentd returns a Deployment object
-func BuildDeploymentForFluentd(instance *operatorv1.CommonAuditLogging) *appsv1.Deployment {
+func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)

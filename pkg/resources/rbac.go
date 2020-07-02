@@ -27,8 +27,8 @@ import (
 
 // OperandServiceAccount defines the name of the operands' ServiceAccount
 const OperandServiceAccount = "ibm-auditlogging-operand"
-const rolePostfix = "-role"
-const roleBindingPostfix = "-rolebinding"
+const RolePostfix = "-role"
+const RoleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
 func BuildServiceAccount(namespace string) *corev1.ServiceAccount {
@@ -48,7 +48,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	rb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + roleBindingPostfix,
+			Name:   AuditPolicyControllerDeploy + RoleBindingPostfix,
 			Labels: metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
@@ -59,7 +59,7 @@ func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.Cl
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     AuditPolicyControllerDeploy + rolePostfix,
+			Name:     AuditPolicyControllerDeploy + RolePostfix,
 		},
 	}
 	return rb
@@ -70,7 +70,7 @@ func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRo
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + rolePostfix,
+			Name:   AuditPolicyControllerDeploy + RolePostfix,
 			Labels: metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -140,7 +140,7 @@ func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + roleBindingPostfix,
+			Name:      FluentdDaemonSetName + RoleBindingPostfix,
 			Namespace: namespace,
 			Labels:    metaLabels,
 		},
@@ -153,7 +153,7 @@ func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     FluentdDaemonSetName + rolePostfix,
+			Name:     FluentdDaemonSetName + RolePostfix,
 		},
 	}
 	return rb
@@ -164,7 +164,7 @@ func BuildRole(namespace string) *rbacv1.Role {
 	metaLabels := LabelsForMetadata(FluentdName)
 	cr := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + rolePostfix,
+			Name:      FluentdDaemonSetName + RolePostfix,
 			Namespace: namespace,
 			Labels:    metaLabels,
 		},

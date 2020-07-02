@@ -71,16 +71,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Deployments and requeue the owner AuditLogging
 	secondaryResourceTypes := []runtime.Object{
+		&extv1beta1.CustomResourceDefinition{},
 		&appsv1.DaemonSet{},
-		&appsv1.Deployment{},
 		&corev1.ConfigMap{},
 		&certmgr.Certificate{},
 		&corev1.ServiceAccount{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&extv1beta1.CustomResourceDefinition{},
 		&corev1.Service{},
 	}
 	for _, restype := range secondaryResourceTypes {
@@ -146,15 +143,12 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 
 	var recResult reconcile.Result
 	var recErr error
-
 	reconcilers := []func(*operatorv1alpha1.AuditLogging) (reconcile.Result, error){
+		r.removeOldPolicyControllerDeploy,
+		r.reconcileAuditPolicyCRD,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
 		r.reconcileServiceAccount,
-		r.reconcileClusterRole,
-		r.reconcileClusterRoleBinding,
-		r.reconcileAuditPolicyCRD,
-		r.reconcilePolicyControllerDeployment,
 		r.reconcileRole,
 		r.reconcileRoleBinding,
 		r.reconcileService,
@@ -170,7 +164,8 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 
 	// Prior to version 3.6, audit-logging used two separate service accounts.
 	// Delete service accounts if they were leftover from a previous version.
-	r.checkOldServiceAccounts(instance)
+	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
+	r.removeOldRBAC(instance)
 
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.

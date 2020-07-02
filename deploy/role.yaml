@@ -88,7 +88,7 @@ rules:
   - operator.ibm.com
   resources:
   - '*'
-  - commonauditloggings
+  - commonaudits
   verbs:
   - create
   - delete

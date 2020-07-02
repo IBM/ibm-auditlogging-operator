@@ -102,6 +102,27 @@ func GetPodNames(pods []corev1.Pod) []string {
 	return podNames
 }
 
+// ContainsString returns a Boolean
+func ContainsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+//RemoveString returns a Boolean
+func RemoveString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
+}
+
 //IBMDEV
 func LabelsForMetadata(name string) map[string]string {
 	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": AuditLoggingComponentName,

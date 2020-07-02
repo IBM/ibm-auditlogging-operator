@@ -66,8 +66,8 @@ func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.Aud
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alpha1.AuditLogging) {
-	reqLogger := log.WithValues("func", "checkOldServiceAccounts", "instance.Name", instance.Name)
+func (r *ReconcileAuditLogging) removeOldRBAC(instance *operatorv1alpha1.AuditLogging) {
+	reqLogger := log.WithValues("func", "removeOldRBAC", "instance.Name", instance.Name)
 	fluentdSA := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      res.FluentdDaemonSetName + "-svcacct",
@@ -110,6 +110,50 @@ func (r *ReconcileAuditLogging) checkOldServiceAccounts(instance *operatorv1alph
 	} else if !errors.IsNotFound(err) {
 		// if err is NotFound do nothing, else print an error msg
 		reqLogger.Error(err, "Failed to get old policy controller service account")
+	}
+
+	cr := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy + res.RolePostfix,
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err = r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RolePostfix, Namespace: res.InstanceNamespace}, cr)
+	if err == nil {
+		// found clusterrole so delete it
+		err := r.client.Delete(context.TODO(), cr)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old policy controller clusterrole")
+		} else {
+			reqLogger.Info("Deleted old policy controller clusterrole")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old policy controller clusterrole")
+	}
+
+	crb := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy + res.RoleBindingPostfix,
+			Namespace: res.InstanceNamespace,
+		},
+	}
+	// check if the service account exists
+	err = r.client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RoleBindingPostfix, Namespace: res.InstanceNamespace}, crb)
+	if err == nil {
+		// found clusterrole so delete it
+		err := r.client.Delete(context.TODO(), crb)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete old policy controller clusterrolebinding")
+		} else {
+			reqLogger.Info("Deleted old policy controller clusterrolebinding")
+		}
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		reqLogger.Error(err, "Failed to get old policy controller clusterrolebinding")
 	}
 }
 
