@@ -35,7 +35,6 @@ const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
-var replicas = int32(1)
 var cpu25 = resource.NewMilliQuantity(25, resource.DecimalSI)          // 25m
 var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
 var cpu200 = resource.NewMilliQuantity(200, resource.DecimalSI)        // 200m

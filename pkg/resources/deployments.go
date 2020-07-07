@@ -23,6 +23,7 @@ import (
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -30,6 +31,7 @@ import (
 var commonVolumes = []corev1.Volume{}
 var architectureList = []string{"amd64", "ppc64le", "s390x"}
 var seconds30 int64 = 30
+var defaultReplicas = int32(1)
 
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
 const FluentdDeploymentName = "audit-logging-fluentd"
@@ -51,8 +53,18 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	annotations := annotationsForMetering(FluentdName)
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
-	fluentdMainContainer.Image = getImageID(instance.Spec.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
-	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PullPolicy)
+	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
+	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
+
+	var replicas = defaultReplicas
+	if instance.Spec.Replicas > 0 {
+		replicas = int32(instance.Spec.Replicas)
+	}
+
+	if instance.Spec.Fluentd.Resources != (operatorv1.CommonAuditSpecResources{}) {
+		fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources.Requests.CPU, instance.Spec.Fluentd.Resources.Requests.Memory,
+			instance.Spec.Fluentd.Resources.Limits.CPU, instance.Spec.Fluentd.Resources.Limits.Memory)
+	}
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -101,9 +113,9 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 		},
 	}
 
-	if len(instance.Spec.Output.HostAliases) > 0 {
+	if len(instance.Spec.Fluentd.Output.HostAliases) > 0 {
 		var hostAliases = []corev1.HostAlias{}
-		for _, hostAlias := range instance.Spec.Output.HostAliases {
+		for _, hostAlias := range instance.Spec.Fluentd.Output.HostAliases {
 			hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
 		}
 		deploy.Spec.Template.Spec.HostAliases = hostAliases
@@ -273,7 +285,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 			Selector: &metav1.LabelSelector{
 				MatchLabels: selectorLabels,
 			},
-			Replicas: &replicas,
+			Replicas: &defaultReplicas,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels:      podLabels,
@@ -545,6 +557,23 @@ func buildDaemonsetVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev
 		},
 	}
 	return commonVolumeMounts
+}
+
+func buildResources(cpuRequest string, memRequest string, cpuLimit string, memLimit string) corev1.ResourceRequirements {
+	var cpuReq = resource.MustParse(cpuRequest)
+	var memReq = resource.MustParse(memRequest)
+	var cpuLim = resource.MustParse(cpuLimit)
+	var memLim = resource.MustParse(memLimit)
+	return corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    cpuLim,
+			corev1.ResourceMemory: memLim,
+		},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    cpuReq,
+			corev1.ResourceMemory: memReq,
+		},
+	}
 }
 
 // EqualDeployments returns a Boolean

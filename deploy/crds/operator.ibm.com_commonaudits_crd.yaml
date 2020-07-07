@@ -32,93 +32,106 @@ spec:
           description: CommonAuditSpec defines the desired state of CommonAudit
           properties:
             clusterIssuer:
-              type: string
-            enabled:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
-              type: boolean
-            imageRegistry:
               type: string
-            output:
-              description: CommonAuditSpecOutput defines the configurations
-                for forwarding audit logs to Splunk or QRadar
+            fluentd:
+              description: CommonAuditSpecFluentd defines the desired state of Fluentd
               properties:
-                hostAliases:
-                  items:
-                    description: CommonAuditSpecHostAliases defines the host
-                      alias for an SIEM
-                    properties:
-                      hostIP:
-                        type: string
-                      hostnames:
-                        items:
+                enabled:
+                  type: boolean
+                imageRegistry:
+                  type: string
+                output:
+                  description: CommonAuditSpecOutput defines the configurations for
+                    forwarding audit logs to Splunk or QRadar
+                  properties:
+                    hostAliases:
+                      items:
+                        description: CommonAuditSpecHostAliases defines the host alias
+                          for an SIEM
+                        properties:
+                          hostIP:
+                            type: string
+                          hostnames:
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - hostIP
+                        - hostnames
+                        type: object
+                      type: array
+                    qradar:
+                      description: CommonAuditSpecQRadar defines the configurations
+                        for forwarding audit logs to QRadar
+                      properties:
+                        host:
                           type: string
-                        type: array
-                    required:
-                    - hostIP
-                    - hostnames
-                    type: object
-                  type: array
-                qradar:
-                  description: CommonAuditSpecQRadar defines the configurations
-                    for forwarding audit logs to QRadar
-                  properties:
-                    host:
-                      type: string
-                    hostname:
-                      type: string
-                    port:
-                      type: integer
-                  required:
-                  - host
-                  - hostname
-                  - port
+                        hostname:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - host
+                      - hostname
+                      - port
+                      type: object
+                    splunk:
+                      description: CommonAuditSpecSplunk defines the configurations
+                        for forwarding audit logs to Splunk
+                      properties:
+                        host:
+                          type: string
+                        port:
+                          type: integer
+                        token:
+                          type: string
+                      required:
+                      - host
+                      - port
+                      - token
+                      type: object
                   type: object
-                splunk:
-                  description: CommonAuditSpecSplunk defines the configurations
-                    for forwarding audit logs to Splunk
+                pullPolicy:
+                  type: string
+                resources:
+                  description: CommonAuditSpecResources defines the resources for
+                    the fluentd deployment
                   properties:
-                    host:
-                      type: string
-                    port:
-                      type: integer
-                    token:
-                      type: string
+                    limits:
+                      description: CommonAuditSpecRequirements defines cpu and memory
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      required:
+                      - cpu
+                      - memory
+                      type: object
+                    requests:
+                      description: CommonAuditSpecRequirements defines cpu and memory
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      required:
+                      - cpu
+                      - memory
+                      type: object
                   required:
-                  - host
-                  - port
-                  - token
+                  - limits
+                  - requests
                   type: object
               type: object
-            pullPolicy:
-              type: string
             replicas:
               type: integer
-            resources:
-              description: CommonAuditSpecResources defines the resources for
-                the fluentd deployment
-              properties:
-                limits:
-                  description: CommonAuditSpecRequirements defines cpu and
-                    memory
-                  properties:
-                    cpu:
-                      type: string
-                    memory:
-                      type: string
-                  type: object
-                requests:
-                  description: CommonAuditSpecRequirements defines cpu and
-                    memory
-                  properties:
-                    cpu:
-                      type: string
-                    memory:
-                      type: string
-                  type: object
-              type: object
+            size:
+              type: string
           type: object
         status:
           description: CommonAuditStatus defines the observed state of CommonAudit

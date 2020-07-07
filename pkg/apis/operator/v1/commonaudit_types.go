@@ -28,25 +28,31 @@ type CommonAuditSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	ClusterIssuer string                 `json:"clusterIssuer,omitempty"`
+	Replicas      int                    `json:"replicas,omitempty"`
+	Size          string                 `json:"size,omitempty"`
+	Fluentd       CommonAuditSpecFluentd `json:"fluentd,omitempty"`
+}
+
+// CommonAuditSpecFluentd defines the desired state of Fluentd
+type CommonAuditSpecFluentd struct {
 	EnableAuditLoggingForwarding bool                     `json:"enabled,omitempty"`
 	ImageRegistry                string                   `json:"imageRegistry,omitempty"`
 	PullPolicy                   string                   `json:"pullPolicy,omitempty"`
-	ClusterIssuer                string                   `json:"clusterIssuer,omitempty"`
-	Replicas                     int                      `json:"replicas,omitempty"`
 	Resources                    CommonAuditSpecResources `json:"resources,omitempty"`
 	Output                       CommonAuditSpecOutput    `json:"output,omitempty"`
 }
 
 // CommonAuditSpecResources defines the resources for the fluentd deployment
 type CommonAuditSpecResources struct {
-	Requests CommonAuditSpecRequirements `json:"requests,omitempty"`
-	Limits   CommonAuditSpecRequirements `json:"limits,omitempty"`
+	Requests CommonAuditSpecRequirements `json:"requests"`
+	Limits   CommonAuditSpecRequirements `json:"limits"`
 }
 
 // CommonAuditSpecRequirements defines cpu and memory
 type CommonAuditSpecRequirements struct {
-	CPU    string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
+	CPU    string `json:"cpu"`
+	Memory string `json:"memory"`
 }
 
 // CommonAuditSpecOutput defines the configurations for forwarding audit logs to Splunk or QRadar
