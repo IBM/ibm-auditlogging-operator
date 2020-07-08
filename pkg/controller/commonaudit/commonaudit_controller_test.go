@@ -43,7 +43,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const dummyHost = "master"
@@ -80,7 +79,7 @@ var replicas = 3
 func TestCommonAuditController(t *testing.T) {
 	// USE THIS
 	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	logf.SetLogger(logf.ZapLogger(true))
+	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-commonaudit"
 	)
@@ -204,7 +203,6 @@ func checkFluentdConfig(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 }
 
 func updateAuditLoggingCR(al *operatorv1.CommonAudit, t *testing.T, r ReconcileCommonAudit, req reconcile.Request) {
-	// al.Spec.Fluentd.JournalPath = journalPath
 	al.Spec.Fluentd.Output.Splunk.Host = dummyHost
 	al.Spec.Fluentd.Output.Splunk.Token = dummyToken
 	al.Spec.Fluentd.Output.Splunk.Port, _ = strconv.Atoi(dummyPort)
@@ -291,15 +289,6 @@ func getAuditLogging(t *testing.T, r ReconcileCommonAudit, req reconcile.Request
 		t.Fatalf("get commonaudit: (%v)", err)
 	}
 	return al
-}
-
-func getAuditPolicyController(t *testing.T, r ReconcileCommonAudit, cr *operatorv1.CommonAudit) *appsv1.Deployment {
-	foundDep := &appsv1.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: cr.Namespace}, foundDep)
-	if err != nil {
-		t.Fatalf("get deployment: (%v)", err)
-	}
-	return foundDep
 }
 
 func getFluentd(t *testing.T, r ReconcileCommonAudit, cr *operatorv1.CommonAudit) *appsv1.Deployment {

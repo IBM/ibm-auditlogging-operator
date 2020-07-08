@@ -41,11 +41,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const journalPath = "/var/log/audit"
-const verbosity = "10"
 const numPods = 3
 const dummyHost = "hec_host master"
 const dummyPort = "hec_port 8088"
@@ -78,7 +76,7 @@ var dummyHostAliases = []corev1.HostAlias{
 func TestAuditLoggingController(t *testing.T) {
 	// USE THIS
 	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	logf.SetLogger(logf.ZapLogger(true))
+	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
 	)
