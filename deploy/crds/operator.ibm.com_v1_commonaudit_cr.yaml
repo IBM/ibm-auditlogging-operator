@@ -18,12 +18,3 @@ spec:
       limits:
         cpu: 500m
         memory: 600Mi
-    output:
-      splunk:
-        host: master
-        port: 8088
-        token: abc-123
-      hostAliases:
-      - hostIP: 9.12.34.56
-        hostnames:
-        - test.fyre.ibm.com

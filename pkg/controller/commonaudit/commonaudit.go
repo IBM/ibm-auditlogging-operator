@@ -126,6 +126,7 @@ func (r *ReconcileCommonAudit) reconcileConfig(instance *operatorv1.CommonAudit,
 			found.Data[res.EnableAuditLogForwardKey] = expected.Data[res.EnableAuditLogForwardKey]
 			update = true
 		}
+		// Fix so that cp4d can add inputs
 		if !res.EqualConfig(found, expected, res.FluentdConfigKey) {
 			found.Data[res.FluentdConfigKey] = expected.Data[res.FluentdConfigKey]
 			update = true

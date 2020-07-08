@@ -27,7 +27,7 @@ const AuditLoggingClientCertSecName = "audit-certs"
 const AuditLoggingHTTPSCertName = "fluentd-https"
 const AuditLoggingServerCertSecName = "audit-server-certs"
 const AuditLoggingCertName = "fluentd"
-const defaultClusterIssuer = "cs-ca-clusterissuer"
+const DefaultClusterIssuer = "cs-ca-clusterissuer"
 
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(namespace string, issuer string, name string) *certmgr.Certificate {
@@ -36,7 +36,7 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 	if issuer != "" {
 		clusterIssuer = issuer
 	} else {
-		clusterIssuer = defaultClusterIssuer
+		clusterIssuer = DefaultClusterIssuer
 	}
 
 	certificate := &certmgr.Certificate{

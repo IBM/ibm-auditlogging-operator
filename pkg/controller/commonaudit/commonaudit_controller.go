@@ -29,7 +29,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,7 +75,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner CommonAudit
 	secondaryResourceTypes := []runtime.Object{
-		&extv1beta1.CustomResourceDefinition{},
 		&appsv1.Deployment{},
 		&corev1.ConfigMap{},
 		&certmgr.Certificate{},
@@ -150,7 +148,6 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 	var recErr error
 
 	reconcilers := []func(*operatorv1.CommonAudit) (reconcile.Result, error){
-		r.reconcileAuditPolicyCRD,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
 		r.reconcileServiceAccount,
