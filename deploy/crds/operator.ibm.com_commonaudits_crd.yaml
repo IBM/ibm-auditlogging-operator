@@ -3,9 +3,9 @@ kind: CustomResourceDefinition
 metadata:
   name: commonaudits.operator.ibm.com
   labels:
-      app.kubernetes.io/instance: "common-audit-logging"     
-      app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
-      app.kubernetes.io/name: "common-audit-logging"
+    app.kubernetes.io/instance: "common-audit-logging"
+    app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
+    app.kubernetes.io/name: "common-audit-logging"
 spec:
   group: operator.ibm.com
   names:
@@ -101,6 +101,8 @@ spec:
                   type: object
                 pullPolicy:
                   type: string
+                replicas:
+                  type: integer
                 resources:
                   description: CommonAuditSpecResources defines the resources for
                     the fluentd deployment
@@ -132,8 +134,6 @@ spec:
                   - requests
                   type: object
               type: object
-            replicas:
-              type: integer
             size:
               type: string
           type: object

@@ -29,7 +29,6 @@ type CommonAuditSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	ClusterIssuer string                 `json:"clusterIssuer,omitempty"`
-	Replicas      int                    `json:"replicas,omitempty"`
 	Size          string                 `json:"size,omitempty"`
 	Fluentd       CommonAuditSpecFluentd `json:"fluentd,omitempty"`
 }
@@ -39,6 +38,7 @@ type CommonAuditSpecFluentd struct {
 	EnableAuditLoggingForwarding bool                     `json:"enabled,omitempty"`
 	ImageRegistry                string                   `json:"imageRegistry,omitempty"`
 	PullPolicy                   string                   `json:"pullPolicy,omitempty"`
+	Replicas                     int                      `json:"replicas,omitempty"`
 	Resources                    CommonAuditSpecResources `json:"resources,omitempty"`
 	Output                       CommonAuditSpecOutput    `json:"output,omitempty"`
 }

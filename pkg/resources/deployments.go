@@ -57,8 +57,8 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 
 	var replicas = defaultReplicas
-	if instance.Spec.Replicas > 0 {
-		replicas = int32(instance.Spec.Replicas)
+	if instance.Spec.Fluentd.Replicas > 0 {
+		replicas = int32(instance.Spec.Fluentd.Replicas)
 	}
 
 	if instance.Spec.Fluentd.Resources != (operatorv1.CommonAuditSpecResources{}) {

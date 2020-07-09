@@ -60,6 +60,26 @@ metadata:
               "verbosity": "0"
             }
           }
+        },
+        {
+          "apiVersion": "audit.policies.ibm.com/v1alpha1",
+          "kind": "AuditPolicy",
+          "metadata": {
+            "labels": {
+                "app.kubernetes.io/instance": "common-audit-logging",
+                "app.kubernetes.io/managed-by": "ibm-auditlogging-operator",
+                "app.kubernetes.io/name": "common-audit-logging"
+            },
+            "name": "example-auditpolicy"
+          },
+          "spec": {
+            "namespaceSelector": {
+              "include": [
+                "ibm-common-services"
+              ]
+            },
+            "remediationAction": "inform"
+          }
         }
       ]
     capabilities: Basic Install
@@ -76,7 +96,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: AuditLogging is the Schema for the auditloggings API (Deprecated)
+    - description: AuditLogging deprecated. AuditLogging is the Schema for the auditloggings API (Deprecated)
       kind: AuditLogging
       name: auditloggings.operator.ibm.com
       version: v1alpha1
@@ -165,7 +185,6 @@ spec:
         - kind: Service
           name: ''
           version: v1
-    required:
     - description: AuditPolcy is the Schema for the auditlpolicies API
       kind: AuditPolicy
       name: auditpolicies.audit.policies.ibm.com
@@ -450,7 +469,7 @@ spec:
                     - sh
                     - -c
                     - pgrep audit-policy -l
-                  initialDelaySeconds: 60
+                  initialDelaySeconds: 30
                   timeoutSeconds: 5
                 name: audit-policy-controller
                 readinessProbe:
@@ -459,7 +478,7 @@ spec:
                     - sh
                     - -c
                     - exec echo start audit-policy-controller
-                  initialDelaySeconds: 60
+                  initialDelaySeconds: 10
                   timeoutSeconds: 2
                 resources:
                   limits:

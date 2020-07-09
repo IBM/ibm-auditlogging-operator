@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: commonaudits.operator.ibm.com
   labels:
-      app.kubernetes.io/instance: "common-audit-logging"     
+      app.kubernetes.io/instance: "common-audit-logging"
       app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
       app.kubernetes.io/name: "common-audit-logging"
 spec:
