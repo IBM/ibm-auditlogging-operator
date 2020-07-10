@@ -227,7 +227,7 @@ get-audit-policy-controller-image-sha:
 install: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Set environment variables ......
 	- export DEPLOY_DIR=deploy/crds
-	- export WATCH_NAMESPACE=${NAMESPACE}
+	# - export WATCH_NAMESPACE=${NAMESPACE}
 	# @echo ....... Creating namespace .......
 	# - kubectl create namespace ${NAMESPACE}
 	@echo ....... Applying CRDS and Operator .......
@@ -241,8 +241,8 @@ install: ## Install all resources (CR/CRD's, RBCA and Operator)
 	- kubectl apply -f deploy/olm-catalog/${BASE_DIR}/${CSV_VERSION}/${BASE_DIR}.v${CSV_VERSION}.clusterserviceversion.yaml -n ${NAMESPACE}
 	@echo ....... Creating the Instance .......
 	# - for cr in $(shell ls deploy/crds/*_cr.yaml); do kubectl -n ${NAMESPACE} apply -f $${cr}; doneMESPACE}
-	# - kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${NAMESPACE}
-	- kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+	- kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${NAMESPACE}
+	# - kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
 
 uninstall: ## Uninstall all that all performed in the $ make install
 	@echo ....... Uninstalling .......
@@ -262,6 +262,7 @@ uninstall: ## Uninstall all that all performed in the $ make install
 
 install-local: ## Install operator using local controller instead of operator deployment
 	@echo ....... Installing .......
+	- export WATCH_NAMESPACE=""
 	@echo ....... Applying CRD and Operator .......
 	- kubectl apply -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
 	- kubectl apply -f deploy/crds/operator.ibm.com_commonaudits_crd.yaml
