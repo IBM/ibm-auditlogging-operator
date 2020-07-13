@@ -57,7 +57,10 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 
 	if name == AuditLoggingHTTPSCertName {
 		certificate.Spec.SecretName = AuditLoggingServerCertSecName
-		certificate.Spec.DNSNames = []string{AuditLoggingComponentName}
+		certificate.Spec.DNSNames = []string{AuditLoggingComponentName,
+			AuditLoggingComponentName + "." + InstanceNamespace,
+			AuditLoggingComponentName + "." + InstanceNamespace + ".svc.cluster.local",
+		}
 	} else {
 		certificate.Spec.SecretName = AuditLoggingClientCertSecName
 	}
