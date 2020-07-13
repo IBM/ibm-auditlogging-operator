@@ -47,6 +47,7 @@ metadata:
           }
         },
         {
+          "apiVersion": "operator.ibm.com/v1alpha1",
           "kind": "OperandBindInfo",
           "metadata": {
             "name": "ibm-auditlogging-bindinfo"
@@ -54,7 +55,7 @@ metadata:
           "spec": {
             "operand": "ibm-auditlogging-operator",
             "registry": "common-service",
-            "description": "Binding information accessible for auditlogging adopters",
+            "description": "Binding information for auditlogging adopters",
             "bindings": {
               "public": {
                 "secret": "audit-server-certs"
