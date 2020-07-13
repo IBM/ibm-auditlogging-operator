@@ -45,6 +45,22 @@ metadata:
               }
             ]
           }
+        },
+        {
+          "kind": "OperandBindInfo",
+          "metadata": {
+            "name": "ibm-auditlogging-bindinfo"
+          },
+          "spec": {
+            "operand": "ibm-auditlogging-operator",
+            "registry": "common-service",
+            "description": "Binding information accessible for auditlogging adopters",
+            "bindings": {
+              "public": {
+                "secret": "audit-server-certs"
+              }
+            }
+          }
         }
       ]
     capabilities: Basic Install
