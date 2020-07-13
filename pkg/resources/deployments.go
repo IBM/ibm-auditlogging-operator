@@ -50,11 +50,13 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName)
+	annotations := annotationsForMetering(FluentdName, false)
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
+	// Run fluentd as restricted
+	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
 
 	var replicas = defaultReplicas
 	if instance.Spec.Fluentd.Replicas > 0 {
@@ -256,92 +258,18 @@ func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 	return commonVolumeMounts
 }
 
-func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging) *appsv1.Deployment {
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	selectorLabels := LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
-	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
-	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
-	policyControllerMainContainer.Image = getImageID(instance.Spec.PolicyController.ImageRegistry, DefaultPCImageName, PolicyConrtollerEnvVar)
-	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
-
-	var args = make([]string, 0)
-	if instance.Spec.PolicyController.Verbosity != "" {
-		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
-	} else {
-		args = append(args, "--v=0")
-	}
-	if instance.Spec.PolicyController.Frequency != "" {
-		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
-	}
-	policyControllerMainContainer.Args = args
-
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      AuditPolicyControllerDeploy,
-			Namespace: InstanceNamespace,
-			Labels:    metaLabels,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: selectorLabels,
-			},
-			Replicas: &defaultReplicas,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels:      podLabels,
-					Annotations: annotations,
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName:            OperandServiceAccount,
-					TerminationGracePeriodSeconds: &seconds30,
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "beta.kubernetes.io/arch",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   architectureList,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-
-					// NodeSelector:                  {},
-					Tolerations: commonTolerations,
-					Volumes: []corev1.Volume{
-						{
-							Name: "tmp",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
-					},
-					Containers: []corev1.Container{
-						policyControllerMainContainer,
-					},
-				},
-			},
-		},
-	}
-	return deploy
-}
-
 // BuildDaemonForFluentd returns a Daemonset object
 func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName)
+	annotations := annotationsForMetering(FluentdName, true)
 	commonVolumes = buildDaemonsetVolumes(instance)
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
+	// Run fluentd as privileged
+	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
 
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -579,6 +507,9 @@ func buildResources(cpuRequest string, memRequest string, cpuLimit string, memLi
 // EqualDeployments returns a Boolean
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+		return false
+	}
+	if expected.Spec.Replicas != found.Spec.Replicas {
 		return false
 	}
 	if !EqualPods(expected.Spec.Template, found.Spec.Template) {

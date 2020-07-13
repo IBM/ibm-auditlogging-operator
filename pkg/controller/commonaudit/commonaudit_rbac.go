@@ -67,7 +67,7 @@ func (r *ReconcileCommonAudit) reconcileServiceAccount(cr *operatorv1.CommonAudi
 
 func (r *ReconcileCommonAudit) reconcileRole(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Role.Namespace", instance.Namespace, "instance.Name", instance.Name)
-	expected := res.BuildRole(instance.Namespace)
+	expected := res.BuildRole(instance.Namespace, false)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)

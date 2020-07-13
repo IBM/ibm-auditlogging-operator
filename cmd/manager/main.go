@@ -186,8 +186,7 @@ func addMetrics(ctx context.Context, cfg *rest.Config) {
 	// Get the namespace the operator is currently deployed in.
 	operatorNs, err := k8sutil.GetOperatorNamespace()
 	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
+		log.Info("Could not get Operator Namespace", "error", err.Error())
 	}
 	// The ServiceMonitor is created in the same namespace where the operator is deployed
 	_, err = metrics.CreateServiceMonitors(cfg, operatorNs, services)

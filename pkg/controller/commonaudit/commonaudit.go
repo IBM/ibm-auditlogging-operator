@@ -243,32 +243,6 @@ func (r *ReconcileCommonAudit) reconcileFluentdDeployment(instance *operatorv1.C
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileCommonAudit) reconcileAuditPolicyCRD(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
-	reqLogger := log.WithValues("CRD.Namespace", instance.Namespace, "instance.Name", instance.Name)
-	expected := res.BuildAuditPolicyCRD()
-	found := &extv1beta1.CustomResourceDefinition{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new CRD
-		reqLogger.Info("Creating a new Audit Policy CRD", "CRD.Namespace", expected.Namespace, "CRD.Name", expected.Name)
-		err = r.client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new CRD", "CRD.Namespace", expected.Namespace,
-				"CRD.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// CRD created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get CRD")
-		return reconcile.Result{}, err
-	}
-	return reconcile.Result{}, nil
-}
-
 func removeCRD(client client.Client, crdName string) error {
 	// Delete CustomResourceDefintion
 	customResourceDefinition := &extv1beta1.CustomResourceDefinition{}

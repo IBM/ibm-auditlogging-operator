@@ -20,17 +20,7 @@ metadata:
             "fluentd": {
               "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "pullPolicy": "IfNotPresent",
-              "resources": {
-                "limits": {
-                  "cpu": "500m",
-                  "memory": "600Mi"
-                },
-                "requests": {
-                  "cpu": "100m",
-                  "memory": "200Mi"
-                }
-              }
+              "pullPolicy": "IfNotPresent"
             }
           }
         },

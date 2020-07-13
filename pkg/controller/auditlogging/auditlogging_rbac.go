@@ -157,92 +157,9 @@ func (r *ReconcileAuditLogging) removeOldRBAC(instance *operatorv1alpha1.AuditLo
 	}
 }
 
-func (r *ReconcileAuditLogging) reconcileClusterRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ClusterRole.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildClusterRole(instance)
-	found := &rbacv1.ClusterRole{}
-	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new ClusterRole
-		// newClusterRole := res.BuildClusterRole(instance)
-		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Creating a new ClusterRole", "ClusterRole.Namespace", expected.Namespace, "ClusterRole.Name", expected.Name)
-		err = r.client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ClusterRole", "ClusterRole.Namespace", expected.Namespace,
-				"ClusterRole.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// ClusterRole created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get ClusterRole")
-		return reconcile.Result{}, err
-	} else if result := res.EqualClusterRoles(expected, found); result {
-		// If role permissions are incorrect, update it and requeue
-		reqLogger.Info("Found role is incorrect", "Found", found.Rules, "Expected", expected.Rules)
-		found.Rules = expected.Rules
-		err = r.client.Update(context.TODO(), found)
-		if err != nil {
-			reqLogger.Error(err, "Failed to update role", "Name", found.Name)
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Updating ClusterRole", "ClusterRole.Name", found.Name)
-		// Updated - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	}
-	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileAuditLogging) reconcileClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ClusterRoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildClusterRoleBinding(instance)
-	found := &rbacv1.ClusterRoleBinding{}
-	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Role
-		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Creating a new ClusterRoleBinding", "ClusterRole.Namespace", expected.Namespace, "ClusterRoleBinding.Name", expected.Name)
-		err = r.client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ClusterRoleBinding", "ClusterRoleBinding.Namespace", expected.Namespace,
-				"RoleBinding.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// ClusterRoleBinding created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		reqLogger.Error(err, "Failed to get ClusterRoleBinding")
-		return reconcile.Result{}, err
-	} else if result := res.EqualClusterRoleBindings(expected, found); result {
-		// If rolebinding is incorrect, delete it and requeue
-		reqLogger.Info("Found rolebinding is incorrect", "Found", found.Subjects, "Expected", expected.Subjects)
-		err = r.client.Delete(context.TODO(), found)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete rolebinding", "Name", found.Name)
-			return reconcile.Result{}, err
-		}
-		// Deleted - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	}
-	return reconcile.Result{}, nil
-}
-
 func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Role.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRole(res.InstanceNamespace)
+	expected := res.BuildRole(res.InstanceNamespace, true)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)

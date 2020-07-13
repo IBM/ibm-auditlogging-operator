@@ -248,6 +248,7 @@ uninstall: ## Uninstall all that all performed in the $ make install
 	@echo ....... Uninstalling .......
 	@echo ....... Deleting CR .......
 	- for cr in $(shell ls deploy/crds/*_cr.yaml); do kubectl -n ${NAMESPACE} delete -f $${cr}; done
+	- kubectl delete --all commonaudit --all-namespaces
 	@echo ....... Deleting Operator .......
 	# - kubectl delete -f deploy/operator.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/olm-catalog/${BASE_DIR}/${CSV_VERSION}/${BASE_DIR}.v${CSV_VERSION}.clusterserviceversion.yaml -n ${NAMESPACE}
@@ -277,7 +278,7 @@ uninstall-local: ## Uninstall all that all performed in the $ make install-local
 	@echo ....... Deleting CRs .......
 	- kubectl get auditpolicy -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete auditpolicy -n ${NAMESPACE}
 	- kubectl delete -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
-	- kubectl delete -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${NAMESPACE}
+	- kubectl delete --all commonaudit --all-namespaces
 	@echo ....... Deleting CRD.......
 	- kubectl delete -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
 	- kubectl delete -f deploy/crds/operator.ibm.com_commonaudits_crd.yaml
