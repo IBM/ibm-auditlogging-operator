@@ -75,7 +75,6 @@ var dummyHostAliases = []corev1.HostAlias{
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
 	// USE THIS
-	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
@@ -179,7 +178,6 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 			t.Fatalf("create pod %d: (%v)", i, err)
 		}
 	}
-
 	// Reconcile again so Reconcile() checks pods and updates the AuditLogging
 	// resources' Status.
 	reconcileResources(t, r, req, false)
@@ -209,7 +207,7 @@ func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r Rec
 }
 
 func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
-	reconcileResources(t, r, req, true)
+	reconcileResources(t, r, req, false)
 	fluentd := getFluentd(t, r)
 	var found = false
 	for _, v := range fluentd.Spec.Template.Spec.Containers[0].VolumeMounts {

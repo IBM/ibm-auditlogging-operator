@@ -187,20 +187,6 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 	for _, pod := range podList.Items {
 		podNames = append(podNames, pod.Name)
 	}
-
-	// Get audit-policy-controller pod too
-	listOpts = []client.ListOption{
-		client.InNamespace(res.InstanceNamespace),
-		client.MatchingLabels(res.LabelsForSelector(res.AuditPolicyControllerDeploy, instance.Name)),
-	}
-	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
-		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
-		return reconcile.Result{}, err
-	}
-	for _, pod := range podList.Items {
-		podNames = append(podNames, pod.Name)
-	}
-
 	sort.Strings(podNames)
 
 	// Update status.Nodes if needed

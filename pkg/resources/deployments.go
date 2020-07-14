@@ -509,7 +509,7 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) boo
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if expected.Spec.Replicas != found.Spec.Replicas {
+	if !reflect.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
 		return false
 	}
 	if !EqualPods(expected.Spec.Template, found.Spec.Template) {

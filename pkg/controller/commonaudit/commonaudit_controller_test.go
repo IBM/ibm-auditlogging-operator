@@ -74,6 +74,11 @@ var dummyHostAliases = []corev1.HostAlias{
 }
 var replicas = 3
 
+const cpuReq = "100m"
+const memReq = "200Mi"
+const cpuLim = "500m"
+const memLim = "600Mi"
+
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
 func TestCommonAuditController(t *testing.T) {
@@ -94,8 +99,8 @@ func TestCommonAuditController(t *testing.T) {
 	reconcileResources(t, r, req, true)
 	checkMountAndRBACPreReqs(t, r, req, cr)
 	checkFluentdConfig(t, r, req, cr)
-	al := getAuditLogging(t, r, req)
-	updateAuditLoggingCR(al, t, r, req)
+	ca := getCommonAudit(t, r, req)
+	updateCommonAuditCR(ca, t, r, req)
 	checkInPlaceUpdate(t, r, req, cr)
 }
 
@@ -194,22 +199,26 @@ func checkFluentdConfig(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	// Check status
 
 	// Get the updated AuditLogging object.
-	al := getAuditLogging(t, r, req)
-	nodes := al.Status.Nodes
+	ca := getCommonAudit(t, r, req)
+	nodes := ca.Status.Nodes
 	sort.Strings(podNames)
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
 	}
 }
 
-func updateAuditLoggingCR(al *operatorv1.CommonAudit, t *testing.T, r ReconcileCommonAudit, req reconcile.Request) {
-	al.Spec.Fluentd.Output.Splunk.Host = dummyHost
-	al.Spec.Fluentd.Output.Splunk.Token = dummyToken
-	al.Spec.Fluentd.Output.Splunk.Port, _ = strconv.Atoi(dummyPort)
-	al.Spec.Fluentd.Output.HostAliases = append(al.Spec.Fluentd.Output.HostAliases, operatorv1.CommonAuditSpecHostAliases{
+func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCommonAudit, req reconcile.Request) {
+	ca.Spec.Fluentd.Output.Splunk.Host = dummyHost
+	ca.Spec.Fluentd.Output.Splunk.Token = dummyToken
+	ca.Spec.Fluentd.Output.Splunk.Port, _ = strconv.Atoi(dummyPort)
+	ca.Spec.Fluentd.Output.HostAliases = append(ca.Spec.Fluentd.Output.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})
-	err := r.client.Update(context.TODO(), al)
+	ca.Spec.Fluentd.Resources.Limits.CPU = cpuLim
+	ca.Spec.Fluentd.Resources.Limits.Memory = memLim
+	ca.Spec.Fluentd.Resources.Requests.CPU = cpuReq
+	ca.Spec.Fluentd.Resources.Requests.Memory = memReq
+	err := r.client.Update(context.TODO(), ca)
 	if err != nil {
 		t.Fatalf("Failed to update CR: (%v)", err)
 	}
@@ -280,9 +289,17 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	if !reflect.DeepEqual(fluentd.Spec.Template.Spec.HostAliases, dummyHostAliases) {
 		t.Fatalf("HostAliases not saved. Found: (%v). Expected: (%v)", fluentd.Spec.Template.Spec.HostAliases, dummyHostAliases)
 	}
+	resources := fluentd.Spec.Template.Spec.Containers[0].Resources
+	foundCPULimit := resources.Limits[corev1.ResourceCPU]
+	foundMemLimit := resources.Limits[corev1.ResourceMemory]
+	foundCPURequest := resources.Requests[corev1.ResourceCPU]
+	foundMemRequest := resources.Requests[corev1.ResourceMemory]
+	if foundCPURequest.String() != cpuReq || foundMemRequest.String() != memReq || foundCPULimit.String() != cpuLim || foundMemLimit.String() != memLim {
+		t.Fatalf("Resources not equal. Found: (%v)", resources)
+	}
 }
 
-func getAuditLogging(t *testing.T, r ReconcileCommonAudit, req reconcile.Request) *operatorv1.CommonAudit {
+func getCommonAudit(t *testing.T, r ReconcileCommonAudit, req reconcile.Request) *operatorv1.CommonAudit {
 	al := &operatorv1.CommonAudit{}
 	err := r.client.Get(context.TODO(), req.NamespacedName, al)
 	if err != nil {
