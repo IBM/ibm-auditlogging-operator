@@ -154,11 +154,12 @@ func annotationsForMetering(deploymentName string, privileged bool) map[string]s
 	}
 	if deploymentName == FluentdName {
 		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
-	}
-	if privileged {
 		annotations["openshift.io/scc"] = "privileged"
-	} else {
-		annotations["openshift.io/scc"] = "restricted"
 	}
+	// if privileged {
+	// 	annotations["openshift.io/scc"] = "privileged"
+	// } else {
+	// 	annotations["openshift.io/scc"] = "restricted"
+	// }
 	return annotations
 }

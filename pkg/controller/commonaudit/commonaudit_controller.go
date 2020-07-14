@@ -23,6 +23,7 @@ import (
 	"time"
 
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
+	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -134,6 +135,14 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
+	if err := r.client.List(context.TODO(), auditLoggingList, client.InNamespace(request.Namespace)); err == nil &&
+		len(auditLoggingList.Items) > 0 && request.Namespace == res.InstanceNamespace {
+		reqLogger.Info("[WARNING] CommonAudit cannot run alongside AuditLogging in the same namespace.")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
 	// Set a default Status value
 	if len(instance.Status.Nodes) == 0 {
 		instance.Status.Nodes = res.DefaultStatusForCR
@@ -156,7 +165,6 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 		r.reconcileService,
 		r.reconcileFluentdDeployment,
 		r.updateStatus,
-		r.checkIfBeingDeleted,
 	}
 	for _, rec := range reconcilers {
 		recResult, recErr = rec(instance)
@@ -201,45 +209,4 @@ func (r *ReconcileCommonAudit) updateStatus(instance *operatorv1.CommonAudit) (r
 		}
 	}
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileCommonAudit) checkIfBeingDeleted(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
-	reqLogger := log.WithValues("func", "checkIfBeingDeleted")
-	// Credit: kubebuilder book
-	finalizerName := "commonaudit.operator.ibm.com"
-	// Determine if the AuditLogging CR is going to be deleted
-	if instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		// Object not being deleted, but add our finalizer so we know to remove this object later when it is going to be deleted
-		if !res.ContainsString(instance.ObjectMeta.Finalizers, finalizerName) {
-			instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, finalizerName)
-			if err := r.client.Update(context.Background(), instance); err != nil {
-				reqLogger.Error(err, "Error adding the finalizer to the CR")
-				return reconcile.Result{}, err
-			}
-		}
-	} else {
-		// Object scheduled to be deleted
-		if res.ContainsString(instance.ObjectMeta.Finalizers, finalizerName) {
-			if err := r.deleteExternalResources(); err != nil {
-				reqLogger.Error(err, "Error deleting resources created by this operator")
-				return reconcile.Result{}, err
-			}
-			instance.ObjectMeta.Finalizers = res.RemoveString(instance.ObjectMeta.Finalizers, finalizerName)
-			if err := r.client.Update(context.Background(), instance); err != nil {
-				reqLogger.Error(err, "Error updating the CR to remove the finalizer")
-				return reconcile.Result{}, err
-			}
-			reqLogger.Info("Successfully deleted external resources")
-		}
-		return reconcile.Result{}, nil
-	}
-	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileCommonAudit) deleteExternalResources() error {
-	// Remove CustomResourceDefinition
-	if err := removeCRD(r.client, res.AuditPolicyCRDName); err != nil {
-		return err
-	}
-	return nil
 }

@@ -56,7 +56,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
-	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
+	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
 
 	var replicas = defaultReplicas
 	if instance.Spec.Fluentd.Replicas > 0 {
@@ -506,13 +506,14 @@ func buildResources(cpuRequest string, memRequest string, cpuLimit string, memLi
 
 // EqualDeployments returns a Boolean
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
+	allowModify := false
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
 	if !reflect.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
 		return false
 	}
 	return true
@@ -520,17 +521,18 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) boo
 
 // EqualDaemonSets returns a Boolean
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
+	allowModify := true
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
 		return false
 	}
 	return true
 }
 
 // EqualPods returns a Boolean
-func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bool {
+func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualPods")
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
@@ -542,15 +544,17 @@ func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bo
 		logger.Info("ServiceAccount not equal", "Found", found.Spec.ServiceAccountName, "Expected", expected.Spec.ServiceAccountName)
 		return false
 	}
-	if !equalHostAliases(found.Spec.HostAliases, expected.Spec.HostAliases) {
-		logger.Info("HostAliases not equal", "Found", found.Spec.HostAliases, "Expected", expected.Spec.HostAliases)
-		return false
+	if !allowModify {
+		if !equalHostAliases(found.Spec.HostAliases, expected.Spec.HostAliases) {
+			logger.Info("HostAliases not equal", "Found", found.Spec.HostAliases, "Expected", expected.Spec.HostAliases)
+			return false
+		}
 	}
 	if len(found.Spec.Containers) != len(expected.Spec.Containers) {
 		logger.Info("Number of containers not equal", "Found", len(found.Spec.Containers), "Expected", len(expected.Spec.Containers))
 		return false
 	}
-	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0]) {
+	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0], allowModify) {
 		return false
 	}
 	return true

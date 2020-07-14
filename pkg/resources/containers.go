@@ -140,7 +140,7 @@ var fluentdMainContainer = corev1.Container{
 }
 
 // EqualContainers returns a Boolean
-func EqualContainers(expected corev1.Container, found corev1.Container) bool {
+func EqualContainers(expected corev1.Container, found corev1.Container, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualContainers")
 	if !reflect.DeepEqual(found.Name, expected.Name) {
 		logger.Info("Container name not equal", "Found", found.Name, "Expected", expected.Name)
@@ -174,8 +174,14 @@ func EqualContainers(expected corev1.Container, found corev1.Container) bool {
 		logger.Info("Env not equal", "Found", found.Env, "Expected", expected.Env)
 		return false
 	}
-	if !equalResources(found.Resources, expected.Resources) {
-		return false
+	if !allowModify {
+		if !reflect.DeepEqual(found.Resources, expected.Resources) {
+			logger.Info("Resources not equal", "Found", found.Resources, "Expected", expected.Resources)
+			return false
+		}
+		// if !equalResources(found.Resources, expected.Resources) {
+		// 	return false
+		// }
 	}
 	return true
 }

@@ -68,10 +68,10 @@ func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
 
 // BuildRole returns a Role object for fluentd
 func BuildRole(namespace string, journalAccess bool) *rbacv1.Role {
-	var scc = "restricted"
-	if journalAccess {
-		scc = "privileged"
-	}
+	// var scc = "restricted"
+	// if journalAccess {
+	// 	scc = "privileged"
+	// }
 	metaLabels := LabelsForMetadata(FluentdName)
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -84,7 +84,7 @@ func BuildRole(namespace string, journalAccess bool) *rbacv1.Role {
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{scc},
+				ResourceNames: []string{"privileged"},
 			},
 		},
 	}

@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
     app.kubernetes.io/name: "common-audit-logging"
 spec:
+  size: small
+  clusterIssuer: cs-ca-clusterissuer
   fluentd:
     enabled: true
     imageRegistry: quay.io/opencloudio/
@@ -18,3 +20,16 @@ spec:
       limits:
         cpu: 500m
         memory: 600Mi
+    output:
+      splunk:
+        host: master
+        port: 8088
+        token: abc-123
+      qradar:
+        host: test.fyre.ibm.com
+        port: 514
+        hostname: qradar-log-source
+      hostAliases:
+        - hostIP: 9.12.34.56
+          hostnames:
+            - test.fyre.ibm.com

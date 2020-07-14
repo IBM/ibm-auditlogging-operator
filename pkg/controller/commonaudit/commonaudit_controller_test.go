@@ -102,6 +102,7 @@ func TestCommonAuditController(t *testing.T) {
 	ca := getCommonAudit(t, r, req)
 	updateCommonAuditCR(ca, t, r, req)
 	checkInPlaceUpdate(t, r, req, cr)
+	checkStatus(t, r, req, cr)
 }
 
 func checkMountAndRBACPreReqs(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
@@ -172,7 +173,9 @@ func checkFluentdConfig(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 		t.Fatalf("Incorrect fluentd image. Found: (%s), Expected: (%s)", dep.Spec.Template.Spec.Containers[0].Image, image)
 	}
 	reconcileResources(t, r, req, false)
+}
 
+func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
 	// Create fake pods in namespace and collect their names to check against Status
 	var podLabels = res.LabelsForPodMetadata(res.FluentdName, cr.Name)
 	var pod = corev1.Pod{
@@ -188,7 +191,7 @@ func checkFluentdConfig(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 		randInt, _ = rand.Int(rand.Reader, big.NewInt(99999))
 		pod.ObjectMeta.Name = res.FluentdDeploymentName + "-" + randInt.String()
 		podNames[i] = pod.ObjectMeta.Name
-		if err = r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
+		if err := r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
 			t.Fatalf("create pod %d: (%v)", i, err)
 		}
 	}
