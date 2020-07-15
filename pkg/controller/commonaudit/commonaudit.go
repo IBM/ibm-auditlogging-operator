@@ -24,7 +24,6 @@ import (
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -241,24 +240,6 @@ func (r *ReconcileCommonAudit) reconcileFluentdDeployment(instance *operatorv1.C
 		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
-}
-
-func removeCRD(client client.Client, crdName string) error {
-	// Delete CustomResourceDefintion
-	customResourceDefinition := &extv1beta1.CustomResourceDefinition{}
-	if err := client.Get(context.Background(), types.NamespacedName{Name: crdName, Namespace: ""},
-		customResourceDefinition); err != nil && errors.IsNotFound(err) {
-		log.V(1).Info("Error getting custome resource definition", "msg", err)
-		return nil
-	} else if err == nil {
-		if err = client.Delete(context.Background(), customResourceDefinition); err != nil {
-			log.V(1).Info("Error deleting custom resource definition", "name", crdName, "error message", err)
-			return err
-		}
-	} else {
-		return err
-	}
-	return nil
 }
 
 func (r *ReconcileCommonAudit) reconcileAuditCerts(instance *operatorv1.CommonAudit) (reconcile.Result, error) {

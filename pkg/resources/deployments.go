@@ -507,10 +507,12 @@ func buildResources(cpuRequest string, memRequest string, cpuLimit string, memLi
 // EqualDeployments returns a Boolean
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
 	allowModify := false
+	logger := log.WithValues("func", "EqualDeployments")
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
 	if !reflect.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
+		logger.Info("Replicas not equal", "Found", found.Spec.Replicas, "Expected", expected.Spec.Replicas)
 		return false
 	}
 	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {

@@ -395,7 +395,6 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 	} else {
 		if instance.Spec.Fluentd.Output.QRadar != (operatorv1.CommonAuditSpecQRadar{}) {
 			key = QRadarConfigKey
-			logger.Info("Searching", "Key", key)
 			hostFound := strings.Split(regexHost.FindStringSubmatch(found.Data[key])[0], " ")
 			if hostFound[1] != instance.Spec.Fluentd.Output.QRadar.Host {
 				logger.Info("Host incorrect", "Found", hostFound[1], "Expected", instance.Spec.Fluentd.Output.QRadar.Host)

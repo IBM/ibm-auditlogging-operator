@@ -179,30 +179,6 @@ func EqualContainers(expected corev1.Container, found corev1.Container, allowMod
 			logger.Info("Resources not equal", "Found", found.Resources, "Expected", expected.Resources)
 			return false
 		}
-		// if !equalResources(found.Resources, expected.Resources) {
-		// 	return false
-		// }
-	}
-	return true
-}
-
-func equalResources(found corev1.ResourceRequirements, expected corev1.ResourceRequirements) bool {
-	logger := log.WithValues("func", "equalResources")
-	foundCPULimit := found.Limits[corev1.ResourceCPU]
-	expectedCPULimit := expected.Limits[corev1.ResourceCPU]
-	foundMemLimit := found.Limits[corev1.ResourceMemory]
-	expectedMemLimit := expected.Limits[corev1.ResourceMemory]
-	if foundCPULimit.Value() != expectedCPULimit.Value() || foundMemLimit.Value() != expectedMemLimit.Value() {
-		logger.Info("Resource limits not equal", "Found", found.Limits, "Expected", expected.Limits)
-		return false
-	}
-	foundCPURequest := found.Requests[corev1.ResourceCPU]
-	expectedCPURequest := expected.Requests[corev1.ResourceCPU]
-	foundMemRequest := found.Requests[corev1.ResourceMemory]
-	expectedMemRequest := expected.Requests[corev1.ResourceMemory]
-	if foundCPURequest.Value() != expectedCPURequest.Value() || foundMemRequest.Value() != expectedMemRequest.Value() {
-		logger.Info("Resource requests not equal", "Found", found.Requests, "Expected", expected.Requests)
-		return false
 	}
 	return true
 }
