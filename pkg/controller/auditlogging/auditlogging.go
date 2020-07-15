@@ -202,7 +202,7 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			found.Data[res.SourceConfigKey] = expected.Data[res.SourceConfigKey]
 			update = true
 		}
-	case res.FluentdDaemonSetName + "-" + res.HTTPIngestConfigName:
+	case res.FluentdDaemonSetName + "-" + res.HTTPIngestName:
 		if !res.EqualConfig(found, expected, res.HTTPIngestURLKey) {
 			found.Data[res.HTTPIngestURLKey] = expected.Data[res.HTTPIngestURLKey]
 			update = true
