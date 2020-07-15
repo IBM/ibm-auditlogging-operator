@@ -29,7 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// EnableAuditLogForwardKey defines the key in the source config map for turning audit on or off
 const EnableAuditLogForwardKey = "ENABLE_AUDIT_LOGGING_FORWARDING"
+
+// HTTPIngestURLKey defines the Http endpoint
+const HTTPIngestURLKey = "AuditLoggingHttpIngestURL"
 
 // ConfigName defines the name of the config configmap
 const ConfigName = "config"
@@ -45,6 +49,9 @@ const QRadarConfigName = "remote-syslog-config"
 
 // SplunkConfigName defines the name of the splunk-hec-config configmap
 const SplunkConfigName = "splunk-hec-config"
+
+// HTTPIngestConfigName definest the name of the http-ingesturl-config configmap
+const HTTPIngestConfigName = "http-ingesturl-config"
 
 // FluentdConfigKey defines the key for the config configmap
 const FluentdConfigKey = "fluent.conf"
@@ -167,6 +174,7 @@ var FluentdConfigMaps = []string{
 	FluentdDaemonSetName + "-" + SourceConfigName,
 	FluentdDaemonSetName + "-" + SplunkConfigName,
 	FluentdDaemonSetName + "-" + QRadarConfigName,
+	FluentdDaemonSetName + "-" + HTTPIngestConfigName,
 }
 
 // DataSplunk defines the struct for splunk-hec-config
@@ -229,6 +237,8 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			break
 		}
 		dataMap[QRadarConfigKey] = dq.Value
+	case FluentdDaemonSetName + "-" + HTTPIngestConfigName:
+		dataMap[HTTPIngestURLKey] = "https://common-audit-logging" + "." + InstanceNamespace + ":9880/icp-audit.http"
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}

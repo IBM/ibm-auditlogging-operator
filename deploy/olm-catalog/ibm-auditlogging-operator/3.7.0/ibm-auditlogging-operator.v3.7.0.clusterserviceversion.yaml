@@ -59,6 +59,7 @@ metadata:
             "bindings": {
               "public": {
                 "secret": "audit-server-certs"
+                "configmap": "audit-logging-fluentd-ds-http-ingesturl-config"
               }
             }
           }

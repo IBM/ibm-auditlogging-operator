@@ -234,7 +234,7 @@ As a developer, if you want to build and test this operator to try out and learn
 #### Operator SDK's Test Framework
 
 - [Unit Testing](https://github.com/operator-framework/operator-sdk/blob/master/website/content/en/docs/golang/legacy/unit-testing.md)
-- [E2E Testing](https://github.com/operator-framework/operator-sdk/blob/master/website/content/en/docs/golang/legacy/e2e-tests.md)
+- [E2E Testing](https://sdk.operatorframework.io/docs/golang/legacy/e2e-tests/)
 - To run unit tests use, `make test`
 - To run e2e tests use, `make test-e2e`
 
