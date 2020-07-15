@@ -22,7 +22,6 @@ import (
 	"sort"
 	"time"
 
-	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 
@@ -128,13 +127,6 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
-	}
-
-	commonAuditList := &operatorv1.CommonAuditList{}
-	if err := r.client.List(context.TODO(), commonAuditList, client.InNamespace(res.InstanceNamespace)); err == nil &&
-		len(commonAuditList.Items) > 0 {
-		// Return and don't requeue
-		return reconcile.Result{}, nil
 	}
 
 	// Set a default Status value

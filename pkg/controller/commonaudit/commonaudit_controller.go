@@ -136,7 +136,7 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
-	if err := r.client.List(context.TODO(), auditLoggingList, client.InNamespace(request.Namespace)); err == nil &&
+	if err := r.client.List(context.TODO(), auditLoggingList); err == nil &&
 		len(auditLoggingList.Items) > 0 && request.Namespace == res.InstanceNamespace {
 		reqLogger.Info("[WARNING] CommonAudit cannot run alongside AuditLogging in the same namespace.")
 		// Return and don't requeue
