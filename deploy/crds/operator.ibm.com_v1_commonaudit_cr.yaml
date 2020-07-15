@@ -10,6 +10,7 @@ spec:
   size: small
   clusterIssuer: cs-ca-clusterissuer
   fluentd:
+    replicas: 3
     enabled: true
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
@@ -29,3 +30,7 @@ spec:
         host: test.fyre.ibm.com
         port: 514
         hostname: qradar-log-source
+      hostAliases:
+        - hostIP: 9.12.34.56
+          hostnames:
+            - test.fyre.ibm.com
