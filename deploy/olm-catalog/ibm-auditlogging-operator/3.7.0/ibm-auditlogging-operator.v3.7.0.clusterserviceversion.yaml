@@ -58,7 +58,8 @@ metadata:
             "description": "Binding information for auditlogging adopters",
             "bindings": {
               "public": {
-                "secret": "audit-server-certs"
+                "secret": "audit-server-certs",
+                "configmap": "audit-logging-fluentd-ds-http-ingesturl"
               }
             }
           }
