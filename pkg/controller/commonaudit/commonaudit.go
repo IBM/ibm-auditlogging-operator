@@ -149,7 +149,17 @@ func (r *ReconcileCommonAudit) reconcileConfig(instance *operatorv1.CommonAudit,
 			}
 			update = true
 		}
-		if !res.EqualSIEMConfig(instance, found) {
+		if equal, missing := res.EqualSIEMConfig(instance, found); !equal {
+			if missing {
+				// Missing required config fields in cm
+				err = r.client.Delete(context.TODO(), found)
+				if err != nil {
+					reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+					return reconcile.Result{}, err
+				}
+				reqLogger.Info("[WARNING] Missing required fields. Recreating ConfigMap", "Name", configName)
+				return reconcile.Result{Requeue: true}, nil
+			}
 			data := res.UpdateSIEMConfig(instance, found)
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
 				found.Data[res.SplunkConfigKey] = data

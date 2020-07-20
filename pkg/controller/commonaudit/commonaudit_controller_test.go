@@ -55,6 +55,7 @@ splunkHEC.conf: |-
         hec_host master
         hec_port 8089
         hec_token abc-123
+        protocol https
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
         <buffer>
@@ -64,7 +65,7 @@ splunkHEC.conf: |-
 const dummyFluentdSHA = "sha256:abc"
 const dummyHostAliasIP = "9.12.34.56"
 const dummyHostAliasName = "test.fyre.ibm.com"
-const namespace = "test"
+const protocol = "http"
 
 var dummyHostAliases = []corev1.HostAlias{
 	{
@@ -86,14 +87,15 @@ func TestCommonAuditController(t *testing.T) {
 	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	// logf.SetLogger(logf.ZapLogger(true))
 	var (
-		name = "example-commonaudit"
+		name      = "example-commonaudit"
+		namespace = "test"
 	)
 
 	os.Setenv(res.FluentdEnvVar, dummyFluentdSHA)
 	os.Setenv("WATCH_NAMESPACE", "")
 
 	req := getReconcileRequest(name)
-	cr := buildCommonAudit(name)
+	cr := buildCommonAudit(name, namespace)
 	r := getReconciler(cr)
 
 	reconcileResources(t, r, req, true)
@@ -101,8 +103,9 @@ func TestCommonAuditController(t *testing.T) {
 	checkFluentdConfig(t, r, req, cr)
 	ca := getCommonAudit(t, r, req)
 	updateCommonAuditCR(ca, t, r, req)
-	checkInPlaceUpdate(t, r, req, cr)
-	checkStatus(t, r, req, cr)
+	ca = getCommonAudit(t, r, req)
+	checkInPlaceUpdate(t, r, req, ca)
+	checkStatus(t, r, req, name, namespace)
 }
 
 func checkMountAndRBACPreReqs(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
@@ -175,12 +178,12 @@ func checkFluentdConfig(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	reconcileResources(t, r, req, false)
 }
 
-func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
+func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, name string, namespace string) {
 	// Create fake pods in namespace and collect their names to check against Status
-	var podLabels = res.LabelsForPodMetadata(res.FluentdName, cr.Name)
+	var podLabels = res.LabelsForPodMetadata(res.FluentdName, name)
 	var pod = corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cr.Namespace,
+			Namespace: namespace,
 			Labels:    podLabels,
 		},
 	}
@@ -211,10 +214,11 @@ func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr
 }
 
 func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCommonAudit, req reconcile.Request) {
-	ca.Spec.Fluentd.Output.Splunk.Host = dummyHost
-	ca.Spec.Fluentd.Output.Splunk.Token = dummyToken
-	ca.Spec.Fluentd.Output.Splunk.Port, _ = strconv.Atoi(dummyPort)
-	ca.Spec.Fluentd.Output.HostAliases = append(ca.Spec.Fluentd.Output.HostAliases, operatorv1.CommonAuditSpecHostAliases{
+	ca.Spec.Outputs.Splunk.Host = dummyHost
+	ca.Spec.Outputs.Splunk.Token = dummyToken
+	ca.Spec.Outputs.Splunk.Port, _ = strconv.Atoi(dummyPort)
+	ca.Spec.Outputs.Splunk.Protocol = protocol
+	ca.Spec.Outputs.HostAliases = append(ca.Spec.Outputs.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})
 	ca.Spec.Fluentd.Resources.Limits.CPU = cpuLim
@@ -258,17 +262,15 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	reHost := regexp.MustCompile(`hec_host .*`)
-	host := strings.Split(reHost.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
-	rePort := regexp.MustCompile(`hec_port .*`)
-	port := strings.Split(rePort.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
-	reToken := regexp.MustCompile(`hec_token .*`)
-	token := strings.Split(reToken.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
+	host := strings.Split(res.RegexHecHost.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
+	port := strings.Split(res.RegexHecPort.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
+	token := strings.Split(res.RegexHecToken.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
+	proto := strings.Split(res.RegexProtocol.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
 	reBuffer := regexp.MustCompile(`buffer`)
 	buffer := reBuffer.FindAllString(updatedCM.Data[res.SplunkConfigKey], -1)
-	if host != dummyHost || port != dummyPort || token != dummyToken {
-		t.Fatalf("SIEM creds not preserved: Found: (%s), (%s), (%s). Expected: (%s), (%s), (%s). ",
-			host, port, token, dummyHost, dummyPort, dummyToken)
+	if host != dummyHost || port != dummyPort || token != dummyToken || proto != protocol {
+		t.Fatalf("SIEM creds not preserved: Found: (%s), (%s), (%s), (%s). Expected: (%s), (%s), (%s), (%s).",
+			host, port, token, proto, dummyHost, dummyPort, dummyToken, protocol)
 	}
 	if !reflect.DeepEqual(updatedCM.ObjectMeta.Labels, res.LabelsForMetadata(res.FluentdName)) {
 		t.Fatalf("Labels not correct")
@@ -320,7 +322,7 @@ func getFluentd(t *testing.T, r ReconcileCommonAudit, cr *operatorv1.CommonAudit
 	return found
 }
 
-func buildCommonAudit(name string) *operatorv1.CommonAudit {
+func buildCommonAudit(name string, namespace string) *operatorv1.CommonAudit {
 	return &operatorv1.CommonAudit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

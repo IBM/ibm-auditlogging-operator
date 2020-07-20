@@ -17,10 +17,44 @@ metadata:
             "name": "example-commonaudit"
           },
           "spec": {
+            "enabled": "true",
+            "size": "small",
+            "clusterIssuer": "cs-ca-clusterissuer",
             "fluentd": {
-              "enabled": true,
               "imageRegistry": "quay.io/opencloudio/",
-              "pullPolicy": "IfNotPresent"
+              "pullPolicy": "IfNotPresent",
+              "resources": {
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "200Mi"
+                },
+                "limits": {
+                  "cpu": "200m",
+                  "memory": "300Mi"
+                }
+              }
+            },
+            "outputs": {
+              "splunk": {
+                "host": "SPLUNK_SERVER_HOSTNAME",
+                "port": "8088",
+                "token": "SPLUNK_HEC_TOKEN"
+                "protocol": "http"
+              },
+              "syslog": {
+                "host": "QRADAR_SERVER_HOSTNAME",
+                "port": "514",
+                "hostname": "QRADAR_LOG_SOURCE_IDENTIFIER",
+                "tls": "false"
+              },
+              "hostAliases": [
+                {
+                  "hostIP": "QRADAR_SERVER_IP",
+                  "hostnames": [
+                    "QRADAR_SERVER_HOSTNAME"
+                  ]
+                }
+              ]
             }
           }
         },

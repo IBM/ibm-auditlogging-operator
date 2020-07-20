@@ -22,15 +22,20 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 
 	apis "github.com/ibm/ibm-auditlogging-operator/pkg/apis"
-	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
+	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	"github.com/ibm/ibm-auditlogging-operator/test/config"
 	"github.com/ibm/ibm-auditlogging-operator/test/helpers"
 	testgroups "github.com/ibm/ibm-auditlogging-operator/test/testgroups"
 )
 
 func TestAuditLoggingOperator(t *testing.T) {
-	auditLoggingList := &operator.AuditLoggingList{}
+	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
 	if err := framework.AddToFrameworkScheme(apis.AddToScheme, auditLoggingList); err != nil {
+		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
+	}
+	commonAuditList := &operatorv1.CommonAuditList{}
+	if err := framework.AddToFrameworkScheme(apis.AddToScheme, commonAuditList); err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
 	t.Parallel()
@@ -43,6 +48,7 @@ func TestAuditLoggingOperator(t *testing.T) {
 
 	// Run group test
 	t.Run("TestAuditLogging", testgroups.TestAuditLogging)
+	t.Run("TestCommonAudit", testgroups.TestCommonAudit)
 }
 
 func deployOperator(t *testing.T, ctx *framework.TestCtx) error {

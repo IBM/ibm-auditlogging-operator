@@ -145,7 +145,7 @@ func LabelsForPodMetadata(deploymentName string, crName string) map[string]strin
 }
 
 //IBMDEV
-func annotationsForMetering(deploymentName string, privileged bool) map[string]string {
+func annotationsForMetering(deploymentName string) map[string]string {
 	annotations := map[string]string{
 		"productName":    productName,
 		"productID":      productID,
@@ -156,10 +156,5 @@ func annotationsForMetering(deploymentName string, privileged bool) map[string]s
 		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
 		annotations["openshift.io/scc"] = "privileged"
 	}
-	// if privileged {
-	// 	annotations["openshift.io/scc"] = "privileged"
-	// } else {
-	// 	annotations["openshift.io/scc"] = "restricted"
-	// }
 	return annotations
 }

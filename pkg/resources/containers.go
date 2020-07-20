@@ -54,14 +54,6 @@ var fluentdPrivilegedSecurityContext = corev1.SecurityContext{
 	Capabilities:             &commonCapabilities,
 }
 
-var fluentdRestrictedSecurityContext = corev1.SecurityContext{
-	AllowPrivilegeEscalation: &falseVar,
-	Privileged:               &falseVar,
-	ReadOnlyRootFilesystem:   &trueVar,
-	RunAsNonRoot:             &trueVar,
-	Capabilities:             &commonCapabilities,
-}
-
 var commonTolerations = []corev1.Toleration{
 	{
 		Key:      "dedicated",

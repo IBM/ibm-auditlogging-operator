@@ -47,9 +47,24 @@ const (
 	// AuditLoggingCrName specifies the name of the custom resource of the AuditLogging
 	AuditLoggingCrName = "test-auditlogging"
 
+	// CommonAuditCrName specifies the name of the custom resource of the AuditLogging
+	CommonAuditCrName = "test-commonaudit"
+
 	// TestJournalPath specifies the journal path of fluentd being tested
 	TestJournalPath = "/var/log/audit"
 
 	// TestForwardingEnvVar specifies the value of fluentd env var ENABLE_AUDIT_LOGGING_FORWARDING being tested
 	TestForwardingEnvVar = true
+
+	// TestSplunkHost specifies the splunk server host name
+	TestSplunkHost = "master"
+
+	// TestSplunkPort specifies the splunk server port
+	TestSplunkPort = 8088
+
+	// TestSplunkToken specifies the splunk hec token
+	TestSplunkToken = "123-abc"
+
+	// TestSplunkProtocol specifies the splunk hec token
+	TestSplunkProtocol = "http"
 )

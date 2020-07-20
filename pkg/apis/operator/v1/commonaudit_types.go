@@ -25,22 +25,19 @@ import (
 
 // CommonAuditSpec defines the desired state of CommonAudit
 type CommonAuditSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	ClusterIssuer string                 `json:"clusterIssuer,omitempty"`
-	Size          string                 `json:"size,omitempty"`
-	Fluentd       CommonAuditSpecFluentd `json:"fluentd,omitempty"`
+	EnableAuditLoggingForwarding bool                   `json:"enabled,omitempty"`
+	ClusterIssuer                string                 `json:"clusterIssuer,omitempty"`
+	Size                         string                 `json:"size,omitempty"`
+	Fluentd                      CommonAuditSpecFluentd `json:"fluentd,omitempty"`
+	Outputs                      CommonAuditSpecOutputs `json:"outputs,omitempty"`
 }
 
 // CommonAuditSpecFluentd defines the desired state of Fluentd
 type CommonAuditSpecFluentd struct {
-	EnableAuditLoggingForwarding bool                     `json:"enabled,omitempty"`
-	ImageRegistry                string                   `json:"imageRegistry,omitempty"`
-	PullPolicy                   string                   `json:"pullPolicy,omitempty"`
-	Replicas                     int                      `json:"replicas,omitempty"`
-	Resources                    CommonAuditSpecResources `json:"resources,omitempty"`
-	Output                       CommonAuditSpecOutput    `json:"output,omitempty"`
+	ImageRegistry string                   `json:"imageRegistry,omitempty"`
+	PullPolicy    string                   `json:"pullPolicy,omitempty"`
+	Replicas      int                      `json:"replicas,omitempty"`
+	Resources     CommonAuditSpecResources `json:"resources,omitempty"`
 }
 
 // CommonAuditSpecResources defines the resources for the fluentd deployment
@@ -55,10 +52,10 @@ type CommonAuditSpecRequirements struct {
 	Memory string `json:"memory"`
 }
 
-// CommonAuditSpecOutput defines the configurations for forwarding audit logs to Splunk or QRadar
-type CommonAuditSpecOutput struct {
+// CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog
+type CommonAuditSpecOutputs struct {
 	Splunk      CommonAuditSpecSplunk        `json:"splunk,omitempty"`
-	QRadar      CommonAuditSpecQRadar        `json:"qradar,omitempty"`
+	Syslog      CommonAuditSpecSyslog        `json:"syslog,omitempty"`
 	HostAliases []CommonAuditSpecHostAliases `json:"hostAliases,omitempty"`
 }
 
@@ -67,13 +64,20 @@ type CommonAuditSpecSplunk struct {
 	Host  string `json:"host"`
 	Port  int    `json:"port"`
 	Token string `json:"token"`
+	// This is the protocol to use for calling the HEC API.
+	// Valid values are: "https" or "http"
+	Protocol protocol `json:"protocol"`
 }
 
-// CommonAuditSpecQRadar defines the configurations for forwarding audit logs to QRadar
-type CommonAuditSpecQRadar struct {
+// +kubebuilder:validation:Enum=https;http
+type protocol string
+
+// CommonAuditSpecSyslog defines the configurations for forwarding audit logs to a syslog SIEM
+type CommonAuditSpecSyslog struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Hostname string `json:"hostname"`
+	TLS      bool   `json:"tls,omitempty"`
 }
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM
@@ -84,9 +88,7 @@ type CommonAuditSpecHostAliases struct {
 
 // CommonAuditStatus defines the observed state of CommonAudit
 type CommonAuditStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	// The list of pod names for fluentd
 	Nodes []string `json:"nodes"`
 }
 

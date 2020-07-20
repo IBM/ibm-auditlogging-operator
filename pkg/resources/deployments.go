@@ -50,7 +50,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName, false)
+	annotations := annotationsForMetering(FluentdName)
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
@@ -115,9 +115,9 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 		},
 	}
 
-	if len(instance.Spec.Fluentd.Output.HostAliases) > 0 {
+	if len(instance.Spec.Outputs.HostAliases) > 0 {
 		var hostAliases = []corev1.HostAlias{}
-		for _, hostAlias := range instance.Spec.Fluentd.Output.HostAliases {
+		for _, hostAlias := range instance.Spec.Outputs.HostAliases {
 			hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
 		}
 		deploy.Spec.Template.Spec.HostAliases = hostAliases
@@ -263,7 +263,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName, true)
+	annotations := annotationsForMetering(FluentdName)
 	commonVolumes = buildDaemonsetVolumes(instance)
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)

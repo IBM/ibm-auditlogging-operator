@@ -192,7 +192,6 @@ remoteSyslog.conf: |-
 `
 var qRadarConfigV1Data2 = `
             protocol tcp
-            tls true
             ca_file /fluentd/etc/tls/qradar.crt
             packet_size 4096
             program fluentd
@@ -227,13 +226,17 @@ const hecToken = `hec_token `
 const host = `host `
 const port = `port `
 const hostname = `hostname `
+const protocol = `protocol `
+const tls = `tls `
 
-var regexHecHost = regexp.MustCompile(hecHost + `.*`)
-var regexHecPort = regexp.MustCompile(hecPort + `.*`)
-var regexHecToken = regexp.MustCompile(hecToken + `.*`)
-var regexHost = regexp.MustCompile(host + `.*`)
-var regexPort = regexp.MustCompile(port + `.*`)
-var regexHostname = regexp.MustCompile(hostname + `.*`)
+var RegexHecHost = regexp.MustCompile(hecHost + `.*`)
+var RegexHecPort = regexp.MustCompile(hecPort + `.*`)
+var RegexHecToken = regexp.MustCompile(hecToken + `.*`)
+var RegexHost = regexp.MustCompile(host + `.*`)
+var RegexPort = regexp.MustCompile(port + `.*`)
+var RegexHostname = regexp.MustCompile(hostname + `.*`)
+var RegexProtocol = regexp.MustCompile(protocol + `.*`)
+var RegexTLS = regexp.MustCompile(tls + `.*`)
 
 var qradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
 var splunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
@@ -249,7 +252,7 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 	var data string
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
-		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.Fluentd.EnableAuditLoggingForwarding)
+		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.EnableAuditLoggingForwarding)
 		type Data struct {
 			Value string `yaml:"fluent.conf"`
 		}
@@ -309,10 +312,10 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 
 func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	var result = fluentdMainConfigV1Data
-	if instance.Spec.Fluentd.Output.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+	if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
 		result += yamlLine(1, splunkPlugin, true)
 	}
-	if instance.Spec.Fluentd.Output.QRadar != (operatorv1.CommonAuditSpecQRadar{}) {
+	if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 		result += yamlLine(1, qradarPlugin, true)
 	}
 	return result
@@ -320,14 +323,16 @@ func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 
 func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
 	var result = splunkConfigV1Data1
-	if instance.Spec.Fluentd.Output.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
-		result += yamlLine(2, hecHost+instance.Spec.Fluentd.Output.Splunk.Host, true)
-		result += yamlLine(2, hecPort+strconv.Itoa(instance.Spec.Fluentd.Output.Splunk.Port), true)
-		result += yamlLine(2, hecToken+instance.Spec.Fluentd.Output.Splunk.Token, false)
+	if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+		result += yamlLine(2, hecHost+instance.Spec.Outputs.Splunk.Host, true)
+		result += yamlLine(2, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port), true)
+		result += yamlLine(2, hecToken+instance.Spec.Outputs.Splunk.Token, true)
+		result += yamlLine(2, protocol+string(instance.Spec.Outputs.Splunk.Protocol), false)
 	} else {
 		result += yamlLine(2, hecHost+`SPLUNK_SERVER_HOSTNAME`, true)
 		result += yamlLine(2, hecPort+`SPLUNK_PORT`, true)
-		result += yamlLine(2, hecToken+`SPLUNK_HEC_TOKEN`, false)
+		result += yamlLine(2, hecToken+`SPLUNK_HEC_TOKEN`, true)
+		result += yamlLine(2, protocol+`https`, false)
 	}
 	// need to add user customized configs like buffer ?
 	return result + splunkConfigV1Data2
@@ -335,14 +340,16 @@ func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
 
 func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 	var result = qRadarConfigV1Data1
-	if instance.Spec.Fluentd.Output.QRadar != (operatorv1.CommonAuditSpecQRadar{}) {
-		result += yamlLine(3, host+instance.Spec.Fluentd.Output.QRadar.Host, true)
-		result += yamlLine(3, port+strconv.Itoa(instance.Spec.Fluentd.Output.QRadar.Port), true)
-		result += yamlLine(3, hostname+instance.Spec.Fluentd.Output.QRadar.Hostname, false)
+	if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
+		result += yamlLine(3, host+instance.Spec.Outputs.Syslog.Host, true)
+		result += yamlLine(3, port+strconv.Itoa(instance.Spec.Outputs.Syslog.Port), true)
+		result += yamlLine(3, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
+		result += yamlLine(3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
 	} else {
 		result += yamlLine(3, host+`QRADAR_SERVER_HOSTNAME`, true)
 		result += yamlLine(3, port+`QRADAR_PORT_FOR_icp-audit`, true)
-		result += yamlLine(3, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, false)
+		result += yamlLine(3, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, true)
+		result += yamlLine(3, tls+`true`, false)
 	}
 	// need to add user customized configs like buffer ?
 	return result + qRadarConfigV1Data2
@@ -350,69 +357,115 @@ func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 
 // UpdateSIEMConfig returns a String
 func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) string {
-	var newData, d1, d2, d3 string
+	var newData, d1, d2, d3, d4 string
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
-		if instance.Spec.Fluentd.Output.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+		if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
 			newData = found.Data[SplunkConfigKey]
-			d1 = regexHecHost.ReplaceAllString(newData, hecHost+instance.Spec.Fluentd.Output.Splunk.Host)
-			d2 = regexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(instance.Spec.Fluentd.Output.Splunk.Port))
-			d3 = regexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Fluentd.Output.Splunk.Token)
+			d1 = RegexHecHost.ReplaceAllString(newData, hecHost+instance.Spec.Outputs.Splunk.Host)
+			d2 = RegexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port))
+			d3 = RegexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Outputs.Splunk.Token)
+			d4 = RegexProtocol.ReplaceAllString(d3, protocol+string(instance.Spec.Outputs.Splunk.Protocol))
 		}
 	} else {
-		if instance.Spec.Fluentd.Output.QRadar != (operatorv1.CommonAuditSpecQRadar{}) {
+		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 			newData = found.Data[QRadarConfigKey]
-			d1 = regexHost.ReplaceAllString(newData, host+instance.Spec.Fluentd.Output.QRadar.Host)
-			d2 = regexPort.ReplaceAllString(d1, port+strconv.Itoa(instance.Spec.Fluentd.Output.QRadar.Port))
-			d3 = regexHostname.ReplaceAllString(d2, hostname+instance.Spec.Fluentd.Output.QRadar.Hostname)
+			d1 = RegexHost.ReplaceAllString(newData, host+instance.Spec.Outputs.Syslog.Host)
+			d2 = RegexPort.ReplaceAllString(d1, port+strconv.Itoa(instance.Spec.Outputs.Syslog.Port))
+			d3 = RegexHostname.ReplaceAllString(d2, hostname+instance.Spec.Outputs.Syslog.Hostname)
+			d4 = RegexTLS.ReplaceAllString(d3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS))
 		}
 	}
-	return d3
+	return d4
 }
 
 // EqualSIEMConfig returns a Boolean
-func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) bool {
+func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) (bool, bool) {
 	var key string
+	type config struct {
+		name  string
+		value string
+		regex *regexp.Regexp
+	}
+	var configs = []config{}
 	logger := log.WithValues("func", "EqualSIEMConfigs")
 	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
-		if instance.Spec.Fluentd.Output.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+		if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
 			key = SplunkConfigKey
-			hostFound := strings.Split(regexHecHost.FindStringSubmatch(found.Data[key])[0], " ")
-			if hostFound[1] != instance.Spec.Fluentd.Output.Splunk.Host {
-				logger.Info("Host incorrect", "Found", hostFound[1], "Expected", instance.Spec.Fluentd.Output.Splunk.Host)
-				return false
-			}
-			portFound := strings.Split(regexHecPort.FindStringSubmatch(found.Data[key])[0], " ")
-			if portFound[1] != strconv.Itoa(instance.Spec.Fluentd.Output.Splunk.Port) {
-				logger.Info("Port incorrect", "Found", portFound[1], "Expected", instance.Spec.Fluentd.Output.Splunk.Port)
-				return false
-			}
-			tokenFound := strings.Split(regexHecToken.FindStringSubmatch(found.Data[key])[0], " ")
-			if tokenFound[1] != instance.Spec.Fluentd.Output.Splunk.Token {
-				logger.Info("Token incorrect", "Found", tokenFound[1], "Expected", instance.Spec.Fluentd.Output.Splunk.Token)
-				return false
+			configs = []config{
+				{
+					name:  "Host",
+					value: instance.Spec.Outputs.Splunk.Host,
+					regex: RegexHecHost,
+				},
+				{
+					name:  "Port",
+					value: strconv.Itoa(instance.Spec.Outputs.Splunk.Port),
+					regex: RegexHecPort,
+				},
+				{
+					name:  "Token",
+					value: instance.Spec.Outputs.Splunk.Token,
+					regex: RegexHecToken,
+				},
+				{
+					name:  "Protocol",
+					value: string(instance.Spec.Outputs.Splunk.Protocol),
+					regex: RegexProtocol,
+				},
 			}
 		}
 	} else {
-		if instance.Spec.Fluentd.Output.QRadar != (operatorv1.CommonAuditSpecQRadar{}) {
+		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 			key = QRadarConfigKey
-			hostFound := strings.Split(regexHost.FindStringSubmatch(found.Data[key])[0], " ")
-			if hostFound[1] != instance.Spec.Fluentd.Output.QRadar.Host {
-				logger.Info("Host incorrect", "Found", hostFound[1], "Expected", instance.Spec.Fluentd.Output.QRadar.Host)
-				return false
-			}
-			portFound := strings.Split(regexPort.FindStringSubmatch(found.Data[key])[0], " ")
-			if portFound[1] != strconv.Itoa(instance.Spec.Fluentd.Output.QRadar.Port) {
-				logger.Info("Port incorrect", "Found", portFound[1], "Expected", instance.Spec.Fluentd.Output.QRadar.Port)
-				return false
-			}
-			hostnameFound := strings.Split(regexHostname.FindStringSubmatch(found.Data[key])[0], " ")
-			if hostnameFound[1] != instance.Spec.Fluentd.Output.QRadar.Hostname {
-				logger.Info("Hostname incorrect", "Found", portFound[1], "Expected", instance.Spec.Fluentd.Output.QRadar.Hostname)
-				return false
+			configs = []config{
+				{
+					name:  "Host",
+					value: instance.Spec.Outputs.Syslog.Host,
+					regex: RegexHost,
+				},
+				{
+					name:  "Port",
+					value: strconv.Itoa(instance.Spec.Outputs.Syslog.Port),
+					regex: RegexPort,
+				},
+				{
+					name:  "Hostname",
+					value: instance.Spec.Outputs.Syslog.Hostname,
+					regex: RegexHostname,
+				},
+				{
+					name:  "TLS",
+					value: strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS),
+					regex: RegexTLS,
+				},
 			}
 		}
 	}
-	return true
+	var equal = true
+	var missing = false
+	for _, c := range configs {
+		equal = true
+		missing = false
+		found := c.regex.FindStringSubmatch(found.Data[key])
+		if len(found) > 0 {
+			value := strings.Split(found[0], " ")
+			if len(value) > 1 {
+				if value[1] != c.value {
+					equal = false
+				}
+			} else {
+				equal = false
+				missing = true
+			}
+		} else {
+			equal = false
+			missing = true
+		}
+		if !equal {
+			logger.Info(c.name+" incorrect", "Expected", c.value)
+		}
+	}
+	return equal, missing
 }
 
 // UpdateMatchTags returns a String
