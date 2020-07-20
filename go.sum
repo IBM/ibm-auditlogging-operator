@@ -470,6 +470,7 @@ github.com/jackc/pgx v3.2.0+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGk
 github.com/jefferai/jsonx v1.0.0/go.mod h1:OGmqmi2tTeI/PS+qQfBDToLHHJIy/RMp24fPo8vFvoQ=
 github.com/jetstack/cert-manager v0.10.0 h1:LXbgp7/o5CSqKn//top1eu0nNQd/7anpMID8RkQxSRc=
 github.com/jetstack/cert-manager v0.10.0/go.mod h1:OwDp3xa9BL5KNvsOiPMAnz45phSrnPk5Wh5Zl72TYDo=
+github.com/jetstack/cert-manager v0.15.2 h1:3P2d0aV0j7hOb5/QK2tSwWHQITb/QQEizGqqdoq+lD4=
 github.com/jimstudt/http-authentication v0.0.0-20140401203705-3eca13d6893a/go.mod h1:wK6yTYYcgjHE1Z1QtXACPDjcFJyBskHEdagmnq3vsP8=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
