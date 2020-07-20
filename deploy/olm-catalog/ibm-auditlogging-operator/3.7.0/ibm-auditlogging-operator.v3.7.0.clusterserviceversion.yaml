@@ -180,6 +180,9 @@ spec:
         - description: Configurations for Fluentd
           displayName: Fluentd
           path: fluentd
+        - description: Configurations for SIEMs
+          displayName: Outputs
+          path: outputs
       statusDescriptors:
         - description: The list of Pods for the Audit Logging service
           displayName: Pod Names
