@@ -73,7 +73,7 @@ func UpdateCommonAudit(f *framework.Framework, ctx *framework.TestCtx) error {
 		conCr.Spec.Outputs.Splunk.Host = config.TestSplunkHost
 		conCr.Spec.Outputs.Splunk.Port = config.TestSplunkPort
 		conCr.Spec.Outputs.Splunk.Token = config.TestSplunkToken
-		conCr.Spec.Outputs.Splunk.Protocol = config.TestSplunkProtocol
+		conCr.Spec.Outputs.Splunk.TLS = config.TestSplunkTLS
 		if err := f.Client.Update(goctx.TODO(), conCr); err != nil {
 			fmt.Println("    --- Waiting for CommonAudit instance stable ...")
 			return false, nil
@@ -101,15 +101,6 @@ func newCommonAuditCR(name, namespace string) *operator.CommonAudit {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: operator.CommonAuditSpec{
-			Outputs: operator.CommonAuditSpecOutputs{
-				Splunk: operator.CommonAuditSpecSplunk{
-					Host:     "worker",
-					Port:     0,
-					Token:    "abc-123",
-					Protocol: "https",
-				},
-			},
-		},
+		Spec: operator.CommonAuditSpec{},
 	}
 }

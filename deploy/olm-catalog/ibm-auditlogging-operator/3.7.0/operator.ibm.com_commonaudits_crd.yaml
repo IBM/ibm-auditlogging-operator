@@ -103,42 +103,37 @@ spec:
                   description: CommonAuditSpecSplunk defines the configurations for
                     forwarding audit logs to Splunk
                   properties:
+                    enableTLS:
+                      type: boolean
                     host:
                       type: string
                     port:
                       type: integer
-                    protocol:
-                      description: 'This is the protocol to use for calling the HEC
-                        API. Valid values are: "https" or "http"'
-                      enum:
-                      - https
-                      - http
-                      type: string
                     token:
                       type: string
                   required:
+                  - enableTLS
                   - host
                   - port
-                  - protocol
                   - token
                   type: object
                 syslog:
                   description: CommonAuditSpecSyslog defines the configurations for
                     forwarding audit logs to a syslog SIEM
                   properties:
+                    enableTLS:
+                      type: boolean
                     host:
                       type: string
                     hostname:
                       type: string
                     port:
                       type: integer
-                    tls:
-                      type: boolean
                   required:
+                  - enableTLS
                   - host
                   - hostname
                   - port
-                  - tls
                   type: object
               type: object
           type: object

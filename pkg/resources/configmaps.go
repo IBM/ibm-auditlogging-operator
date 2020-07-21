@@ -253,6 +253,11 @@ var splunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
 
 const matchTags = `<match icp-audit icp-audit.**>`
 
+var Protocols = map[bool]string{
+	true:  "https",
+	false: "http",
+}
+
 // BuildFluentdConfigMap returns a ConfigMap object
 func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Namespace, "ConfigMap.Name", name)
@@ -337,7 +342,7 @@ func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
 		result += yamlLine(2, hecHost+instance.Spec.Outputs.Splunk.Host, true)
 		result += yamlLine(2, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port), true)
 		result += yamlLine(2, hecToken+instance.Spec.Outputs.Splunk.Token, true)
-		result += yamlLine(2, protocol+string(instance.Spec.Outputs.Splunk.Protocol), false)
+		result += yamlLine(2, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS], false)
 	} else {
 		result += yamlLine(2, hecHost+`SPLUNK_SERVER_HOSTNAME`, true)
 		result += yamlLine(2, hecPort+`SPLUNK_PORT`, true)
@@ -374,7 +379,7 @@ func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap)
 			d1 = RegexHecHost.ReplaceAllString(newData, hecHost+instance.Spec.Outputs.Splunk.Host)
 			d2 = RegexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port))
 			d3 = RegexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Outputs.Splunk.Token)
-			d4 = RegexProtocol.ReplaceAllString(d3, protocol+string(instance.Spec.Outputs.Splunk.Protocol))
+			d4 = RegexProtocol.ReplaceAllString(d3, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS])
 		}
 	} else {
 		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
@@ -419,7 +424,7 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 				},
 				{
 					name:  "Protocol",
-					value: string(instance.Spec.Outputs.Splunk.Protocol),
+					value: Protocols[instance.Spec.Outputs.Splunk.TLS],
 					regex: RegexProtocol,
 				},
 			}
@@ -473,6 +478,7 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 		}
 		if !equal {
 			logger.Info(c.name+" incorrect", "Expected", c.value)
+			break
 		}
 	}
 	return equal, missing

@@ -37,14 +37,14 @@ metadata:
               "splunk": {
                 "host": "SPLUNK_SERVER_HOSTNAME",
                 "port": "8088",
-                "token": "SPLUNK_HEC_TOKEN"
-                "protocol": "http"
+                "token": "SPLUNK_HEC_TOKEN",
+                "enableTLS": "false"
               },
               "syslog": {
                 "host": "QRADAR_SERVER_HOSTNAME",
                 "port": "514",
                 "hostname": "QRADAR_LOG_SOURCE_IDENTIFIER",
-                "tls": "false"
+                "enableTLS": "false"
               },
               "hostAliases": [
                 {
@@ -117,6 +117,7 @@ metadata:
             "bindings": {
               "public": {
                 "secret": "audit-server-certs",
+                "secret": "audit-certs",
                 "configmap": "audit-logging-fluentd-ds-http-ingesturl"
               }
             }

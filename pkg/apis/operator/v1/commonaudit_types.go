@@ -25,6 +25,7 @@ import (
 
 // CommonAuditSpec defines the desired state of CommonAudit
 type CommonAuditSpec struct {
+	// EnableAuditLoggingForwarding defines if audit logs should be forwarded to an SIEM or not
 	EnableAuditLoggingForwarding bool                   `json:"enabled,omitempty"`
 	ClusterIssuer                string                 `json:"clusterIssuer,omitempty"`
 	Fluentd                      CommonAuditSpecFluentd `json:"fluentd,omitempty"`
@@ -63,20 +64,15 @@ type CommonAuditSpecSplunk struct {
 	Host  string `json:"host"`
 	Port  int    `json:"port"`
 	Token string `json:"token"`
-	// This is the protocol to use for calling the HEC API.
-	// Valid values are: "https" or "http"
-	Protocol protocol `json:"protocol"`
+	TLS   bool   `json:"enableTLS"`
 }
-
-// +kubebuilder:validation:Enum=https;http
-type protocol string
 
 // CommonAuditSpecSyslog defines the configurations for forwarding audit logs to a syslog SIEM
 type CommonAuditSpecSyslog struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Hostname string `json:"hostname"`
-	TLS      bool   `json:"tls"`
+	TLS      bool   `json:"enableTLS"`
 }
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM

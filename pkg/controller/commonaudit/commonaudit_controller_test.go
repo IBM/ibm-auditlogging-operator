@@ -65,7 +65,7 @@ splunkHEC.conf: |-
 const dummyFluentdSHA = "sha256:abc"
 const dummyHostAliasIP = "9.12.34.56"
 const dummyHostAliasName = "test.fyre.ibm.com"
-const protocol = "http"
+const enableTLS = false
 
 var dummyHostAliases = []corev1.HostAlias{
 	{
@@ -217,7 +217,7 @@ func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCo
 	ca.Spec.Outputs.Splunk.Host = dummyHost
 	ca.Spec.Outputs.Splunk.Token = dummyToken
 	ca.Spec.Outputs.Splunk.Port, _ = strconv.Atoi(dummyPort)
-	ca.Spec.Outputs.Splunk.Protocol = protocol
+	ca.Spec.Outputs.Splunk.TLS = enableTLS
 	ca.Spec.Outputs.HostAliases = append(ca.Spec.Outputs.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})
@@ -268,9 +268,9 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	proto := strings.Split(res.RegexProtocol.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
 	reBuffer := regexp.MustCompile(`buffer`)
 	buffer := reBuffer.FindAllString(updatedCM.Data[res.SplunkConfigKey], -1)
-	if host != dummyHost || port != dummyPort || token != dummyToken || proto != protocol {
+	if host != dummyHost || port != dummyPort || token != dummyToken || proto != res.Protocols[enableTLS] {
 		t.Fatalf("SIEM creds not preserved: Found: (%s), (%s), (%s), (%s). Expected: (%s), (%s), (%s), (%s).",
-			host, port, token, proto, dummyHost, dummyPort, dummyToken, protocol)
+			host, port, token, proto, dummyHost, dummyPort, dummyToken, res.Protocols[enableTLS])
 	}
 	if !reflect.DeepEqual(updatedCM.ObjectMeta.Labels, res.LabelsForMetadata(res.FluentdName)) {
 		t.Fatalf("Labels not correct")

@@ -26,12 +26,12 @@ spec:
       host: master
       port: 8088
       token: abc-123
-      protocol: http
+      enableTLS: false
     syslog:
       host: test.fyre.ibm.com
       port: 514
       hostname: qradar_source_id
-      tls: false
+      enableTLS: false
     hostAliases:
       - hostIP: 9.12.34.56
         hostnames:

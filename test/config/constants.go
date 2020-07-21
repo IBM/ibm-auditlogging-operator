@@ -65,6 +65,6 @@ const (
 	// TestSplunkToken specifies the splunk hec token
 	TestSplunkToken = "123-abc"
 
-	// TestSplunkProtocol specifies the splunk hec token
-	TestSplunkProtocol = "http"
+	// TestSplunkTLS specifies if tls for splunk is enabled
+	TestSplunkTLS = false
 )
