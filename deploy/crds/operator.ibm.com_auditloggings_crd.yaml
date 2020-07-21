@@ -3,9 +3,9 @@ kind: CustomResourceDefinition
 metadata:
   name: auditloggings.operator.ibm.com
   labels:
-      app.kubernetes.io/instance: "common-audit-logging"
-      app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
-      app.kubernetes.io/name: "common-audit-logging"
+      app.kubernetes.io/instance: common-audit-logging
+      app.kubernetes.io/managed-by: ibm-auditlogging-operator
+      app.kubernetes.io/name: common-audit-logging
 spec:
   group: operator.ibm.com
   names:

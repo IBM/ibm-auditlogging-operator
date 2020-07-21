@@ -27,7 +27,6 @@ import (
 type CommonAuditSpec struct {
 	EnableAuditLoggingForwarding bool                   `json:"enabled,omitempty"`
 	ClusterIssuer                string                 `json:"clusterIssuer,omitempty"`
-	Size                         string                 `json:"size,omitempty"`
 	Fluentd                      CommonAuditSpecFluentd `json:"fluentd,omitempty"`
 	Outputs                      CommonAuditSpecOutputs `json:"outputs,omitempty"`
 }
@@ -77,7 +76,7 @@ type CommonAuditSpecSyslog struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Hostname string `json:"hostname"`
-	TLS      bool   `json:"tls,omitempty"`
+	TLS      bool   `json:"tls"`
 }
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM
