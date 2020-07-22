@@ -135,6 +135,11 @@ func (r *ReconcileCommonAudit) reconcileConfig(instance *operatorv1.CommonAudit,
 			found.Data[res.SourceConfigKey] = expected.Data[res.SourceConfigKey]
 			update = true
 		}
+	case res.FluentdDaemonSetName + "-" + res.HTTPIngestName:
+		if !res.EqualConfig(found, expected, res.HTTPIngestURLKey) {
+			found.Data[res.HTTPIngestURLKey] = expected.Data[res.HTTPIngestURLKey]
+			update = true
+		}
 	case res.FluentdDaemonSetName + "-" + res.SplunkConfigName:
 		reqLogger.Info("Checking output configs")
 		fallthrough
