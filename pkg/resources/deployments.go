@@ -50,13 +50,13 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName)
+	annotations := annotationsForMetering(false)
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
-	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
+	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
 
 	var replicas = defaultReplicas
 	if instance.Spec.Fluentd.Replicas > 0 {
@@ -263,7 +263,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName)
+	annotations := annotationsForMetering(true)
 	commonVolumes = buildDaemonsetVolumes(instance)
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)

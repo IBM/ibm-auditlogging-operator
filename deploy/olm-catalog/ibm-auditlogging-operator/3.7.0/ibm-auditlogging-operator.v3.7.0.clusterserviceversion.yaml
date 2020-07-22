@@ -117,7 +117,6 @@ metadata:
             "bindings": {
               "public": {
                 "secret": "audit-server-certs",
-                "secret": "audit-certs",
                 "configmap": "audit-logging-fluentd-ds-http-ingesturl"
               }
             }
@@ -483,8 +482,8 @@ spec:
                 - name: POLICY_CTRL_TAG_OR_SHA
                   value: sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409
                 - name: FLUENTD_TAG_OR_SHA
-                  value: sha256:d9bbc6c3f8dc0299abd0927285c40b8f61878aafaae3928340991ce0436ff854
-                image: hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/audit-operator:test
+                  value: v1.6.2-bedrock-0
+                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources:

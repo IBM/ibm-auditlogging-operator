@@ -25,7 +25,7 @@ import (
 
 const DefaultImageRegistry = "quay.io/opencloudio/"
 const DefaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "v1.6.2-ruby25"
+const defaultFluentdImageTag = "v1.6.2-bedrock-0"
 const DefaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.5.0"
 
@@ -51,6 +51,14 @@ var fluentdPrivilegedSecurityContext = corev1.SecurityContext{
 	ReadOnlyRootFilesystem:   &trueVar,
 	RunAsNonRoot:             &falseVar,
 	RunAsUser:                &rootUser,
+	Capabilities:             &commonCapabilities,
+}
+
+var fluentdRestrictedSecurityContext = corev1.SecurityContext{
+	AllowPrivilegeEscalation: &falseVar,
+	Privileged:               &falseVar,
+	ReadOnlyRootFilesystem:   &trueVar,
+	RunAsNonRoot:             &trueVar,
 	Capabilities:             &commonCapabilities,
 }
 

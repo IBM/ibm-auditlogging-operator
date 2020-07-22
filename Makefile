@@ -31,8 +31,10 @@ OPERAND_REGISTRY ?= $(IMAGE_REPO)
 FLUENTD_TAG ?= v1.6.2-ruby25
 POLICY_CTRL_TAG ?= 3.5.0
 
-# The namespcethat operator will be deployed in
+# The namespce that operator and auditlogging will be deployed in
 NAMESPACE=ibm-common-services
+# The namespce that commonaudit will be deployed in
+CA_NAMESPACE = test
 
 # Github host to use for checking the source tree;
 # Override this variable ue with your own value if you're working on forked repo.
@@ -228,8 +230,9 @@ install: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Set environment variables ......
 	- export DEPLOY_DIR=deploy/crds
 	# - export WATCH_NAMESPACE=${NAMESPACE}
-	# @echo ....... Creating namespace .......
-	# - kubectl create namespace ${NAMESPACE}
+	@echo ....... Creating namespaces .......
+	- kubectl create namespace ${NAMESPACE}
+	- kubectl create namespace ${CA_NAMESPACE}
 	@echo ....... Applying CRDS and Operator .......
 	- for crd in $(shell ls deploy/crds/*crd.yaml); do kubectl apply -f $${crd}; done
 	@echo ....... Applying RBAC .......
@@ -239,9 +242,11 @@ install: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Applying Operator .......
 	# - kubectl apply -f deploy/operator.yaml -n ${NAMESPACE}
 	- kubectl apply -f deploy/olm-catalog/${BASE_DIR}/${CSV_VERSION}/${BASE_DIR}.v${CSV_VERSION}.clusterserviceversion.yaml -n ${NAMESPACE}
-	@echo ....... Creating the Instance .......
+	@echo ....... Creating the Instances .......
 	# - for cr in $(shell ls deploy/crds/*_cr.yaml); do kubectl -n ${NAMESPACE} apply -f $${cr}; doneMESPACE}
-	# - kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${NAMESPACE}
+	@echo ....... Creating the CommonAudit Instance in Namespace ${CA_NAMESPACE} .......
+	- kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${CA_NAMESPACE}
+	@echo ....... Creating the AuditLogging Instance in Namespace ${NAMESPACE}.......
 	- kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
 
 uninstall: ## Uninstall all that all performed in the $ make install
@@ -258,8 +263,12 @@ uninstall: ## Uninstall all that all performed in the $ make install
 	- kubectl delete -f deploy/role_binding.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/service_account.yaml -n ${NAMESPACE}
 	- kubectl delete -f deploy/role.yaml -n ${NAMESPACE}
-	# @echo ....... Deleting namespace .......
-	# - kubectl delete namespace ${NAMESPACE}
+	@echo ...... Deleting Secrets .......
+	- kubectl get secret -n ${CA_NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${CA_NAMESPACE}
+	- kubectl get secret -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${NAMESPACE}
+	@echo ...... Deleting Namespaces .......
+	# - kubectl delete ns ${CA_NAMESPACE}
+	# - kubectl delete ns ${NAMESPACE}
 
 install-local: ## Install operator using local controller instead of operator deployment
 	@echo ....... Installing .......
@@ -282,6 +291,8 @@ uninstall-local: ## Uninstall all that all performed in the $ make install-local
 	@echo ....... Deleting CRD.......
 	- kubectl delete -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
 	- kubectl delete -f deploy/crds/operator.ibm.com_commonaudits_crd.yaml
+	@echo ...... Deleting Secrets .......
+	- kubectl get secret -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${NAMESPACE}
 
 ############################################################
 # CSV section

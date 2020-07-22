@@ -8,7 +8,6 @@ metadata:
     app.kubernetes.io/name: "common-audit-logging"
 spec:
   enabled: true
-  size: small
   clusterIssuer: cs-ca-clusterissuer
   fluentd:
     replicas: 1

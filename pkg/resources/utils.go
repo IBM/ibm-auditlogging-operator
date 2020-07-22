@@ -145,16 +145,18 @@ func LabelsForPodMetadata(deploymentName string, crName string) map[string]strin
 }
 
 //IBMDEV
-func annotationsForMetering(deploymentName string) map[string]string {
+func annotationsForMetering(journalAccess bool) map[string]string {
+	var scc = "restricted"
+	if journalAccess {
+		scc = "privileged"
+	}
 	annotations := map[string]string{
-		"productName":    productName,
-		"productID":      productID,
-		"productVersion": productVersion,
-		"productMetric":  productMetric,
+		"productName":                        productName,
+		"productID":                          productID,
+		"productVersion":                     productVersion,
+		"productMetric":                      productMetric,
+		"clusterhealth.ibm.com/dependencies": "cert-manager",
 	}
-	if deploymentName == FluentdName {
-		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
-		annotations["openshift.io/scc"] = "privileged"
-	}
+	annotations["openshift.io/scc"] = scc
 	return annotations
 }
