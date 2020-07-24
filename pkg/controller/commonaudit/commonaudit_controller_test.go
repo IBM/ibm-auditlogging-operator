@@ -67,6 +67,7 @@ const dummyFluentdSHA = "sha256:abc"
 const dummyHostAliasIP = "9.12.34.56"
 const dummyHostAliasName = "test.fyre.ibm.com"
 const enableTLS = false
+const enableSIEM = true
 
 var dummyHostAliases = []corev1.HostAlias{
 	{
@@ -219,6 +220,7 @@ func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCo
 	ca.Spec.Outputs.Splunk.Token = dummyToken
 	ca.Spec.Outputs.Splunk.Port = int32(dummyPort)
 	ca.Spec.Outputs.Splunk.TLS = enableTLS
+	ca.Spec.Outputs.Splunk.EnableSIEM = enableSIEM
 	ca.Spec.Outputs.HostAliases = append(ca.Spec.Outputs.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})

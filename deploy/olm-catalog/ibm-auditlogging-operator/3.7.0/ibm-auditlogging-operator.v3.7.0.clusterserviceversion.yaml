@@ -35,12 +35,14 @@ metadata:
             },
             "outputs": {
               "splunk": {
+                "enableSIEM": "false",
                 "host": "SPLUNK_SERVER_HOSTNAME",
                 "port": "8088",
                 "token": "SPLUNK_HEC_TOKEN",
                 "enableTLS": "false"
               },
               "syslog": {
+                "enableSIEM": "false",
                 "host": "QRADAR_SERVER_HOSTNAME",
                 "port": "514",
                 "hostname": "QRADAR_LOG_SOURCE_IDENTIFIER",

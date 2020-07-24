@@ -330,10 +330,10 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 
 func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	var result = fluentdMainConfigV1Data
-	if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+	if instance.Spec.Outputs.Splunk.EnableSIEM {
 		result += yamlLine(1, splunkPlugin, true)
 	}
-	if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
+	if instance.Spec.Outputs.Syslog.EnableSIEM {
 		result += yamlLine(1, qradarPlugin, true)
 	}
 	return result
@@ -341,35 +341,33 @@ func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 
 func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
 	var result = splunkConfigV1Data1
-	if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+	if instance.Spec.Outputs.Splunk.Host != "" && instance.Spec.Outputs.Splunk.Port != 0 &&
+		instance.Spec.Outputs.Splunk.Token != "" {
 		result += yamlLine(2, hecHost+instance.Spec.Outputs.Splunk.Host, true)
 		result += yamlLine(2, hecPort+strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)), true)
 		result += yamlLine(2, hecToken+instance.Spec.Outputs.Splunk.Token, true)
-		result += yamlLine(2, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS], false)
 	} else {
 		result += yamlLine(2, hecHost+`SPLUNK_SERVER_HOSTNAME`, true)
 		result += yamlLine(2, hecPort+`SPLUNK_PORT`, true)
 		result += yamlLine(2, hecToken+`SPLUNK_HEC_TOKEN`, true)
-		result += yamlLine(2, protocol+`https`, false)
 	}
-	// need to add user customized configs like buffer ?
+	result += yamlLine(2, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS], false)
 	return result + splunkConfigV1Data2
 }
 
 func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 	var result = qRadarConfigV1Data1
-	if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
+	if instance.Spec.Outputs.Syslog.Host != "" && instance.Spec.Outputs.Syslog.Port != 0 &&
+		instance.Spec.Outputs.Syslog.Hostname != "" {
 		result += yamlLine(3, host+instance.Spec.Outputs.Syslog.Host, true)
 		result += yamlLine(3, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)), true)
 		result += yamlLine(3, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
-		result += yamlLine(3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
 	} else {
 		result += yamlLine(3, host+`QRADAR_SERVER_HOSTNAME`, true)
 		result += yamlLine(3, port+`QRADAR_PORT_FOR_icp-audit`, true)
 		result += yamlLine(3, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, true)
-		result += yamlLine(3, tls+`true`, false)
 	}
-	// need to add user customized configs like buffer ?
+	result += yamlLine(3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
 	return result + qRadarConfigV1Data2
 }
 

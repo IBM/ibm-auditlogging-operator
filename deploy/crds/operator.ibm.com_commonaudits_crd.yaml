@@ -92,6 +92,8 @@ spec:
                   description: CommonAuditSpecSplunk defines the configurations for
                     forwarding audit logs to Splunk
                   properties:
+                    enableSIEM:
+                      type: boolean
                     enableTLS:
                       type: boolean
                     host:
@@ -102,6 +104,7 @@ spec:
                     token:
                       type: string
                   required:
+                  - enableSIEM
                   - enableTLS
                   - host
                   - port
@@ -111,6 +114,8 @@ spec:
                   description: CommonAuditSpecSyslog defines the configurations for
                     forwarding audit logs to a syslog SIEM
                   properties:
+                    enableSIEM:
+                      type: boolean
                     enableTLS:
                       type: boolean
                     host:
@@ -121,6 +126,7 @@ spec:
                       format: int32
                       type: integer
                   required:
+                  - enableSIEM
                   - enableTLS
                   - host
                   - hostname

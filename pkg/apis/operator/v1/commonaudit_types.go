@@ -50,18 +50,20 @@ type CommonAuditSpecOutputs struct {
 
 // CommonAuditSpecSplunk defines the configurations for forwarding audit logs to Splunk
 type CommonAuditSpecSplunk struct {
-	Host  string `json:"host"`
-	Port  int32  `json:"port"`
-	Token string `json:"token"`
-	TLS   bool   `json:"enableTLS"`
+	EnableSIEM bool   `json:"enableSIEM"`
+	Host       string `json:"host"`
+	Port       int32  `json:"port"`
+	Token      string `json:"token"`
+	TLS        bool   `json:"enableTLS"`
 }
 
 // CommonAuditSpecSyslog defines the configurations for forwarding audit logs to a syslog SIEM
 type CommonAuditSpecSyslog struct {
-	Host     string `json:"host"`
-	Port     int32  `json:"port"`
-	Hostname string `json:"hostname"`
-	TLS      bool   `json:"enableTLS"`
+	EnableSIEM bool   `json:"enableSIEM"`
+	Host       string `json:"host"`
+	Port       int32  `json:"port"`
+	Hostname   string `json:"hostname"`
+	TLS        bool   `json:"enableTLS"`
 }
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM
