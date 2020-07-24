@@ -140,6 +140,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	commonVolumes = BuildCommonVolumes(instance)
 	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
+	// setup the resource requirements
+	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
 	if instance.Spec.Fluentd.PullPolicy != "" {
 		switch instance.Spec.Fluentd.PullPolicy {
@@ -370,6 +372,38 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 		},
 	}
 	return commonVolumeMounts
+}
+
+func buildResources(requestedResources, defaultResources corev1.ResourceRequirements) corev1.ResourceRequirements {
+	var resourceRequirements = corev1.ResourceRequirements{
+		Limits:   defaultResources.Limits.DeepCopy(),
+		Requests: defaultResources.Requests.DeepCopy(),
+	}
+	if requestedResources.Limits != nil {
+		// check CPU limits
+		cpuLimit := requestedResources.Limits.Cpu()
+		if !cpuLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceCPU] = *cpuLimit
+		}
+		// check Memory limits
+		memoryLimit := requestedResources.Limits.Memory()
+		if !memoryLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceMemory] = *memoryLimit
+		}
+	}
+	if requestedResources.Requests != nil {
+		// check CPU requests
+		cpuRequest := requestedResources.Requests.Cpu()
+		if !cpuRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceCPU] = *cpuRequest
+		}
+		// check Memory requests
+		memoryRequest := requestedResources.Requests.Memory()
+		if !memoryRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceMemory] = *memoryRequest
+		}
+	}
+	return resourceRequirements
 }
 
 // EqualDeployments returns a Boolean

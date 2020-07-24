@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,10 +26,9 @@ import (
 
 // AuditLoggingSpec defines the desired state of AuditLogging
 type AuditLoggingSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Fluentd          AuditLoggingSpecFluentd          `json:"fluentd,omitempty"`
+	// Fluentd defines the desired state of Fluentd
+	Fluentd AuditLoggingSpecFluentd `json:"fluentd,omitempty"`
+	// PolicyController has been deprecated. Define values in operator.yaml
 	PolicyController AuditLoggingSpecPolicyController `json:"policyController,omitempty"`
 }
 
@@ -37,13 +37,14 @@ type AuditLoggingSpecFluentd struct {
 	EnableAuditLoggingForwarding bool   `json:"enabled,omitempty"`
 	ImageRegistry                string `json:"imageRegistry,omitempty"`
 	// ImageTag deprecated. Define image sha or tag in operator.yaml
-	ImageTag      string `json:"imageTag,omitempty"`
-	PullPolicy    string `json:"pullPolicy,omitempty"`
-	JournalPath   string `json:"journalPath,omitempty"`
-	ClusterIssuer string `json:"clusterIssuer,omitempty"`
+	ImageTag      string                      `json:"imageTag,omitempty"`
+	PullPolicy    string                      `json:"pullPolicy,omitempty"`
+	JournalPath   string                      `json:"journalPath,omitempty"`
+	ClusterIssuer string                      `json:"clusterIssuer,omitempty"`
+	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
-// AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec
+// AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec.
 type AuditLoggingSpecPolicyController struct {
 	ImageRegistry string `json:"imageRegistry,omitempty"`
 	ImageTag      string `json:"imageTag,omitempty"`
@@ -54,9 +55,7 @@ type AuditLoggingSpecPolicyController struct {
 
 // AuditLoggingStatus defines the observed state of AuditLogging
 type AuditLoggingStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	// Nodes defines the names of the audit pods
 	Nodes []string `json:"nodes"`
 }
 

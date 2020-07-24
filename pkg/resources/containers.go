@@ -45,6 +45,15 @@ var memory150 = resource.NewQuantity(150*1024*1024, resource.BinarySI) // 150Mi
 var memory400 = resource.NewQuantity(400*1024*1024, resource.BinarySI) // 400Mi
 var memory450 = resource.NewQuantity(450*1024*1024, resource.BinarySI) // 450Mi
 
+var defaultFluentdResources = corev1.ResourceRequirements{
+	Limits: map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:    *cpu300,
+		corev1.ResourceMemory: *memory400},
+	Requests: map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:    *cpu25,
+		corev1.ResourceMemory: *memory100},
+}
+
 var commonCapabilities = corev1.Capabilities{
 	Drop: []corev1.Capability{
 		"ALL",
@@ -181,14 +190,6 @@ var fluentdMainContainer = corev1.Container{
 		SuccessThreshold:    1,
 		FailureThreshold:    3,
 	},
-	Resources: corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu300,
-			corev1.ResourceMemory: *memory400},
-		Requests: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu25,
-			corev1.ResourceMemory: *memory100},
-	},
 	SecurityContext: &fluentdSecurityContext,
 }
 
@@ -225,6 +226,26 @@ func EqualContainers(expected corev1.Container, found corev1.Container) bool {
 	}
 	if !reflect.DeepEqual(found.Env, expected.Env) {
 		logger.Info("Env not equal", "Found", found.Env, "Expected", expected.Env)
+		return false
+	}
+	if !equalResources(found.Resources, expected.Resources) {
+		logger.Info("Resources not equal", "Found", found.Resources, "Expected", expected.Resources)
+		return false
+	}
+	return true
+}
+
+func equalResources(found, expected corev1.ResourceRequirements) bool {
+	if !found.Limits.Cpu().Equal(*expected.Limits.Cpu()) {
+		return false
+	}
+	if !found.Limits.Memory().Equal(*expected.Limits.Memory()) {
+		return false
+	}
+	if !found.Requests.Cpu().Equal(*expected.Requests.Cpu()) {
+		return false
+	}
+	if !found.Requests.Memory().Equal(*expected.Requests.Memory()) {
 		return false
 	}
 	return true
