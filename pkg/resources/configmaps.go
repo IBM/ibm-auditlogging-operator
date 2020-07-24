@@ -81,8 +81,8 @@ fluent.conf: |-
   #@include /fluentd/etc/splunkHEC.conf
 `
 var sourceConfigDataKey = `
-source.conf: |-
-`
+source.conf: |-`
+
 var sourceConfigDataSystemd1 = `
     <source>
         @type systemd
