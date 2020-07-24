@@ -143,6 +143,14 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
+	commonAuditList := &operatorv1.CommonAuditList{}
+	if err := r.client.List(context.TODO(), commonAuditList, client.InNamespace(request.Namespace)); err == nil &&
+		len(commonAuditList.Items) > 1 {
+		reqLogger.Info("[WARNING] Only one instance of CommonAudit per namespace. Delete other instances to proceed.")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
 	// Set a default Status value
 	if len(instance.Status.Nodes) == 0 {
 		instance.Status.Nodes = res.DefaultStatusForCR

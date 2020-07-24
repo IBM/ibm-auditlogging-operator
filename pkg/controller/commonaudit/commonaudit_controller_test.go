@@ -51,7 +51,7 @@ const dummyPort = 8088
 const dummyToken = "abc-123"
 const dummySplunkConfig = `
 splunkHEC.conf: |-
-     <match icp-audit k8s-audit>
+     <store>
         @type splunk_hec
         hec_host master
         hec_port 8089
@@ -62,7 +62,7 @@ splunkHEC.conf: |-
         <buffer>
           # ...
         </buffer>
-     </match>`
+     </store>`
 const dummyFluentdSHA = "sha256:abc"
 const dummyHostAliasIP = "9.12.34.56"
 const dummyHostAliasName = "test.fyre.ibm.com"

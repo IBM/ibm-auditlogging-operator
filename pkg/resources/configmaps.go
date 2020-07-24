@@ -181,35 +181,37 @@ var fluentdMainConfigV1Data = `
 fluent.conf: |-
     # Input plugins (Supports Systemd and HTTP)
     @include /fluentd/etc/source.conf
-    # Output plugins (Only use one output plugin conf file at a time)
+
+    <match icp-audit icp-audit.**>
+        @type copy
+`
+var fluentdMainConfigV1Data2 = `
+    </match>
 `
 var splunkConfigV1Data1 = `
 splunkHEC.conf: |-
-    <match icp-audit icp-audit.**>
+    <store>
         @type splunk_hec
 `
 var splunkConfigV1Data2 = `
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
-    </match>`
+    </store>`
 var qRadarConfigV1Data1 = `
 remoteSyslog.conf: |-
-    <match icp-audit icp-audit.**>
-        @type copy
-        <store>
-            @type remote_syslog
+    <store>
+        @type remote_syslog
 `
 var qRadarConfigV1Data2 = `
-            protocol tcp
-            ca_file /fluentd/etc/tls/qradar.crt
-            packet_size 4096
-            program fluentd
-            <format>
-                @type single_value
-                message_key message
-            </format>
-        </store>
-    </match>`
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
 
 // FluentdConfigMaps defines the names of the fluentd configmaps
 var FluentdConfigMaps = []string{
@@ -336,7 +338,7 @@ func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	if instance.Spec.Outputs.Syslog.EnableSIEM {
 		result += yamlLine(1, qradarPlugin, true)
 	}
-	return result
+	return result + fluentdMainConfigV1Data2
 }
 
 func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
@@ -359,15 +361,15 @@ func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 	var result = qRadarConfigV1Data1
 	if instance.Spec.Outputs.Syslog.Host != "" && instance.Spec.Outputs.Syslog.Port != 0 &&
 		instance.Spec.Outputs.Syslog.Hostname != "" {
-		result += yamlLine(3, host+instance.Spec.Outputs.Syslog.Host, true)
-		result += yamlLine(3, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)), true)
-		result += yamlLine(3, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
+		result += yamlLine(2, host+instance.Spec.Outputs.Syslog.Host, true)
+		result += yamlLine(2, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)), true)
+		result += yamlLine(2, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
 	} else {
-		result += yamlLine(3, host+`QRADAR_SERVER_HOSTNAME`, true)
-		result += yamlLine(3, port+`QRADAR_PORT_FOR_icp-audit`, true)
-		result += yamlLine(3, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, true)
+		result += yamlLine(2, host+`QRADAR_SERVER_HOSTNAME`, true)
+		result += yamlLine(2, port+`QRADAR_PORT_FOR_icp-audit`, true)
+		result += yamlLine(2, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, true)
 	}
-	result += yamlLine(3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
+	result += yamlLine(2, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
 	return result + qRadarConfigV1Data2
 }
 

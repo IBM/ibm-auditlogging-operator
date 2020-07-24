@@ -144,16 +144,6 @@ func (r *ReconcileCommonAudit) reconcileConfig(instance *operatorv1.CommonAudit,
 		reqLogger.Info("Checking output configs")
 		fallthrough
 	case res.FluentdDaemonSetName + "-" + res.QRadarConfigName:
-		// Ensure match tags are correct
-		if !res.EqualMatchTags(found) {
-			data := res.UpdateMatchTags(found)
-			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
-				found.Data[res.SplunkConfigKey] = data
-			} else {
-				found.Data[res.QRadarConfigKey] = data
-			}
-			update = true
-		}
 		if equal, missing := res.EqualSIEMConfig(instance, found); !equal {
 			if missing {
 				// Missing required config fields in cm
