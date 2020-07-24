@@ -343,7 +343,7 @@ func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
 	var result = splunkConfigV1Data1
 	if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
 		result += yamlLine(2, hecHost+instance.Spec.Outputs.Splunk.Host, true)
-		result += yamlLine(2, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port), true)
+		result += yamlLine(2, hecPort+strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)), true)
 		result += yamlLine(2, hecToken+instance.Spec.Outputs.Splunk.Token, true)
 		result += yamlLine(2, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS], false)
 	} else {
@@ -360,7 +360,7 @@ func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 	var result = qRadarConfigV1Data1
 	if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 		result += yamlLine(3, host+instance.Spec.Outputs.Syslog.Host, true)
-		result += yamlLine(3, port+strconv.Itoa(instance.Spec.Outputs.Syslog.Port), true)
+		result += yamlLine(3, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)), true)
 		result += yamlLine(3, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
 		result += yamlLine(3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
 	} else {
@@ -380,7 +380,7 @@ func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap)
 		if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
 			newData = found.Data[SplunkConfigKey]
 			d1 = RegexHecHost.ReplaceAllString(newData, hecHost+instance.Spec.Outputs.Splunk.Host)
-			d2 = RegexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(instance.Spec.Outputs.Splunk.Port))
+			d2 = RegexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)))
 			d3 = RegexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Outputs.Splunk.Token)
 			d4 = RegexProtocol.ReplaceAllString(d3, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS])
 		}
@@ -388,7 +388,7 @@ func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap)
 		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 			newData = found.Data[QRadarConfigKey]
 			d1 = RegexHost.ReplaceAllString(newData, host+instance.Spec.Outputs.Syslog.Host)
-			d2 = RegexPort.ReplaceAllString(d1, port+strconv.Itoa(instance.Spec.Outputs.Syslog.Port))
+			d2 = RegexPort.ReplaceAllString(d1, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)))
 			d3 = RegexHostname.ReplaceAllString(d2, hostname+instance.Spec.Outputs.Syslog.Hostname)
 			d4 = RegexTLS.ReplaceAllString(d3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS))
 		}
@@ -417,7 +417,7 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 				},
 				{
 					name:  "Port",
-					value: strconv.Itoa(instance.Spec.Outputs.Splunk.Port),
+					value: strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)),
 					regex: RegexHecPort,
 				},
 				{
@@ -443,7 +443,7 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 				},
 				{
 					name:  "Port",
-					value: strconv.Itoa(instance.Spec.Outputs.Syslog.Port),
+					value: strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)),
 					regex: RegexPort,
 				},
 				{

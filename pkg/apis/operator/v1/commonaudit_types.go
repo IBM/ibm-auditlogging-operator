@@ -17,6 +17,7 @@
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,28 +29,16 @@ type CommonAuditSpec struct {
 	// EnableAuditLoggingForwarding defines if audit logs should be forwarded to an SIEM or not
 	EnableAuditLoggingForwarding bool                   `json:"enabled,omitempty"`
 	ClusterIssuer                string                 `json:"clusterIssuer,omitempty"`
+	Replicas                     int32                  `json:"replicas,omitempty"`
 	Fluentd                      CommonAuditSpecFluentd `json:"fluentd,omitempty"`
 	Outputs                      CommonAuditSpecOutputs `json:"outputs,omitempty"`
 }
 
 // CommonAuditSpecFluentd defines the desired state of Fluentd
 type CommonAuditSpecFluentd struct {
-	ImageRegistry string                   `json:"imageRegistry,omitempty"`
-	PullPolicy    string                   `json:"pullPolicy,omitempty"`
-	Replicas      int                      `json:"replicas,omitempty"`
-	Resources     CommonAuditSpecResources `json:"resources,omitempty"`
-}
-
-// CommonAuditSpecResources defines the resources for the fluentd deployment
-type CommonAuditSpecResources struct {
-	Requests CommonAuditSpecRequirements `json:"requests"`
-	Limits   CommonAuditSpecRequirements `json:"limits"`
-}
-
-// CommonAuditSpecRequirements defines cpu and memory
-type CommonAuditSpecRequirements struct {
-	CPU    string `json:"cpu"`
-	Memory string `json:"memory"`
+	ImageRegistry string                      `json:"imageRegistry,omitempty"`
+	PullPolicy    string                      `json:"pullPolicy,omitempty"`
+	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog
@@ -62,7 +51,7 @@ type CommonAuditSpecOutputs struct {
 // CommonAuditSpecSplunk defines the configurations for forwarding audit logs to Splunk
 type CommonAuditSpecSplunk struct {
 	Host  string `json:"host"`
-	Port  int    `json:"port"`
+	Port  int32  `json:"port"`
 	Token string `json:"token"`
 	TLS   bool   `json:"enableTLS"`
 }
@@ -70,7 +59,7 @@ type CommonAuditSpecSplunk struct {
 // CommonAuditSpecSyslog defines the configurations for forwarding audit logs to a syslog SIEM
 type CommonAuditSpecSyslog struct {
 	Host     string `json:"host"`
-	Port     int    `json:"port"`
+	Port     int32  `json:"port"`
 	Hostname string `json:"hostname"`
 	TLS      bool   `json:"enableTLS"`
 }

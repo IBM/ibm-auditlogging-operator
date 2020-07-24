@@ -36,7 +36,7 @@ spec:
           description: AuditLoggingSpec defines the desired state of AuditLogging
           properties:
             fluentd:
-              description: AuditLoggingSpecFluentd defines the desired state of Fluentd
+              description: Fluentd defines the desired state of Fluentd
               properties:
                 clusterIssuer:
                   type: string
@@ -51,10 +51,29 @@ spec:
                   type: string
                 pullPolicy:
                   type: string
+                resources:
+                  description: ResourceRequirements describes the compute resource
+                    requirements.
+                  properties:
+                    limits:
+                      additionalProperties:
+                        type: string
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                      type: object
+                    requests:
+                      additionalProperties:
+                        type: string
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                      type: object
+                  type: object
               type: object
             policyController:
-              description: AuditLoggingSpecPolicyController defines the policy controller
-                configuration in the the audit logging spec
+              description: PolicyController has been deprecated. Define values in
+                operator.yaml
               properties:
                 frequency:
                   type: string
@@ -72,10 +91,7 @@ spec:
           description: AuditLoggingStatus defines the observed state of AuditLogging
           properties:
             nodes:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              description: Nodes defines the names of the audit pods
               items:
                 type: string
               type: array

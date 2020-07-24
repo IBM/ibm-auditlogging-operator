@@ -23,7 +23,6 @@ import (
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -57,16 +56,11 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
 	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
-
 	var replicas = defaultReplicas
-	if instance.Spec.Fluentd.Replicas > 0 {
-		replicas = int32(instance.Spec.Fluentd.Replicas)
+	if instance.Spec.Replicas > 0 {
+		replicas = instance.Spec.Replicas
 	}
-
-	if instance.Spec.Fluentd.Resources != (operatorv1.CommonAuditSpecResources{}) {
-		fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources.Requests.CPU, instance.Spec.Fluentd.Resources.Requests.Memory,
-			instance.Spec.Fluentd.Resources.Limits.CPU, instance.Spec.Fluentd.Resources.Limits.Memory)
-	}
+	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -270,6 +264,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as privileged
 	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
+	// setup the resource requirements
+	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -487,21 +483,36 @@ func buildDaemonsetVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev
 	return commonVolumeMounts
 }
 
-func buildResources(cpuRequest string, memRequest string, cpuLimit string, memLimit string) corev1.ResourceRequirements {
-	var cpuReq = resource.MustParse(cpuRequest)
-	var memReq = resource.MustParse(memRequest)
-	var cpuLim = resource.MustParse(cpuLimit)
-	var memLim = resource.MustParse(memLimit)
-	return corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    cpuLim,
-			corev1.ResourceMemory: memLim,
-		},
-		Requests: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    cpuReq,
-			corev1.ResourceMemory: memReq,
-		},
+func buildResources(requestedResources, defaultResources corev1.ResourceRequirements) corev1.ResourceRequirements {
+	var resourceRequirements = corev1.ResourceRequirements{
+		Limits:   defaultResources.Limits.DeepCopy(),
+		Requests: defaultResources.Requests.DeepCopy(),
 	}
+	if requestedResources.Limits != nil {
+		// check CPU limits
+		cpuLimit := requestedResources.Limits.Cpu()
+		if !cpuLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceCPU] = *cpuLimit
+		}
+		// check Memory limits
+		memoryLimit := requestedResources.Limits.Memory()
+		if !memoryLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceMemory] = *memoryLimit
+		}
+	}
+	if requestedResources.Requests != nil {
+		// check CPU requests
+		cpuRequest := requestedResources.Requests.Cpu()
+		if !cpuRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceCPU] = *cpuRequest
+		}
+		// check Memory requests
+		memoryRequest := requestedResources.Requests.Memory()
+		if !memoryRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceMemory] = *memoryRequest
+		}
+	}
+	return resourceRequirements
 }
 
 // EqualDeployments returns a Boolean

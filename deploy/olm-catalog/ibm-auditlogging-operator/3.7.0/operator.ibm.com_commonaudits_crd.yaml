@@ -38,6 +38,8 @@ spec:
             clusterIssuer:
               type: string
             enabled:
+              description: EnableAuditLoggingForwarding defines if audit logs should
+                be forwarded to an SIEM or not
               type: boolean
             fluentd:
               description: CommonAuditSpecFluentd defines the desired state of Fluentd
@@ -46,37 +48,24 @@ spec:
                   type: string
                 pullPolicy:
                   type: string
-                replicas:
-                  type: integer
                 resources:
-                  description: CommonAuditSpecResources defines the resources for
-                    the fluentd deployment
+                  description: ResourceRequirements describes the compute resource
+                    requirements.
                   properties:
                     limits:
-                      description: CommonAuditSpecRequirements defines cpu and memory
-                      properties:
-                        cpu:
-                          type: string
-                        memory:
-                          type: string
-                      required:
-                      - cpu
-                      - memory
+                      additionalProperties:
+                        type: string
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                       type: object
                     requests:
-                      description: CommonAuditSpecRequirements defines cpu and memory
-                      properties:
-                        cpu:
-                          type: string
-                        memory:
-                          type: string
-                      required:
-                      - cpu
-                      - memory
+                      additionalProperties:
+                        type: string
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                       type: object
-                  required:
-                  - limits
-                  - requests
                   type: object
               type: object
             outputs:
@@ -108,6 +97,7 @@ spec:
                     host:
                       type: string
                     port:
+                      format: int32
                       type: integer
                     token:
                       type: string
@@ -128,6 +118,7 @@ spec:
                     hostname:
                       type: string
                     port:
+                      format: int32
                       type: integer
                   required:
                   - enableTLS
@@ -136,6 +127,9 @@ spec:
                   - port
                   type: object
               type: object
+            replicas:
+              format: int32
+              type: integer
           type: object
         status:
           description: CommonAuditStatus defines the observed state of CommonAudit

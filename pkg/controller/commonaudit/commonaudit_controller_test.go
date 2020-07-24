@@ -37,6 +37,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,7 +47,7 @@ import (
 )
 
 const dummyHost = "master"
-const dummyPort = "8088"
+const dummyPort = 8088
 const dummyToken = "abc-123"
 const dummySplunkConfig = `
 splunkHEC.conf: |-
@@ -75,10 +76,10 @@ var dummyHostAliases = []corev1.HostAlias{
 }
 var replicas = 3
 
-const cpuReq = "100m"
-const memReq = "200Mi"
-const cpuLim = "500m"
-const memLim = "600Mi"
+var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
+var cpu400 = resource.NewMilliQuantity(400, resource.DecimalSI)        // 400m
+var memory200 = resource.NewQuantity(200*1024*1024, resource.BinarySI) // 200Mi
+var memory500 = resource.NewQuantity(500*1024*1024, resource.BinarySI) // 500Mi
 
 // TestConfigConfig runs ReconcileOperandConfig.Reconcile() against a
 // fake client that tracks a OperandConfig object.
@@ -216,15 +217,15 @@ func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, na
 func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCommonAudit, req reconcile.Request) {
 	ca.Spec.Outputs.Splunk.Host = dummyHost
 	ca.Spec.Outputs.Splunk.Token = dummyToken
-	ca.Spec.Outputs.Splunk.Port, _ = strconv.Atoi(dummyPort)
+	ca.Spec.Outputs.Splunk.Port = int32(dummyPort)
 	ca.Spec.Outputs.Splunk.TLS = enableTLS
 	ca.Spec.Outputs.HostAliases = append(ca.Spec.Outputs.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})
-	ca.Spec.Fluentd.Resources.Limits.CPU = cpuLim
-	ca.Spec.Fluentd.Resources.Limits.Memory = memLim
-	ca.Spec.Fluentd.Resources.Requests.CPU = cpuReq
-	ca.Spec.Fluentd.Resources.Requests.Memory = memReq
+	ca.Spec.Fluentd.Resources.Limits[corev1.ResourceCPU] = *cpu400
+	ca.Spec.Fluentd.Resources.Limits[corev1.ResourceMemory] = *memory500
+	ca.Spec.Fluentd.Resources.Requests[corev1.ResourceCPU] = *cpu100
+	ca.Spec.Fluentd.Resources.Requests[corev1.ResourceMemory] = *memory200
 	err := r.client.Update(context.TODO(), ca)
 	if err != nil {
 		t.Fatalf("Failed to update CR: (%v)", err)
@@ -268,8 +269,8 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	proto := strings.Split(res.RegexProtocol.FindStringSubmatch(updatedCM.Data[res.SplunkConfigKey])[0], " ")[1]
 	reBuffer := regexp.MustCompile(`buffer`)
 	buffer := reBuffer.FindAllString(updatedCM.Data[res.SplunkConfigKey], -1)
-	if host != dummyHost || port != dummyPort || token != dummyToken || proto != res.Protocols[enableTLS] {
-		t.Fatalf("SIEM creds not preserved: Found: (%s), (%s), (%s), (%s). Expected: (%s), (%s), (%s), (%s).",
+	if host != dummyHost || port != strconv.Itoa(dummyPort) || token != dummyToken || proto != res.Protocols[enableTLS] {
+		t.Fatalf("SIEM creds not preserved: Found: (%s), (%s), (%s), (%s). Expected: (%s), (%d), (%s), (%s).",
 			host, port, token, proto, dummyHost, dummyPort, dummyToken, res.Protocols[enableTLS])
 	}
 	if !reflect.DeepEqual(updatedCM.ObjectMeta.Labels, res.LabelsForMetadata(res.FluentdName)) {
@@ -299,7 +300,8 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 	foundMemLimit := resources.Limits[corev1.ResourceMemory]
 	foundCPURequest := resources.Requests[corev1.ResourceCPU]
 	foundMemRequest := resources.Requests[corev1.ResourceMemory]
-	if foundCPURequest.String() != cpuReq || foundMemRequest.String() != memReq || foundCPULimit.String() != cpuLim || foundMemLimit.String() != memLim {
+	if foundCPURequest.String() != cpu100.String() || foundMemRequest.String() != memory200.String() || foundCPULimit.String() != cpu400.String() ||
+		foundMemLimit.String() != memory500.String() {
 		t.Fatalf("Resources not equal. Found: (%v)", resources)
 	}
 }
