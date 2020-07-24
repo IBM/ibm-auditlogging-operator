@@ -222,8 +222,10 @@ func updateCommonAuditCR(ca *operatorv1.CommonAudit, t *testing.T, r ReconcileCo
 	ca.Spec.Outputs.HostAliases = append(ca.Spec.Outputs.HostAliases, operatorv1.CommonAuditSpecHostAliases{
 		HostIP: dummyHostAliasIP, Hostnames: []string{dummyHostAliasName},
 	})
+	ca.Spec.Fluentd.Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
 	ca.Spec.Fluentd.Resources.Limits[corev1.ResourceCPU] = *cpu400
 	ca.Spec.Fluentd.Resources.Limits[corev1.ResourceMemory] = *memory500
+	ca.Spec.Fluentd.Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
 	ca.Spec.Fluentd.Resources.Requests[corev1.ResourceCPU] = *cpu100
 	ca.Spec.Fluentd.Resources.Requests[corev1.ResourceMemory] = *memory200
 	err := r.client.Update(context.TODO(), ca)
