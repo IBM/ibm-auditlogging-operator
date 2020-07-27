@@ -116,12 +116,13 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 		for _, hostAlias := range instance.Spec.Outputs.HostAliases {
 			if ip := net.ParseIP(hostAlias.HostIP); ip != nil {
 				hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
-				deploy.Spec.Template.Spec.HostAliases = hostAliases
 			} else {
 				logger.Info("[WARNING] Invalid HostAliases IP. Update CommonAudit CR with a valid IP.", "Found", hostAlias.HostIP, "Instance", instance.Name)
 			}
 		}
+		deploy.Spec.Template.Spec.HostAliases = hostAliases
 	}
+
 	return deploy
 }
 
