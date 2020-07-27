@@ -77,15 +77,15 @@ spec:
                     description: CommonAuditSpecHostAliases defines the host alias
                       for an SIEM
                     properties:
-                      hostIP:
-                        type: string
                       hostnames:
                         items:
                           type: string
                         type: array
+                      ip:
+                        type: string
                     required:
-                    - hostIP
                     - hostnames
+                    - ip
                     type: object
                   type: array
                 splunk:

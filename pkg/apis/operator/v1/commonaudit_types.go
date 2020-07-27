@@ -68,7 +68,7 @@ type CommonAuditSpecSyslog struct {
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM
 type CommonAuditSpecHostAliases struct {
-	HostIP    string   `json:"hostIP"`
+	HostIP    string   `json:"ip"`
 	Hostnames []string `json:"hostnames"`
 }
 

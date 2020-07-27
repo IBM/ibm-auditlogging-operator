@@ -34,6 +34,6 @@ spec:
       hostname: qradar_source_id
       enableTLS: false
     hostAliases:
-      - hostIP: 9.12.34.56
+      - ip: 9.12.34.56
         hostnames:
           - test.fyre.ibm.com

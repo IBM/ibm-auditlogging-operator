@@ -50,7 +50,7 @@ metadata:
               },
               "hostAliases": [
                 {
-                  "hostIP": "QRADAR_SERVER_IP",
+                  "ip": "QRADAR_SERVER_IP",
                   "hostnames": [
                     "QRADAR_SERVER_HOSTNAME"
                   ]
