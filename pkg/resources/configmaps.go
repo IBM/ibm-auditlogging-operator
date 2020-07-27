@@ -181,12 +181,10 @@ var fluentdMainConfigV1Data = `
 fluent.conf: |-
     # Input plugins (Supports Systemd and HTTP)
     @include /fluentd/etc/source.conf
-
+    # Output plugins (Supports Splunk and Syslog)`
+var fluentdOutputConfigV1Data = `
     <match icp-audit icp-audit.**>
         @type copy
-`
-var fluentdMainConfigV1Data2 = `
-    </match>
 `
 var splunkConfigV1Data1 = `
 splunkHEC.conf: |-
@@ -332,13 +330,17 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 
 func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	var result = fluentdMainConfigV1Data
-	if instance.Spec.Outputs.Splunk.EnableSIEM {
-		result += yamlLine(1, splunkPlugin, true)
+	if instance.Spec.Outputs.Splunk.EnableSIEM || instance.Spec.Outputs.Syslog.EnableSIEM {
+		result += fluentdOutputConfigV1Data
+		if instance.Spec.Outputs.Splunk.EnableSIEM {
+			result += yamlLine(2, splunkPlugin, true)
+		}
+		if instance.Spec.Outputs.Syslog.EnableSIEM {
+			result += yamlLine(2, qradarPlugin, true)
+		}
+		result += yamlLine(1, `</match>`, false)
 	}
-	if instance.Spec.Outputs.Syslog.EnableSIEM {
-		result += yamlLine(1, qradarPlugin, true)
-	}
-	return result + fluentdMainConfigV1Data2
+	return result
 }
 
 func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
