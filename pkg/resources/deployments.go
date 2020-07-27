@@ -17,6 +17,7 @@
 package resources
 
 import (
+	"net"
 	"reflect"
 
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
@@ -46,6 +47,7 @@ const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 // BuildDeploymentForFluentd returns a Deployment object
 func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
+	logger := log.WithValues("func", "BuildDeploymentForFluentd")
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
@@ -112,7 +114,11 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	if len(instance.Spec.Outputs.HostAliases) > 0 {
 		var hostAliases = []corev1.HostAlias{}
 		for _, hostAlias := range instance.Spec.Outputs.HostAliases {
-			hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
+			if ip := net.ParseIP(hostAlias.HostIP); ip != nil {
+				hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
+			} else {
+				logger.Info("[WARNING] Invalid HostAliases IP. Update CommonAudit CR with a valid IP.", "Found", hostAlias.HostIP, "Instance", instance.Name)
+			}
 		}
 		deploy.Spec.Template.Spec.HostAliases = hostAliases
 	}
