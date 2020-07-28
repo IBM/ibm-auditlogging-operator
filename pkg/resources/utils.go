@@ -102,6 +102,27 @@ func GetPodNames(pods []corev1.Pod) []string {
 	return podNames
 }
 
+// ContainsString returns a Boolean
+func ContainsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+//RemoveString returns a Boolean
+func RemoveString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
+}
+
 //IBMDEV
 func LabelsForMetadata(name string) map[string]string {
 	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": AuditLoggingComponentName,
@@ -124,19 +145,18 @@ func LabelsForPodMetadata(deploymentName string, crName string) map[string]strin
 }
 
 //IBMDEV
-func annotationsForMetering(deploymentName string) map[string]string {
+func annotationsForMetering(journalAccess bool) map[string]string {
+	var scc = "restricted"
+	if journalAccess {
+		scc = "privileged"
+	}
 	annotations := map[string]string{
-		"productName":    productName,
-		"productID":      productID,
-		"productVersion": productVersion,
-		"productMetric":  productMetric,
+		"productName":                        productName,
+		"productID":                          productID,
+		"productVersion":                     productVersion,
+		"productMetric":                      productMetric,
+		"clusterhealth.ibm.com/dependencies": "cert-manager",
 	}
-	if deploymentName == FluentdName {
-		annotations["seccomp.security.alpha.kubernetes.io/pod"] = "docker/default"
-		annotations["clusterhealth.ibm.com/dependencies"] = "cert-manager"
-		annotations["openshift.io/scc"] = "privileged"
-	} else {
-		annotations["openshift.io/scc"] = "restricted"
-	}
+	annotations["openshift.io/scc"] = scc
 	return annotations
 }

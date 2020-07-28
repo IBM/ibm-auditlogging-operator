@@ -17,8 +17,10 @@
 package resources
 
 import (
+	"net"
 	"reflect"
 
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,8 +31,10 @@ import (
 var commonVolumes = []corev1.Volume{}
 var architectureList = []string{"amd64", "ppc64le", "s390x"}
 var seconds30 int64 = 30
+var defaultReplicas = int32(1)
 
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
+const FluentdDeploymentName = "audit-logging-fluentd"
 const FluentdName = "fluentd"
 
 const fluentdInput = "/fluentd/etc/source.conf"
@@ -41,42 +45,29 @@ const defaultJournalPath = "/run/log/journal"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
-// BuildDeploymentForPolicyController returns a Deployment object
-func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging) *appsv1.Deployment {
-	reqLogger := log.WithValues("deploymentForPolicyController", "Entry", "instance.Name", instance.Name)
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	selectorLabels := LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
-	podLabels := LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
-	annotations := annotationsForMetering(AuditPolicyControllerDeploy)
-	policyControllerMainContainer.Image = getImageID(instance.Spec.PolicyController.ImageRegistry, DefaultPCImageName, PolicyConrtollerEnvVar)
-
-	if instance.Spec.PolicyController.PullPolicy != "" {
-		switch instance.Spec.PolicyController.PullPolicy {
-		case "Always":
-			policyControllerMainContainer.ImagePullPolicy = corev1.PullAlways
-		case "PullNever":
-			policyControllerMainContainer.ImagePullPolicy = corev1.PullNever
-		case "IfNotPresent":
-			policyControllerMainContainer.ImagePullPolicy = corev1.PullIfNotPresent
-		default:
-			reqLogger.Info("Trying to update PullPolicy", "NOT SUPPORTED", instance.Spec.PolicyController.PullPolicy)
-		}
+// BuildDeploymentForFluentd returns a Deployment object
+func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
+	logger := log.WithValues("func", "BuildDeploymentForFluentd")
+	metaLabels := LabelsForMetadata(FluentdName)
+	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
+	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
+	annotations := annotationsForMetering(false)
+	volumes := buildFluentdDeploymentVolumes()
+	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
+	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
+	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
+	// Run fluentd as restricted
+	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
+	var replicas = defaultReplicas
+	if instance.Spec.Replicas > 0 {
+		replicas = instance.Spec.Replicas
 	}
-	var args = make([]string, 0)
-	if instance.Spec.PolicyController.Verbosity != "" {
-		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
-	} else {
-		args = append(args, "--v=0")
-	}
-	if instance.Spec.PolicyController.Frequency != "" {
-		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
-	}
-	policyControllerMainContainer.Args = args
+	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      AuditPolicyControllerDeploy,
-			Namespace: InstanceNamespace,
+			Name:      FluentdDeploymentName,
+			Namespace: instance.Namespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -109,50 +100,178 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging)
 							},
 						},
 					},
-
 					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
-					Volumes: []corev1.Volume{
-						{
-							Name: "tmp",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
-					},
+					Volumes:     volumes,
 					Containers: []corev1.Container{
-						policyControllerMainContainer,
+						fluentdMainContainer,
 					},
 				},
 			},
 		},
 	}
+
+	if len(instance.Spec.Outputs.HostAliases) > 0 {
+		var hostAliases = []corev1.HostAlias{}
+		for _, hostAlias := range instance.Spec.Outputs.HostAliases {
+			if ip := net.ParseIP(hostAlias.HostIP); ip != nil {
+				hostAliases = append(hostAliases, corev1.HostAlias{IP: hostAlias.HostIP, Hostnames: hostAlias.Hostnames})
+			} else {
+				logger.Info("[WARNING] Invalid HostAliases IP. Update CommonAudit CR with a valid IP.", "Found", hostAlias.HostIP, "Instance", instance.Name)
+			}
+		}
+		deploy.Spec.Template.Spec.HostAliases = hostAliases
+	}
+
 	return deploy
+}
+
+func buildFluentdDeploymentVolumes() []corev1.Volume {
+	commonVolumes := []corev1.Volume{
+		{
+			Name: FluentdConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + ConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  FluentdConfigKey,
+							Path: FluentdConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SourceConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SourceConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SourceConfigKey,
+							Path: SourceConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: QRadarConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + QRadarConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  QRadarConfigKey,
+							Path: QRadarConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SplunkConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SplunkConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SplunkConfigKey,
+							Path: SplunkConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "shared",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: AuditLoggingClientCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
+				},
+			},
+		},
+	}
+	return commonVolumes
+}
+
+func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
+	commonVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      FluentdConfigName,
+			MountPath: "/fluentd/etc/" + FluentdConfigKey,
+			SubPath:   FluentdConfigKey,
+		},
+		{
+			Name:      SourceConfigName,
+			MountPath: fluentdInput,
+			SubPath:   SourceConfigKey,
+		},
+		{
+			Name:      QRadarConfigName,
+			MountPath: qRadarOutput,
+			SubPath:   QRadarConfigKey,
+		},
+		{
+			Name:      SplunkConfigName,
+			MountPath: splunkOutput,
+			SubPath:   SplunkConfigKey,
+		},
+		{
+			Name:      "shared",
+			MountPath: "/tmp",
+		},
+		{
+			Name:      AuditLoggingClientCertSecName,
+			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      AuditLoggingServerCertSecName,
+			MountPath: "/fluentd/etc/https",
+			ReadOnly:  true,
+		},
+	}
+	return commonVolumeMounts
 }
 
 // BuildDaemonForFluentd returns a Daemonset object
 func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
-	reqLogger := log.WithValues("dameonForFluentd", "Entry", "instance.Name", instance.Name)
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
-	annotations := annotationsForMetering(FluentdName)
-	commonVolumes = BuildCommonVolumes(instance)
-	fluentdMainContainer.VolumeMounts = BuildCommonVolumeMounts(instance)
+	annotations := annotationsForMetering(true)
+	commonVolumes = buildDaemonsetVolumes(instance)
+	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
-
-	if instance.Spec.Fluentd.PullPolicy != "" {
-		switch instance.Spec.Fluentd.PullPolicy {
-		case "Always":
-			fluentdMainContainer.ImagePullPolicy = corev1.PullAlways
-		case "PullNever":
-			fluentdMainContainer.ImagePullPolicy = corev1.PullNever
-		case "IfNotPresent":
-			fluentdMainContainer.ImagePullPolicy = corev1.PullIfNotPresent
-		default:
-			reqLogger.Info("Trying to update PullPolicy", "NOT SUPPORTED", instance.Spec.Fluentd.PullPolicy)
-		}
-	}
+	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
+	// Run fluentd as privileged
+	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
+	// setup the resource requirements
+	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -212,8 +331,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	return daemon
 }
 
-// BuildCommonVolumes returns an array of Volume objects
-func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
+func buildDaemonsetVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
 	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
@@ -318,8 +436,7 @@ func BuildCommonVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume
 	return commonVolumes
 }
 
-// BuildCommonVolumeMounts returns an array of VolumeMount objects
-func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
+func buildDaemonsetVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
 	var journal = defaultJournalPath
 	if instance.Spec.Fluentd.JournalPath != "" {
 		journal = instance.Spec.Fluentd.JournalPath
@@ -372,12 +489,50 @@ func BuildCommonVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.V
 	return commonVolumeMounts
 }
 
+func buildResources(requestedResources, defaultResources corev1.ResourceRequirements) corev1.ResourceRequirements {
+	var resourceRequirements = corev1.ResourceRequirements{
+		Limits:   defaultResources.Limits.DeepCopy(),
+		Requests: defaultResources.Requests.DeepCopy(),
+	}
+	if requestedResources.Limits != nil {
+		// check CPU limits
+		cpuLimit := requestedResources.Limits.Cpu()
+		if !cpuLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceCPU] = *cpuLimit
+		}
+		// check Memory limits
+		memoryLimit := requestedResources.Limits.Memory()
+		if !memoryLimit.IsZero() {
+			resourceRequirements.Limits[corev1.ResourceMemory] = *memoryLimit
+		}
+	}
+	if requestedResources.Requests != nil {
+		// check CPU requests
+		cpuRequest := requestedResources.Requests.Cpu()
+		if !cpuRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceCPU] = *cpuRequest
+		}
+		// check Memory requests
+		memoryRequest := requestedResources.Requests.Memory()
+		if !memoryRequest.IsZero() {
+			resourceRequirements.Requests[corev1.ResourceMemory] = *memoryRequest
+		}
+	}
+	return resourceRequirements
+}
+
 // EqualDeployments returns a Boolean
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
+	allowModify := false
+	logger := log.WithValues("func", "EqualDeployments")
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+	if !reflect.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
+		logger.Info("Replicas not equal", "Found", found.Spec.Replicas, "Expected", expected.Spec.Replicas)
+		return false
+	}
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
 		return false
 	}
 	return true
@@ -385,17 +540,18 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) boo
 
 // EqualDaemonSets returns a Boolean
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
+	allowModify := true
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template) {
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
 		return false
 	}
 	return true
 }
 
 // EqualPods returns a Boolean
-func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bool {
+func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualPods")
 	if !EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
@@ -407,12 +563,47 @@ func EqualPods(expected corev1.PodTemplateSpec, found corev1.PodTemplateSpec) bo
 		logger.Info("ServiceAccount not equal", "Found", found.Spec.ServiceAccountName, "Expected", expected.Spec.ServiceAccountName)
 		return false
 	}
+	if !allowModify {
+		if !equalHostAliases(found.Spec.HostAliases, expected.Spec.HostAliases) {
+			logger.Info("HostAliases not equal", "Found", found.Spec.HostAliases, "Expected", expected.Spec.HostAliases)
+			return false
+		}
+	}
 	if len(found.Spec.Containers) != len(expected.Spec.Containers) {
 		logger.Info("Number of containers not equal", "Found", len(found.Spec.Containers), "Expected", len(expected.Spec.Containers))
 		return false
 	}
-	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0]) {
+	if !EqualContainers(expected.Spec.Containers[0], found.Spec.Containers[0], allowModify) {
 		return false
 	}
 	return true
+}
+
+func equalHostAliases(found []corev1.HostAlias, expected []corev1.HostAlias) bool {
+	if (found == nil) != (expected == nil) {
+		return false
+	}
+	if len(found) != len(expected) {
+		return false
+	}
+	for i := range found {
+		if found[i].IP != expected[i].IP {
+			return false
+		}
+		if !reflect.DeepEqual(found[i].Hostnames, expected[i].Hostnames) {
+			return false
+		}
+	}
+	return true
+}
+
+func getPullPolicy(pullPolicy string) corev1.PullPolicy {
+	switch pullPolicy {
+	case "Always":
+		return corev1.PullAlways
+	case "PullNever":
+		return corev1.PullNever
+	default:
+		return corev1.PullIfNotPresent
+	}
 }

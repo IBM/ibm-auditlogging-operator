@@ -44,8 +44,7 @@ import (
 )
 
 const journalPath = "/var/log/audit"
-const verbosity = "10"
-const numPods = 4
+const numPods = 3
 const dummyHost = "hec_host master"
 const dummyPort = "hec_port 8088"
 const dummyToken = "hec_token abc-123"
@@ -76,7 +75,6 @@ var dummyHostAliases = []corev1.HostAlias{
 // fake client that tracks a OperandConfig object.
 func TestAuditLoggingController(t *testing.T) {
 	// USE THIS
-	// logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	// logf.SetLogger(logf.ZapLogger(true))
 	var (
 		name = "example-auditlogging"
@@ -91,7 +89,6 @@ func TestAuditLoggingController(t *testing.T) {
 
 	reconcileResources(t, r, req, true)
 	checkMountAndRBACPreReqs(t, r, req)
-	checkPolicyControllerConfig(t, r, req)
 	checkFluentdConfig(t, r, req, cr)
 	checkInPlaceUpdate(t, r, req)
 }
@@ -124,41 +121,6 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileAuditLogging, req reconci
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.OperandServiceAccount, Namespace: res.InstanceNamespace}, foundSA)
 	if err != nil {
 		t.Fatalf("get service account: (%v)", err)
-	}
-	reconcileResources(t, r, req, true)
-}
-
-func checkPolicyControllerConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
-	var err error
-
-	// Check if ClusterRole and ClusterRoleBinding are created
-	foundCR := &rbacv1.ClusterRole{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-role"}, foundCR)
-	if err != nil {
-		t.Fatalf("get clusterrole: (%v)", err)
-	}
-	reconcileResources(t, r, req, true)
-
-	foundCRB := &rbacv1.ClusterRoleBinding{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-rolebinding"}, foundCRB)
-	if err != nil {
-		t.Fatalf("get clusterrolebinding: (%v)", err)
-	}
-	reconcileResources(t, r, req, true)
-
-	// Check Audit Policy CRD is created
-	foundCRD := &extv1beta1.CustomResourceDefinition{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyCRDName}, foundCRD)
-	if err != nil {
-		t.Fatalf("get CRD: (%v)", err)
-	}
-	reconcileResources(t, r, req, true)
-
-	// Check if Policy Controller Deployment has been created
-	pc := getAuditPolicyController(t, r)
-	image := res.DefaultImageRegistry + res.DefaultPCImageName + ":" + dummyPolicyControllerTag
-	if pc.Spec.Template.Spec.Containers[0].Image != image {
-		t.Fatalf("Incorrect policy controller image. Found: (%s), Expected: (%s)", pc.Spec.Template.Spec.Containers[0].Image, image)
 	}
 	reconcileResources(t, r, req, true)
 }
@@ -208,7 +170,7 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	podNames := make([]string, numPods)
 	var randInt *big.Int
 	var i int
-	for i = 0; i < numPods-1; i++ {
+	for i = 0; i < numPods; i++ {
 		randInt, _ = rand.Int(rand.Reader, big.NewInt(99999))
 		pod.ObjectMeta.Name = res.FluentdDaemonSetName + "-" + randInt.String()
 		podNames[i] = pod.ObjectMeta.Name
@@ -216,20 +178,6 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 			t.Fatalf("create pod %d: (%v)", i, err)
 		}
 	}
-	podLabels = res.LabelsForPodMetadata(res.AuditPolicyControllerDeploy, cr.Name)
-	pod = corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: res.InstanceNamespace,
-			Labels:    podLabels,
-		},
-	}
-	randInt, _ = rand.Int(rand.Reader, big.NewInt(99999))
-	pod.ObjectMeta.Name = res.AuditPolicyControllerDeploy + "-" + randInt.String()
-	podNames[i] = pod.ObjectMeta.Name
-	if err = r.client.Create(context.TODO(), pod.DeepCopy()); err != nil {
-		t.Fatalf("create pod %d: (%v)", i, err)
-	}
-
 	// Reconcile again so Reconcile() checks pods and updates the AuditLogging
 	// resources' Status.
 	reconcileResources(t, r, req, false)
@@ -250,7 +198,6 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 
 func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
 	al.Spec.Fluentd.JournalPath = journalPath
-	al.Spec.PolicyController.Verbosity = verbosity
 	err := r.client.Update(context.TODO(), al)
 	if err != nil {
 		t.Fatalf("Failed to update CR: (%v)", err)
@@ -260,21 +207,9 @@ func updateAuditLoggingCR(al *operatorv1alpha1.AuditLogging, t *testing.T, r Rec
 }
 
 func checkAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Request) {
-	reconcileResources(t, r, req, true)
-	policyController := getAuditPolicyController(t, r)
 	reconcileResources(t, r, req, false)
 	fluentd := getFluentd(t, r)
 	var found = false
-	for _, arg := range policyController.Spec.Template.Spec.Containers[0].Args {
-		if arg == "--v="+verbosity {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("Policy controller not updated with verbosity: (%s)", verbosity)
-	}
-	found = false
 	for _, v := range fluentd.Spec.Template.Spec.Containers[0].VolumeMounts {
 		if v.MountPath == journalPath {
 			found = true
@@ -357,15 +292,6 @@ func getAuditLogging(t *testing.T, r ReconcileAuditLogging, req reconcile.Reques
 		t.Fatalf("get auditlogging: (%v)", err)
 	}
 	return al
-}
-
-func getAuditPolicyController(t *testing.T, r ReconcileAuditLogging) *appsv1.Deployment {
-	foundDep := &appsv1.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, foundDep)
-	if err != nil {
-		t.Fatalf("get deployment: (%v)", err)
-	}
-	return foundDep
 }
 
 func getFluentd(t *testing.T, r ReconcileAuditLogging) *appsv1.DaemonSet {

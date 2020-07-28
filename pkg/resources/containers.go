@@ -25,7 +25,7 @@ import (
 
 const DefaultImageRegistry = "quay.io/opencloudio/"
 const DefaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "v1.6.2-ruby25"
+const defaultFluentdImageTag = "v1.6.2-bedrock-0"
 const DefaultPCImageName = "audit-policy-controller"
 const defaultPCImageTag = "3.5.0"
 
@@ -35,22 +35,26 @@ const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
-var replicas = int32(1)
 var cpu25 = resource.NewMilliQuantity(25, resource.DecimalSI)          // 25m
-var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
-var cpu200 = resource.NewMilliQuantity(200, resource.DecimalSI)        // 200m
 var cpu300 = resource.NewMilliQuantity(300, resource.DecimalSI)        // 300m
 var memory100 = resource.NewQuantity(100*1024*1024, resource.BinarySI) // 100Mi
-var memory150 = resource.NewQuantity(150*1024*1024, resource.BinarySI) // 150Mi
 var memory400 = resource.NewQuantity(400*1024*1024, resource.BinarySI) // 400Mi
-var memory450 = resource.NewQuantity(450*1024*1024, resource.BinarySI) // 450Mi
+
+var defaultFluentdResources = corev1.ResourceRequirements{
+	Limits: map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:    *cpu300,
+		corev1.ResourceMemory: *memory400},
+	Requests: map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:    *cpu25,
+		corev1.ResourceMemory: *memory100},
+}
 
 var commonCapabilities = corev1.Capabilities{
 	Drop: []corev1.Capability{
 		"ALL",
 	},
 }
-var fluentdSecurityContext = corev1.SecurityContext{
+var fluentdPrivilegedSecurityContext = corev1.SecurityContext{
 	AllowPrivilegeEscalation: &trueVar,
 	Privileged:               &trueVar,
 	ReadOnlyRootFilesystem:   &trueVar,
@@ -59,7 +63,7 @@ var fluentdSecurityContext = corev1.SecurityContext{
 	Capabilities:             &commonCapabilities,
 }
 
-var policyControllerSecurityContext = corev1.SecurityContext{
+var fluentdRestrictedSecurityContext = corev1.SecurityContext{
 	AllowPrivilegeEscalation: &falseVar,
 	Privileged:               &falseVar,
 	ReadOnlyRootFilesystem:   &trueVar,
@@ -77,53 +81,6 @@ var commonTolerations = []corev1.Toleration{
 		Key:      "CriticalAddonsOnly",
 		Operator: corev1.TolerationOpExists,
 	},
-}
-
-var policyControllerMainContainer = corev1.Container{
-	Image:           DefaultImageRegistry + DefaultPCImageName + ":" + defaultPCImageTag,
-	Name:            AuditPolicyControllerDeploy,
-	ImagePullPolicy: corev1.PullIfNotPresent,
-	VolumeMounts: []corev1.VolumeMount{
-		{
-			Name:      "tmp",
-			MountPath: "/tmp",
-		},
-	},
-	LivenessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
-			Exec: &corev1.ExecAction{
-				Command: []string{
-					"sh",
-					"-c",
-					"pgrep audit-policy -l",
-				},
-			},
-		},
-		InitialDelaySeconds: 30,
-		TimeoutSeconds:      5,
-	},
-	ReadinessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
-			Exec: &corev1.ExecAction{
-				Command: []string{
-					"sh",
-					"-c",
-					"exec echo start audit-policy-controller",
-				},
-			},
-		},
-		InitialDelaySeconds: 10,
-		TimeoutSeconds:      2,
-	},
-	Resources: corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu200,
-			corev1.ResourceMemory: *memory450},
-		Requests: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu100,
-			corev1.ResourceMemory: *memory150},
-	},
-	SecurityContext: &policyControllerSecurityContext,
 }
 
 var fluentdMainContainer = corev1.Container{
@@ -181,19 +138,10 @@ var fluentdMainContainer = corev1.Container{
 		SuccessThreshold:    1,
 		FailureThreshold:    3,
 	},
-	Resources: corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu300,
-			corev1.ResourceMemory: *memory400},
-		Requests: map[corev1.ResourceName]resource.Quantity{
-			corev1.ResourceCPU:    *cpu25,
-			corev1.ResourceMemory: *memory100},
-	},
-	SecurityContext: &fluentdSecurityContext,
 }
 
 // EqualContainers returns a Boolean
-func EqualContainers(expected corev1.Container, found corev1.Container) bool {
+func EqualContainers(expected corev1.Container, found corev1.Container, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualContainers")
 	if !reflect.DeepEqual(found.Name, expected.Name) {
 		logger.Info("Container name not equal", "Found", found.Name, "Expected", expected.Name)
@@ -225,6 +173,26 @@ func EqualContainers(expected corev1.Container, found corev1.Container) bool {
 	}
 	if !reflect.DeepEqual(found.Env, expected.Env) {
 		logger.Info("Env not equal", "Found", found.Env, "Expected", expected.Env)
+		return false
+	}
+	if !equalResources(found.Resources, expected.Resources) {
+		logger.Info("Resources not equal", "Found", found.Resources, "Expected", expected.Resources)
+		return false
+	}
+	return true
+}
+
+func equalResources(found, expected corev1.ResourceRequirements) bool {
+	if !found.Limits.Cpu().Equal(*expected.Limits.Cpu()) {
+		return false
+	}
+	if !found.Limits.Memory().Equal(*expected.Limits.Memory()) {
+		return false
+	}
+	if !found.Requests.Cpu().Equal(*expected.Requests.Cpu()) {
+		return false
+	}
+	if !found.Requests.Memory().Equal(*expected.Requests.Memory()) {
 		return false
 	}
 	return true

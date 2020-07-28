@@ -14,16 +14,15 @@
 // limitations under the License.
 //
 
-package auditlogging
+package commonaudit
 
 import (
 	"context"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,9 +30,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("cr.Name", cr.Name)
-	expectedRes := res.BuildServiceAccount(res.InstanceNamespace)
+func (r *ReconcileCommonAudit) reconcileServiceAccount(cr *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("instance.Name", cr.Name, "instance.Namespace", cr.Namespace)
+	expectedRes := res.BuildServiceAccount(cr.Namespace)
 	// Set CR instance as the owner and controller
 	err := controllerutil.SetControllerReference(cr, expectedRes, r.scheme)
 	if err != nil {
@@ -43,15 +42,15 @@ func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.Aud
 
 	// If ServiceAccount does not exist, create it and requeue
 	foundSvcAcct := &corev1.ServiceAccount{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: res.InstanceNamespace}, foundSvcAcct)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: expectedRes.Name, Namespace: cr.Namespace}, foundSvcAcct)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new ServiceAccount", "Namespace", res.InstanceNamespace, "Name", expectedRes.Name)
+		reqLogger.Info("Creating a new ServiceAccount", "Namespace", cr.Namespace, "Name", expectedRes.Name)
 		err = r.client.Create(context.TODO(), expectedRes)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", res.InstanceNamespace, "Name", expectedRes.Name)
+			reqLogger.Error(err, "Failed to create new ServiceAccount", "Namespace", cr.Namespace, "Name", expectedRes.Name)
 			return reconcile.Result{}, err
 		}
 		// Created successfully - return and requeue
@@ -66,103 +65,12 @@ func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.Aud
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) removeOldRBAC(instance *operatorv1alpha1.AuditLogging) {
-	reqLogger := log.WithValues("func", "removeOldRBAC", "instance.Name", instance.Name)
-	fluentdSA := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.FluentdDaemonSetName + "-svcacct",
-			Namespace: res.InstanceNamespace,
-		},
-	}
-	// check if the service account exists
-	err := r.client.Get(context.TODO(),
-		types.NamespacedName{Name: res.FluentdDaemonSetName + "-svcacct", Namespace: res.InstanceNamespace}, fluentdSA)
-	if err == nil {
-		// found service account so delete it
-		err := r.client.Delete(context.TODO(), fluentdSA)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete old fluentd service account")
-		} else {
-			reqLogger.Info("Deleted old fluentd service account")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		reqLogger.Error(err, "Failed to get old fluentd service account")
-	}
-
-	policySA := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + "-svcacct",
-			Namespace: res.InstanceNamespace,
-		},
-	}
-	// check if the service account exists
-	err = r.client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-svcacct", Namespace: res.InstanceNamespace}, policySA)
-	if err == nil {
-		// found service account so delete it
-		err := r.client.Delete(context.TODO(), policySA)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete old policy controller service account")
-		} else {
-			reqLogger.Info("Deleted old policy controller service account")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		reqLogger.Error(err, "Failed to get old policy controller service account")
-	}
-
-	cr := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + res.RolePostfix,
-			Namespace: res.InstanceNamespace,
-		},
-	}
-	// check if the service account exists
-	err = r.client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RolePostfix, Namespace: res.InstanceNamespace}, cr)
-	if err == nil {
-		// found clusterrole so delete it
-		err := r.client.Delete(context.TODO(), cr)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete old policy controller clusterrole")
-		} else {
-			reqLogger.Info("Deleted old policy controller clusterrole")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		reqLogger.Error(err, "Failed to get old policy controller clusterrole")
-	}
-
-	crb := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + res.RoleBindingPostfix,
-			Namespace: res.InstanceNamespace,
-		},
-	}
-	// check if the service account exists
-	err = r.client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RoleBindingPostfix, Namespace: res.InstanceNamespace}, crb)
-	if err == nil {
-		// found clusterrole so delete it
-		err := r.client.Delete(context.TODO(), crb)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete old policy controller clusterrolebinding")
-		} else {
-			reqLogger.Info("Deleted old policy controller clusterrolebinding")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		reqLogger.Error(err, "Failed to get old policy controller clusterrolebinding")
-	}
-}
-
-func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Role.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRole(res.InstanceNamespace, true)
+func (r *ReconcileCommonAudit) reconcileRole(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Role.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected := res.BuildRole(instance.Namespace, false)
 	found := &rbacv1.Role{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		// newClusterRole := res.BuildRole(instance)
@@ -201,12 +109,12 @@ func (r *ReconcileAuditLogging) reconcileRole(instance *operatorv1alpha1.AuditLo
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileRoleBinding(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("RoleBinding.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildRoleBinding(res.InstanceNamespace)
+func (r *ReconcileCommonAudit) reconcileRoleBinding(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("RoleBinding.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected := res.BuildRoleBinding(instance.Namespace)
 	found := &rbacv1.RoleBinding{}
 	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {

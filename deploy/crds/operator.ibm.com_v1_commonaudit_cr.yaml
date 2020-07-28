@@ -1,0 +1,39 @@
+apiVersion: operator.ibm.com/v1
+kind: CommonAudit
+metadata:
+  name: example-commonaudit
+  labels:
+    app.kubernetes.io/instance: common-audit-logging
+    app.kubernetes.io/managed-by: ibm-auditlogging-operator
+    app.kubernetes.io/name: common-audit-logging
+spec:
+  enabled: true
+  clusterIssuer: cs-ca-clusterissuer
+  replicas: 1
+  fluentd:
+    imageRegistry: quay.io/opencloudio/
+    pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 500m
+        memory: 600Mi
+  outputs:
+    splunk:
+      enableSIEM: true
+      host: master
+      port: 8088
+      token: abc-123
+      enableTLS: false
+    syslog:
+      enableSIEM: false
+      host: test.fyre.ibm.com
+      port: 514
+      hostname: qradar_source_id
+      enableTLS: false
+    hostAliases:
+      - ip: 9.12.34.56
+        hostnames:
+          - test.fyre.ibm.com

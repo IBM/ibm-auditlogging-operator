@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	yaml "gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -79,16 +80,17 @@ fluent.conf: |-
   #@include /fluentd/etc/remoteSyslog.conf
   #@include /fluentd/etc/splunkHEC.conf
 `
+var sourceConfigDataKey = `
+source.conf: |-`
 
-var sourceConfigData1 = `
-source.conf: |-
+var sourceConfigDataSystemd1 = `
     <source>
         @type systemd
         @id input_systemd_icp
         @log_level info
         tag icp-audit
         path `
-var sourceConfigData2 = `
+var sourceConfigDataSystemd2 = `
         matches '[{ "SYSLOG_IDENTIFIER": "icp-audit" }]'
         read_from_head true
         <storage>
@@ -101,12 +103,12 @@ var sourceConfigData2 = `
           fields_lowercase true
         </entry>
     </source>`
-var sourceConfigData3 = `
+var sourceConfigDataHTTP1 = `
     <source>
         @type http
         # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
         port `
-var sourceConfigData4 = `
+var sourceConfigDataHTTP2 = `
         bind 0.0.0.0
         body_size_limit 32m
         keepalive_timeout 10s
@@ -119,12 +121,16 @@ var sourceConfigData4 = `
           @type json
         </parse>
     </source>
+`
+var filterJournal = `
     <filter icp-audit>
         @type parser
         format json
         key_name message
         reserve_data true
     </filter>
+`
+var filterHTTP = `
     <filter icp-audit.*>
         @type record_transformer
         enable_ruby true
@@ -170,6 +176,41 @@ var qRadarDefaults = `
 var qRadarConfigData2 = `
     </match>`
 
+// operatorv1 output config constants
+var fluentdMainConfigV1Data = `
+fluent.conf: |-
+    # Input plugins (Supports Systemd and HTTP)
+    @include /fluentd/etc/source.conf
+    # Output plugins (Supports Splunk and Syslog)`
+var fluentdOutputConfigV1Data = `
+    <match icp-audit icp-audit.**>
+        @type copy
+`
+var splunkConfigV1Data1 = `
+splunkHEC.conf: |-
+    <store>
+        @type splunk_hec
+`
+var splunkConfigV1Data2 = `
+        ca_file /fluentd/etc/tls/splunkCA.pem
+        source ${tag}
+    </store>`
+var qRadarConfigV1Data1 = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+`
+var qRadarConfigV1Data2 = `
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
 // FluentdConfigMaps defines the names of the fluentd configmaps
 var FluentdConfigMaps = []string{
 	FluentdDaemonSetName + "-" + ConfigName,
@@ -187,6 +228,277 @@ type DataSplunk struct {
 // DataQRadar defines the struct for remote-syslog-config
 type DataQRadar struct {
 	Value string `yaml:"remoteSyslog.conf"`
+}
+
+const hecHost = `hec_host `
+const hecPort = `hec_port `
+const hecToken = `hec_token `
+const host = `host `
+const port = `port `
+const hostname = `hostname `
+const protocol = `protocol `
+const tls = `tls `
+
+var RegexHecHost = regexp.MustCompile(hecHost + `.*`)
+var RegexHecPort = regexp.MustCompile(hecPort + `.*`)
+var RegexHecToken = regexp.MustCompile(hecToken + `.*`)
+var RegexHost = regexp.MustCompile(host + `.*`)
+var RegexPort = regexp.MustCompile(port + `.*`)
+var RegexHostname = regexp.MustCompile(hostname + `.*`)
+var RegexProtocol = regexp.MustCompile(protocol + `.*`)
+var RegexTLS = regexp.MustCompile(tls + `.*`)
+
+var qradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
+var splunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
+
+const matchTags = `<match icp-audit icp-audit.**>`
+
+var Protocols = map[bool]string{
+	true:  "https",
+	false: "http",
+}
+
+// BuildFluentdConfigMap returns a ConfigMap object
+func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*corev1.ConfigMap, error) {
+	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Namespace, "ConfigMap.Name", name)
+	metaLabels := LabelsForMetadata(FluentdName)
+	dataMap := make(map[string]string)
+	var err error
+	var data string
+	switch name {
+	case FluentdDaemonSetName + "-" + ConfigName:
+		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.EnableAuditLoggingForwarding)
+		type Data struct {
+			Value string `yaml:"fluent.conf"`
+		}
+		d := Data{}
+		data = buildFluentdConfig(instance)
+		err = yaml.Unmarshal([]byte(data), &d)
+		if err != nil {
+			break
+		}
+		dataMap[FluentdConfigKey] = d.Value
+	case FluentdDaemonSetName + "-" + SourceConfigName:
+		type DataS struct {
+			Value string `yaml:"source.conf"`
+		}
+		ds := DataS{}
+		var result string
+		p := strconv.Itoa(defaultHTTPPort)
+		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP
+		err = yaml.Unmarshal([]byte(result), &ds)
+		if err != nil {
+			break
+		}
+		dataMap[SourceConfigKey] = ds.Value
+	case FluentdDaemonSetName + "-" + SplunkConfigName:
+		dsplunk := DataSplunk{}
+		data = buildFluentdSplunkConfig(instance)
+		err = yaml.Unmarshal([]byte(data), &dsplunk)
+		if err != nil {
+			break
+		}
+		dataMap[SplunkConfigKey] = dsplunk.Value
+	case FluentdDaemonSetName + "-" + QRadarConfigName:
+		dq := DataQRadar{}
+		data = buildFluentdQRadarConfig(instance)
+		err = yaml.Unmarshal([]byte(data), &dq)
+		if err != nil {
+			break
+		}
+		dataMap[QRadarConfigKey] = dq.Value
+	case FluentdDaemonSetName + "-" + HTTPIngestName:
+		p := strconv.Itoa(defaultHTTPPort)
+		dataMap[HTTPIngestURLKey] = "https://common-audit-logging" + "." + instance.Namespace + ":" + p + httpPath
+	default:
+		reqLogger.Info("Unknown ConfigMap name")
+	}
+	if err != nil {
+		reqLogger.Error(err, "Failed to unmarshall data for "+name)
+		return nil, err
+	}
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: instance.Namespace,
+			Labels:    metaLabels,
+		},
+		Data: dataMap,
+	}
+	return cm, nil
+}
+
+func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
+	var result = fluentdMainConfigV1Data
+	if instance.Spec.Outputs.Splunk.EnableSIEM || instance.Spec.Outputs.Syslog.EnableSIEM {
+		result += fluentdOutputConfigV1Data
+		if instance.Spec.Outputs.Splunk.EnableSIEM {
+			result += yamlLine(2, splunkPlugin, true)
+		}
+		if instance.Spec.Outputs.Syslog.EnableSIEM {
+			result += yamlLine(2, qradarPlugin, true)
+		}
+		result += yamlLine(1, `</match>`, false)
+	}
+	return result
+}
+
+func buildFluentdSplunkConfig(instance *operatorv1.CommonAudit) string {
+	var result = splunkConfigV1Data1
+	if instance.Spec.Outputs.Splunk.Host != "" && instance.Spec.Outputs.Splunk.Port != 0 &&
+		instance.Spec.Outputs.Splunk.Token != "" {
+		result += yamlLine(2, hecHost+instance.Spec.Outputs.Splunk.Host, true)
+		result += yamlLine(2, hecPort+strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)), true)
+		result += yamlLine(2, hecToken+instance.Spec.Outputs.Splunk.Token, true)
+	} else {
+		result += yamlLine(2, hecHost+`SPLUNK_SERVER_HOSTNAME`, true)
+		result += yamlLine(2, hecPort+`SPLUNK_PORT`, true)
+		result += yamlLine(2, hecToken+`SPLUNK_HEC_TOKEN`, true)
+	}
+	result += yamlLine(2, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS], false)
+	return result + splunkConfigV1Data2
+}
+
+func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
+	var result = qRadarConfigV1Data1
+	if instance.Spec.Outputs.Syslog.Host != "" && instance.Spec.Outputs.Syslog.Port != 0 &&
+		instance.Spec.Outputs.Syslog.Hostname != "" {
+		result += yamlLine(2, host+instance.Spec.Outputs.Syslog.Host, true)
+		result += yamlLine(2, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)), true)
+		result += yamlLine(2, hostname+instance.Spec.Outputs.Syslog.Hostname, true)
+	} else {
+		result += yamlLine(2, host+`QRADAR_SERVER_HOSTNAME`, true)
+		result += yamlLine(2, port+`QRADAR_PORT_FOR_icp-audit`, true)
+		result += yamlLine(2, hostname+`QRADAR_LOG_SOURCE_IDENTIFIER_FOR_icp-audit`, true)
+	}
+	result += yamlLine(2, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS), false)
+	return result + qRadarConfigV1Data2
+}
+
+// UpdateSIEMConfig returns a String
+func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) string {
+	var newData, d1, d2, d3, d4 string
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+			newData = found.Data[SplunkConfigKey]
+			d1 = RegexHecHost.ReplaceAllString(newData, hecHost+instance.Spec.Outputs.Splunk.Host)
+			d2 = RegexHecPort.ReplaceAllString(d1, hecPort+strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)))
+			d3 = RegexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Outputs.Splunk.Token)
+			d4 = RegexProtocol.ReplaceAllString(d3, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS])
+		}
+	} else {
+		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
+			newData = found.Data[QRadarConfigKey]
+			d1 = RegexHost.ReplaceAllString(newData, host+instance.Spec.Outputs.Syslog.Host)
+			d2 = RegexPort.ReplaceAllString(d1, port+strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)))
+			d3 = RegexHostname.ReplaceAllString(d2, hostname+instance.Spec.Outputs.Syslog.Hostname)
+			d4 = RegexTLS.ReplaceAllString(d3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS))
+		}
+	}
+	return d4
+}
+
+// EqualSIEMConfig returns a Boolean
+func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) (bool, bool) {
+	var key string
+	type config struct {
+		name  string
+		value string
+		regex *regexp.Regexp
+	}
+	var configs = []config{}
+	logger := log.WithValues("func", "EqualSIEMConfigs")
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		if instance.Spec.Outputs.Splunk != (operatorv1.CommonAuditSpecSplunk{}) {
+			key = SplunkConfigKey
+			configs = []config{
+				{
+					name:  "Host",
+					value: instance.Spec.Outputs.Splunk.Host,
+					regex: RegexHecHost,
+				},
+				{
+					name:  "Port",
+					value: strconv.Itoa(int(instance.Spec.Outputs.Splunk.Port)),
+					regex: RegexHecPort,
+				},
+				{
+					name:  "Token",
+					value: instance.Spec.Outputs.Splunk.Token,
+					regex: RegexHecToken,
+				},
+				{
+					name:  "Protocol",
+					value: Protocols[instance.Spec.Outputs.Splunk.TLS],
+					regex: RegexProtocol,
+				},
+			}
+		}
+	} else {
+		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
+			key = QRadarConfigKey
+			configs = []config{
+				{
+					name:  "Host",
+					value: instance.Spec.Outputs.Syslog.Host,
+					regex: RegexHost,
+				},
+				{
+					name:  "Port",
+					value: strconv.Itoa(int(instance.Spec.Outputs.Syslog.Port)),
+					regex: RegexPort,
+				},
+				{
+					name:  "Hostname",
+					value: instance.Spec.Outputs.Syslog.Hostname,
+					regex: RegexHostname,
+				},
+				{
+					name:  "TLS",
+					value: strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS),
+					regex: RegexTLS,
+				},
+			}
+		}
+	}
+	var equal = true
+	var missing = false
+	for _, c := range configs {
+		equal = true
+		missing = false
+		found := c.regex.FindStringSubmatch(found.Data[key])
+		if len(found) > 0 {
+			value := strings.Split(found[0], " ")
+			if len(value) > 1 {
+				if value[1] != c.value {
+					equal = false
+				}
+			} else {
+				equal = false
+				missing = true
+			}
+		} else {
+			equal = false
+			missing = true
+		}
+		if !equal {
+			logger.Info(c.name+" incorrect", "Expected", c.value)
+			break
+		}
+	}
+	return equal, missing
+}
+
+// UpdateMatchTags returns a String
+func UpdateMatchTags(found *corev1.ConfigMap) string {
+	var data string
+	re := regexp.MustCompile(`<match.*>`)
+	if found.Name == FluentdDaemonSetName+"-"+SplunkConfigName {
+		data = found.Data[SplunkConfigKey]
+	} else {
+		data = found.Data[QRadarConfigKey]
+	}
+	return re.ReplaceAllString(removeK8sAudit(data), matchTags)
 }
 
 // BuildConfigMap returns a ConfigMap object
@@ -212,14 +524,15 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 			Value string `yaml:"source.conf"`
 		}
 		ds := DataS{}
-		var result string
+		var result = sourceConfigDataKey + sourceConfigDataSystemd1
 		if instance.Spec.Fluentd.JournalPath != "" {
-			result = sourceConfigData1 + instance.Spec.Fluentd.JournalPath + sourceConfigData2
+			result += instance.Spec.Fluentd.JournalPath
 		} else {
-			result = sourceConfigData1 + defaultJournalPath + sourceConfigData2
+			result += defaultJournalPath
 		}
+		result += sourceConfigDataSystemd2
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigData3 + p + sourceConfigData4
+		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterJournal + filterHTTP
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
@@ -360,7 +673,7 @@ func EqualSourceConfig(expected *corev1.ConfigMap, found *corev1.ConfigMap) (boo
 func EqualConfig(found *corev1.ConfigMap, expected *corev1.ConfigMap, key string) bool {
 	logger := log.WithValues("func", "EqualConfig")
 	if !reflect.DeepEqual(found.Data[key], expected.Data[key]) {
-		logger.Info("Found config is incorrect", "Key", key)
+		logger.Info("Found config is incorrect", "Key", key, "Found", found.Data[key], "Expected", expected.Data[key])
 		return false
 	}
 	return true

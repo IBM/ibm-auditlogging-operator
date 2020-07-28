@@ -19,7 +19,6 @@ package resources
 import (
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -28,14 +27,14 @@ import (
 const defaultHTTPPort = 9880
 
 // BuildAuditService returns a Service object
-func BuildAuditService(instance *operatorv1alpha1.AuditLogging) *corev1.Service {
+func BuildAuditService(instanceName string, namespace string) *corev1.Service {
 	metaLabels := LabelsForMetadata(FluentdName)
-	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
+	selectorLabels := LabelsForSelector(FluentdName, instanceName)
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AuditLoggingComponentName,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Spec: corev1.ServiceSpec{

@@ -25,6 +25,8 @@ spec:
         productMetric: FREE
         openshift.io/scc: restricted
     spec:
+      imagePullSecrets:
+      - name: docker-scratch
       serviceAccountName: ibm-auditlogging-operator
       affinity:
         nodeAffinity:
@@ -73,3 +75,42 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
+        - name: audit-policy-controller
+          image: quay.io/opencloudio/audit-policy-controller@sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409
+          imagePullPolicy: IfNotPresent
+          args:
+          - --v=0
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - pgrep audit-policy -l
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "exec echo start audit-policy-controller"]
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+          resources:
+            limits:
+              memory: 300Mi
+              cpu: 200m
+            requests:
+              memory: 150Mi
+              cpu: 100m
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          volumeMounts:
+          - name: tmp
+            mountPath: "/tmp"
+      volumes:
+      - name: tmp
+        emptyDir: {}

@@ -19,7 +19,6 @@ package resources
 import (
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -28,22 +27,22 @@ const AuditLoggingClientCertSecName = "audit-certs"
 const AuditLoggingHTTPSCertName = "fluentd-https"
 const AuditLoggingServerCertSecName = "audit-server-certs"
 const AuditLoggingCertName = "fluentd"
-const defaultClusterIssuer = "cs-ca-clusterissuer"
+const DefaultClusterIssuer = "cs-ca-clusterissuer"
 
 // BuildCertsForAuditLogging returns a Certificate object
-func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer string, name string) *certmgr.Certificate {
+func BuildCertsForAuditLogging(namespace string, issuer string, name string) *certmgr.Certificate {
 	metaLabels := LabelsForMetadata(FluentdName)
 	var clusterIssuer string
 	if issuer != "" {
 		clusterIssuer = issuer
 	} else {
-		clusterIssuer = defaultClusterIssuer
+		clusterIssuer = DefaultClusterIssuer
 	}
 
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Spec: certmgr.CertificateSpec{
@@ -57,9 +56,10 @@ func BuildCertsForAuditLogging(instance *operatorv1alpha1.AuditLogging, issuer s
 
 	if name == AuditLoggingHTTPSCertName {
 		certificate.Spec.SecretName = AuditLoggingServerCertSecName
-		certificate.Spec.DNSNames = []string{AuditLoggingComponentName,
-			AuditLoggingComponentName + "." + InstanceNamespace,
-			AuditLoggingComponentName + "." + InstanceNamespace + ".svc.cluster.local",
+		certificate.Spec.DNSNames = []string{
+			AuditLoggingComponentName,
+			AuditLoggingComponentName + "." + namespace,
+			AuditLoggingComponentName + "." + namespace + ".svc.cluster.local",
 		}
 	} else {
 		certificate.Spec.SecretName = AuditLoggingClientCertSecName

@@ -18,13 +18,11 @@ package helpers
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	operator "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	"github.com/ibm/ibm-auditlogging-operator/test/config"
@@ -94,14 +92,6 @@ func DeleteAuditLogging(reqCr *operator.AuditLogging, f *framework.Framework) er
 	return nil
 }
 
-// AssertNoError confirms the error returned is nil
-func AssertNoError(t *testing.T, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 //AuditLogging instance
 func newAuditLoggingCR(name, namespace string) *operator.AuditLogging {
 	return &operator.AuditLogging{
@@ -111,15 +101,6 @@ func newAuditLoggingCR(name, namespace string) *operator.AuditLogging {
 		},
 		Spec: operator.AuditLoggingSpec{
 			// TODO
-		},
-	}
-}
-
-func GetReconcileRequest(name, namespace string) reconcile.Request {
-	return reconcile.Request{
-		NamespacedName: types.NamespacedName{
-			Name:      name,
-			Namespace: namespace,
 		},
 	}
 }

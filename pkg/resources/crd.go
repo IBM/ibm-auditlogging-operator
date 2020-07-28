@@ -17,7 +17,6 @@
 package resources
 
 import (
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,7 +24,7 @@ import (
 const AuditPolicyCRDName = "auditpolicies.audit.policies.ibm.com"
 
 // BuildAuditPolicyCRD returns a CRD object
-func BuildAuditPolicyCRD(instance *operatorv1alpha1.AuditLogging) *extv1beta1.CustomResourceDefinition {
+func BuildAuditPolicyCRD() *extv1beta1.CustomResourceDefinition {
 	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
 	metaLabels["controller-tools.k8s.io"] = "1.0"
 	crd := &extv1beta1.CustomResourceDefinition{

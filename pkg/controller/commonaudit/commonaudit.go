@@ -14,30 +14,29 @@
 // limitations under the License.
 //
 
-package auditlogging
+package commonaudit
 
 import (
 	"context"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Service.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildAuditService(instance.Name, res.InstanceNamespace)
+func (r *ReconcileCommonAudit) reconcileService(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Service.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected := res.BuildAuditService(instance.Name, instance.Namespace)
 	found := &corev1.Service{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: res.InstanceNamespace}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
@@ -71,36 +70,7 @@ func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.Audi
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	// Policy controller container has been moved to operator pod in 3.7, remove redundant deployment
-	reqLogger := log.WithValues("func", "removeOldPolicyControllerDeploy", "instance.Name", instance.Name)
-	policyDeploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy,
-			Namespace: res.InstanceNamespace,
-		},
-	}
-	// check if the deployment exists
-	err := r.client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, policyDeploy)
-	if err == nil {
-		// found deployment so delete it
-		err := r.client.Delete(context.TODO(), policyDeploy)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete old policy controller deployment")
-			return reconcile.Result{}, err
-		}
-		reqLogger.Info("Deleted old policy controller deployment")
-		return reconcile.Result{Requeue: true}, nil
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		reqLogger.Error(err, "Failed to get old policy controller deployment")
-		return reconcile.Result{}, err
-	}
-	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileCommonAudit) reconcileAuditConfigMaps(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
 
@@ -113,15 +83,15 @@ func (r *ReconcileAuditLogging) reconcileAuditConfigMaps(instance *operatorv1alp
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.AuditLogging, configName string) (reconcile.Result, error) {
-	reqLogger := log.WithValues("ConfigMap.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected, err := res.BuildConfigMap(instance, configName)
+func (r *ReconcileCommonAudit) reconcileConfig(instance *operatorv1.CommonAudit, configName string) (reconcile.Result, error) {
+	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected, err := res.BuildFluentdConfigMap(instance, configName)
 	if err != nil {
 		reqLogger.Error(err, "Failed to create ConfigMap")
 		return reconcile.Result{}, err
 	}
 	found := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: res.InstanceNamespace}, found)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: configName, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new ConfigMap
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
@@ -155,6 +125,11 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 			found.Data[res.EnableAuditLogForwardKey] = expected.Data[res.EnableAuditLogForwardKey]
 			update = true
 		}
+		// Fix so that cp4d can add inputs
+		if !res.EqualConfig(found, expected, res.FluentdConfigKey) {
+			found.Data[res.FluentdConfigKey] = expected.Data[res.FluentdConfigKey]
+			update = true
+		}
 	case res.FluentdDaemonSetName + "-" + res.SourceConfigName:
 		if !res.EqualConfig(found, expected, res.SourceConfigKey) {
 			found.Data[res.SourceConfigKey] = expected.Data[res.SourceConfigKey]
@@ -169,14 +144,18 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 		reqLogger.Info("Checking output configs")
 		fallthrough
 	case res.FluentdDaemonSetName + "-" + res.QRadarConfigName:
-		// Ensure match tags are correct
-		if !res.EqualMatchTags(found) {
-			// Keep customer SIEM configs
-			data, err := res.BuildWithSIEMConfigs(found)
-			if err != nil {
-				reqLogger.Error(err, "Failed to get SIEM configs", "Name", found.Name, "Found output config", data)
-				return reconcile.Result{}, err
+		if equal, missing := res.EqualSIEMConfig(instance, found); !equal {
+			if missing {
+				// Missing required config fields in cm
+				err = r.client.Delete(context.TODO(), found)
+				if err != nil {
+					reqLogger.Error(err, "Failed to delete ConfigMap", "Name", found.Name)
+					return reconcile.Result{}, err
+				}
+				reqLogger.Info("[WARNING] Missing required fields. Recreating ConfigMap", "Name", configName)
+				return reconcile.Result{Requeue: true}, nil
 			}
+			data := res.UpdateSIEMConfig(instance, found)
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
 				found.Data[res.SplunkConfigKey] = data
 			} else {
@@ -204,11 +183,11 @@ func (r *ReconcileAuditLogging) reconcileConfig(instance *operatorv1alpha1.Audit
 	return reconcile.Result{}, nil
 }
 
-func restartFluentdPods(r *ReconcileAuditLogging, instance *operatorv1alpha1.AuditLogging) error {
+func restartFluentdPods(r *ReconcileCommonAudit, instance *operatorv1.CommonAudit) error {
 	reqLogger := log.WithValues("func", "restartFluentdPods")
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(res.InstanceNamespace),
+		client.InNamespace(instance.Namespace),
 		client.MatchingLabels(res.LabelsForSelector(res.FluentdName, instance.Name)),
 	}
 	if err := r.client.List(context.TODO(), podList, listOpts...); err != nil {
@@ -227,51 +206,48 @@ func restartFluentdPods(r *ReconcileAuditLogging, instance *operatorv1alpha1.Aud
 	return nil
 }
 
-func (r *ReconcileAuditLogging) reconcileFluentdDaemonSet(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Daemonset.Namespace", res.InstanceNamespace, "instance.Name", instance.Name)
-	expected := res.BuildDaemonForFluentd(instance)
-	found := &appsv1.DaemonSet{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: res.InstanceNamespace}, found)
+func (r *ReconcileCommonAudit) reconcileFluentdDeployment(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Deployment.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected := res.BuildDeploymentForFluentd(instance)
+	found := &appsv1.Deployment{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		// Define a new DaemonSet
+		// Define a new Deployment
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Creating a new Fluentd DaemonSet", "Daemonset.Namespace", expected.Namespace, "Daemonset.Name", expected.Name)
+		reqLogger.Info("Creating a new Fluentd Deployment", "Deployment.Namespace", expected.Namespace, "Deployment.Name", expected.Name)
 		err = r.client.Create(context.TODO(), expected)
 		if err != nil && errors.IsAlreadyExists(err) {
 			// Already exists from previous reconcile, requeue.
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			reqLogger.Error(err, "Failed to create new Fluentd DaemonSet", "Daemonset.Namespace", expected.Namespace,
-				"Daemonset.Name", expected.Name)
+			reqLogger.Error(err, "Failed to create new Fluentd Deployment", "Deployment.Namespace", expected.Namespace,
+				"Deployment.Name", expected.Name)
 			return reconcile.Result{}, err
 		}
-		// DaemonSet created successfully - return and requeue
+		// Deployment created successfully - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
-		reqLogger.Error(err, "Failed to get DaemonSet")
+		reqLogger.Error(err, "Failed to get Deployment")
 		return reconcile.Result{}, err
-	} else if !res.EqualDaemonSets(expected, found) {
+	} else if !res.EqualDeployments(expected, found) {
 		// If spec is incorrect, update it and requeue
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
-		// Keep hostAliases
-		temp := found.Spec.Template.Spec.HostAliases
 		found.Spec = expected.Spec
-		found.Spec.Template.Spec.HostAliases = temp
 		err = r.client.Update(context.TODO(), found)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Daemonset", "Namespace", res.InstanceNamespace, "Name", found.Name)
+			reqLogger.Error(err, "Failed to update Deployment", "Namespace", instance.Namespace, "Name", found.Name)
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Updating Fluentd DaemonSet", "Daemonset.Name", found.Name)
+		reqLogger.Info("Updating Fluentd Deployment", "Deployment.Name", found.Name)
 		// Spec updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditCerts(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *ReconcileCommonAudit) reconcileAuditCerts(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
 	recResult, recErr = r.reconcileAuditCertificate(instance, res.AuditLoggingHTTPSCertName)
@@ -285,9 +261,9 @@ func (r *ReconcileAuditLogging) reconcileAuditCerts(instance *operatorv1alpha1.A
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileAuditLogging) reconcileAuditCertificate(instance *operatorv1alpha1.AuditLogging, name string) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Certificate.Namespace", res.InstanceNamespace, "Instance.Name", instance.Name)
-	expectedCert := res.BuildCertsForAuditLogging(res.InstanceNamespace, instance.Spec.Fluentd.ClusterIssuer, name)
+func (r *ReconcileCommonAudit) reconcileAuditCertificate(instance *operatorv1.CommonAudit, name string) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Certificate.Namespace", instance.Namespace, "Instance.Name", instance.Name)
+	expectedCert := res.BuildCertsForAuditLogging(instance.Namespace, instance.Spec.ClusterIssuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

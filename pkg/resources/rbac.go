@@ -19,7 +19,6 @@ package resources
 import (
 	"reflect"
 
-	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,145 +26,57 @@ import (
 
 // OperandServiceAccount defines the name of the operands' ServiceAccount
 const OperandServiceAccount = "ibm-auditlogging-operand"
-const rolePostfix = "-role"
-const roleBindingPostfix = "-rolebinding"
+const RolePostfix = "-role"
+const RoleBindingPostfix = "-rolebinding"
 
 // BuildServiceAccount returns a ServiceAccoutn object
-func BuildServiceAccount(instance *operatorv1alpha1.AuditLogging) *corev1.ServiceAccount {
+func BuildServiceAccount(namespace string) *corev1.ServiceAccount {
 	metaLabels := LabelsForMetadata(OperandServiceAccount)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      OperandServiceAccount,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 	}
 	return sa
 }
 
-// BuildClusterRoleBinding returns a ClusterRoleBinding object
-func BuildClusterRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRoleBinding {
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	rb := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + roleBindingPostfix,
-			Labels: metaLabels,
-		},
-		Subjects: []rbacv1.Subject{{
-			Kind:      "ServiceAccount",
-			Name:      OperandServiceAccount,
-			Namespace: InstanceNamespace,
-		}},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     AuditPolicyControllerDeploy + rolePostfix,
-		},
-	}
-	return rb
-}
-
-// BuildClusterRole returns a ClusterRole object
-func BuildClusterRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.ClusterRole {
-	metaLabels := LabelsForMetadata(AuditPolicyControllerDeploy)
-	cr := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   AuditPolicyControllerDeploy + rolePostfix,
-			Labels: metaLabels,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{""},
-				Resources: []string{"services"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{""},
-				Resources: []string{"secrets"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"admissionregistration.k8s.io"},
-				Resources: []string{"mutatingwebhookconfigurations", "validatingwebhookconfigurations"},
-			},
-			{
-				Verbs:     []string{"get", "update", "patch"},
-				APIGroups: []string{"audit.policies.ibm.com"},
-				Resources: []string{"auditpolicies/status"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"audit.policies.ibm.com"},
-				Resources: []string{"auditpolicies"},
-			},
-			{
-				Verbs:     []string{"get", "update", "patch"},
-				APIGroups: []string{"apps"},
-				Resources: []string{"deployments/status"},
-			},
-			{
-				Verbs:     []string{"get", "watch", "list", "create", "update", "patch", "delete"},
-				APIGroups: []string{"apps"},
-				Resources: []string{"deployments"},
-			},
-			{
-				Verbs:     []string{"get", "list", "watch"},
-				APIGroups: []string{""},
-				Resources: []string{"pods", "namespaces"},
-			},
-			{
-				Verbs:     []string{"get", "list", "watch", "update"},
-				APIGroups: []string{""},
-				Resources: []string{"configmaps"},
-			},
-			{
-				Verbs:     []string{"create", "get", "update", "patch"},
-				APIGroups: []string{""},
-				Resources: []string{"events"},
-			},
-			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"restricted"},
-			},
-		},
-	}
-	return cr
-}
-
 // BuildRoleBinding returns a RoleBinding object for fluentd
-func BuildRoleBinding(instance *operatorv1alpha1.AuditLogging) *rbacv1.RoleBinding {
+func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
 	metaLabels := LabelsForMetadata(FluentdName)
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + roleBindingPostfix,
-			Namespace: InstanceNamespace,
+			Name:      FluentdDaemonSetName + RoleBindingPostfix,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Subjects: []rbacv1.Subject{{
 			APIGroup:  "",
 			Kind:      "ServiceAccount",
 			Name:      OperandServiceAccount,
-			Namespace: InstanceNamespace,
+			Namespace: namespace,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     FluentdDaemonSetName + rolePostfix,
+			Name:     FluentdDaemonSetName + RolePostfix,
 		},
 	}
 	return rb
 }
 
 // BuildRole returns a Role object for fluentd
-func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
+func BuildRole(namespace string, journalAccess bool) *rbacv1.Role {
+	var scc = "restricted"
+	if journalAccess {
+		scc = "privileged"
+	}
 	metaLabels := LabelsForMetadata(FluentdName)
-	cr := &rbacv1.Role{
+	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + rolePostfix,
-			Namespace: InstanceNamespace,
+			Name:      FluentdDaemonSetName + RolePostfix,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -173,11 +84,11 @@ func BuildRole(instance *operatorv1alpha1.AuditLogging) *rbacv1.Role {
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
 				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"privileged"},
+				ResourceNames: []string{scc},
 			},
 		},
 	}
-	return cr
+	return role
 }
 
 // EqualRoles returns a Boolean
