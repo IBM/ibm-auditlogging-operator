@@ -206,11 +206,47 @@ func restartFluentdPods(r *ReconcileCommonAudit, instance *operatorv1.CommonAudi
 	return nil
 }
 
+func (r *ReconcileCommonAudit) reconcileSecret(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	reqLogger := log.WithValues("instance.Namespace", instance.Namespace, "instance.Name", instance.Name)
+	expected := res.BuildSecret(instance)
+	found := &corev1.Secret{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Secret
+		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Creating a new Secret", "Secret.Namespace", expected.Namespace, "Secret.Name", expected.Name)
+		err = r.client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to create new Secret", "Secret.Namespace", expected.Namespace,
+				"Secret.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Secret created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get Secret")
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *ReconcileCommonAudit) reconcileFluentdDeployment(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Deployment.Namespace", instance.Namespace, "instance.Name", instance.Name)
-	expected := res.BuildDeploymentForFluentd(instance)
+	secret := &corev1.Secret{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditLoggingClientCertSecName, Namespace: instance.Namespace}, secret)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Secert not found", "Secret.Name", secret.Name)
+		return reconcile.Result{}, nil
+	}
+	hash := res.GenerateHash(secret)
+	expected := res.BuildDeploymentForFluentd(instance, hash)
 	found := &appsv1.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: instance.Namespace}, found)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Deployment
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
@@ -251,10 +287,6 @@ func (r *ReconcileCommonAudit) reconcileAuditCerts(instance *operatorv1.CommonAu
 	var recResult reconcile.Result
 	var recErr error
 	recResult, recErr = r.reconcileAuditCertificate(instance, res.AuditLoggingHTTPSCertName)
-	if recErr != nil || recResult.Requeue {
-		return recResult, recErr
-	}
-	recResult, recErr = r.reconcileAuditCertificate(instance, res.AuditLoggingCertName)
 	if recErr != nil || recResult.Requeue {
 		return recResult, recErr
 	}

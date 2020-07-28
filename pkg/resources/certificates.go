@@ -38,7 +38,6 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 	} else {
 		clusterIssuer = DefaultClusterIssuer
 	}
-
 	certificate := &certmgr.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -53,18 +52,12 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 			},
 		},
 	}
-
-	if name == AuditLoggingHTTPSCertName {
-		certificate.Spec.SecretName = AuditLoggingServerCertSecName
-		certificate.Spec.DNSNames = []string{
-			AuditLoggingComponentName,
-			AuditLoggingComponentName + "." + namespace,
-			AuditLoggingComponentName + "." + namespace + ".svc.cluster.local",
-		}
-	} else {
-		certificate.Spec.SecretName = AuditLoggingClientCertSecName
+	certificate.Spec.SecretName = AuditLoggingServerCertSecName
+	certificate.Spec.DNSNames = []string{
+		AuditLoggingComponentName,
+		AuditLoggingComponentName + "." + namespace,
+		AuditLoggingComponentName + "." + namespace + ".svc.cluster.local",
 	}
-
 	return certificate
 }
 
