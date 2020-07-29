@@ -108,6 +108,8 @@ func TestCommonAuditController(t *testing.T) {
 	ca = getCommonAudit(t, r, req)
 	checkInPlaceUpdate(t, r, req, ca)
 	checkStatus(t, r, req, name, namespace)
+	ca = getCommonAudit(t, r, req)
+	checkUpdateSecret(t, r, req, ca)
 }
 
 func checkMountAndRBACPreReqs(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
@@ -124,7 +126,7 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileCommonAudit, req reconcil
 
 	// Check if Certs are created
 	foundCert := &certmgr.Certificate{}
-	certs := []string{res.AuditLoggingHTTPSCertName, res.AuditLoggingCertName}
+	certs := []string{res.AuditLoggingHTTPSCertName}
 	for _, c := range certs {
 		err = r.client.Get(context.TODO(), types.NamespacedName{Name: c, Namespace: cr.Namespace}, foundCert)
 		if err != nil {
@@ -135,6 +137,14 @@ func checkMountAndRBACPreReqs(t *testing.T, r ReconcileCommonAudit, req reconcil
 		}
 		reconcileResources(t, r, req, true)
 	}
+
+	// Check if Secret is created
+	foundSec := &corev1.Secret{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditLoggingClientCertSecName, Namespace: cr.Namespace}, foundSec)
+	if err != nil {
+		t.Fatalf("get secret: (%v)", err)
+	}
+	reconcileResources(t, r, req, true)
 
 	// Check if ServiceAccount is created
 	foundSA := &corev1.ServiceAccount{}
@@ -308,6 +318,10 @@ func checkInPlaceUpdate(t *testing.T, r ReconcileCommonAudit, req reconcile.Requ
 		foundMemLimit.String() != memory500.String() {
 		t.Fatalf("Resources not equal. Found: (%v)", resources)
 	}
+}
+
+func checkUpdateSecret(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, cr *operatorv1.CommonAudit) {
+
 }
 
 func getCommonAudit(t *testing.T, r ReconcileCommonAudit, req reconcile.Request) *operatorv1.CommonAudit {

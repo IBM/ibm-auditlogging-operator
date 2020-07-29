@@ -79,6 +79,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&appsv1.Deployment{},
 		&corev1.ConfigMap{},
 		&certmgr.Certificate{},
+		&corev1.Secret{},
 		&corev1.ServiceAccount{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
@@ -167,6 +168,7 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 	reconcilers := []func(*operatorv1.CommonAudit) (reconcile.Result, error){
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
+		r.reconcileSecret,
 		r.reconcileServiceAccount,
 		r.reconcileRole,
 		r.reconcileRoleBinding,

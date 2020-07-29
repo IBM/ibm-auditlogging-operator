@@ -44,14 +44,17 @@ const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 const defaultJournalPath = "/run/log/journal"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
+const secretHashKey = AuditLoggingClientCertSecName + "-hash"
 
 // BuildDeploymentForFluentd returns a Deployment object
-func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
+func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit, secretHash string) *appsv1.Deployment {
 	logger := log.WithValues("func", "BuildDeploymentForFluentd")
 	metaLabels := LabelsForMetadata(FluentdName)
 	selectorLabels := LabelsForSelector(FluentdName, instance.Name)
 	podLabels := LabelsForPodMetadata(FluentdName, instance.Name)
 	annotations := annotationsForMetering(false)
+	annotations[secretHashKey] = secretHash
+
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
 	fluentdMainContainer.Image = getImageID(instance.Spec.Fluentd.ImageRegistry, DefaultFluentdImageName, FluentdEnvVar)
