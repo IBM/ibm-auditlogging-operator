@@ -52,11 +52,15 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 			},
 		},
 	}
-	certificate.Spec.SecretName = AuditLoggingServerCertSecName
-	certificate.Spec.DNSNames = []string{
-		AuditLoggingComponentName,
-		AuditLoggingComponentName + "." + namespace,
-		AuditLoggingComponentName + "." + namespace + ".svc.cluster.local",
+	if name == AuditLoggingHTTPSCertName {
+		certificate.Spec.SecretName = AuditLoggingServerCertSecName
+		certificate.Spec.DNSNames = []string{
+			AuditLoggingComponentName,
+			AuditLoggingComponentName + "." + namespace,
+			AuditLoggingComponentName + "." + namespace + ".svc.cluster.local",
+		}
+	} else {
+		certificate.Spec.SecretName = AuditLoggingClientCertSecName
 	}
 	return certificate
 }

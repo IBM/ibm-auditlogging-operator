@@ -217,6 +217,28 @@ func buildFluentdDeploymentVolumes() []corev1.Volume {
 				},
 			},
 		},
+		{
+			Name: "shared",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: AuditLoggingClientCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
+				},
+			},
+		},
 	}
 	return commonVolumes
 }
