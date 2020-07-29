@@ -191,7 +191,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	// Delete service accounts if they were leftover from a previous version.
 	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
 	r.removeOldRBAC(instance)
-
+	r.updateEvent(instance, "Deployed "+res.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
