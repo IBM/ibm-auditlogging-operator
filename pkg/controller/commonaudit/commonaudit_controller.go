@@ -32,6 +32,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -56,7 +57,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCommonAudit{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileCommonAudit{
+		client:   mgr.GetClient(),
+		scheme:   mgr.GetScheme(),
+		recorder: mgr.GetEventRecorderFor("ibm-auditlogging-operator"),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -106,8 +111,9 @@ var _ reconcile.Reconciler = &ReconcileCommonAudit{}
 type ReconcileCommonAudit struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client   client.Client
+	scheme   *runtime.Scheme
+	recorder record.EventRecorder
 }
 
 // Reconcile reads that state of the cluster for a CommonAudit object and makes changes based on the state read
@@ -135,22 +141,6 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
-	if err := r.client.List(context.TODO(), auditLoggingList); err == nil &&
-		len(auditLoggingList.Items) > 0 && request.Namespace == res.InstanceNamespace {
-		reqLogger.Info("[WARNING] CommonAudit cannot run alongside AuditLogging in the same namespace.")
-		// Return and don't requeue
-		return reconcile.Result{}, nil
-	}
-
-	commonAuditList := &operatorv1.CommonAuditList{}
-	if err := r.client.List(context.TODO(), commonAuditList, client.InNamespace(request.Namespace)); err == nil &&
-		len(commonAuditList.Items) > 1 {
-		reqLogger.Info("[WARNING] Only one instance of CommonAudit per namespace. Delete other instances to proceed.")
-		// Return and don't requeue
-		return reconcile.Result{}, nil
-	}
-
 	// Set a default Status value
 	if len(instance.Status.Nodes) == 0 {
 		instance.Status.Nodes = res.DefaultStatusForCR
@@ -160,6 +150,28 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 			return reconcile.Result{}, err
 		}
 	}
+
+	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
+	if err := r.client.List(context.TODO(), auditLoggingList); err == nil &&
+		len(auditLoggingList.Items) > 0 && request.Namespace == res.InstanceNamespace {
+		msg := "CommonAudit cannot run alongside AuditLogging in the same namespace. Delete one or the other to proceed."
+		reqLogger.Info(msg)
+		r.updateEvent(instance, msg, corev1.EventTypeWarning, "Not Allowed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
+	commonAuditList := &operatorv1.CommonAuditList{}
+	if err := r.client.List(context.TODO(), commonAuditList, client.InNamespace(request.Namespace)); err == nil &&
+		len(commonAuditList.Items) > 1 {
+		msg := "Only one instance of CommonAudit per namespace. Delete other instances to proceed."
+		reqLogger.Info(msg)
+		r.updateEvent(instance, msg, corev1.EventTypeWarning, "Not Allowed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
+	r.updateEvent(instance, "Instance found", corev1.EventTypeNormal, "Initializing")
 
 	var recResult reconcile.Result
 	var recErr error
@@ -180,7 +192,7 @@ func (r *ReconcileCommonAudit) Reconcile(request reconcile.Request) (reconcile.R
 			return recResult, recErr
 		}
 	}
-
+	r.updateEvent(instance, "Deployed "+res.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
@@ -217,4 +229,8 @@ func (r *ReconcileCommonAudit) updateStatus(instance *operatorv1.CommonAudit) (r
 		}
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileCommonAudit) updateEvent(instance *operatorv1.CommonAudit, message, event, reason string) {
+	r.recorder.Event(instance, event, reason, message)
 }

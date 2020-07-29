@@ -22,6 +22,7 @@ import (
 	"sort"
 	"time"
 
+	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
 
@@ -31,6 +32,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -50,7 +52,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileAuditLogging{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileAuditLogging{
+		client:   mgr.GetClient(),
+		scheme:   mgr.GetScheme(),
+		recorder: mgr.GetEventRecorderFor("ibm-auditlogging-operator"),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -100,8 +106,9 @@ var _ reconcile.Reconciler = &ReconcileAuditLogging{}
 type ReconcileAuditLogging struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client   client.Client
+	scheme   *runtime.Scheme
+	recorder record.EventRecorder
 }
 
 // Reconcile reads that state of the cluster for a AuditLogging object and makes changes based on the state read
@@ -139,6 +146,27 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
+	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
+	if err := r.client.List(context.TODO(), auditLoggingList); err == nil && len(auditLoggingList.Items) > 1 {
+		msg := "Only one instance of AuditLogging per cluster. Delete other instances to proceed."
+		reqLogger.Info(msg)
+		r.updateEvent(instance, msg, corev1.EventTypeWarning, "Not Allowed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
+	commonAuditList := &operatorv1.CommonAuditList{}
+	if err := r.client.List(context.TODO(), commonAuditList, client.InNamespace(res.InstanceNamespace)); err == nil &&
+		len(commonAuditList.Items) > 0 {
+		msg := "CommonAudit cannot run alongside AuditLogging in the same namespace. Delete one or the other to proceed."
+		reqLogger.Info(msg)
+		r.updateEvent(instance, msg, corev1.EventTypeWarning, "Not Allowed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
+	r.updateEvent(instance, "Instance found", corev1.EventTypeNormal, "Initializing")
+
 	var recResult reconcile.Result
 	var recErr error
 	reconcilers := []func(*operatorv1alpha1.AuditLogging) (reconcile.Result, error){
@@ -163,7 +191,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	// Delete service accounts if they were leftover from a previous version.
 	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
 	r.removeOldRBAC(instance)
-
+	r.updateEvent(instance, "Deployed "+res.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	reqLogger.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
@@ -199,4 +227,8 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 		}
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileAuditLogging) updateEvent(instance *operatorv1alpha1.AuditLogging, message, event, reason string) {
+	r.recorder.Event(instance, event, reason, message)
 }
