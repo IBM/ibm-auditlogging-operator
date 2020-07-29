@@ -44,7 +44,7 @@ const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 const defaultJournalPath = "/run/log/journal"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
-const secretHashKey = "secretHash"
+const secretHashKey = AuditLoggingClientCertSecName + "-hash"
 
 // BuildDeploymentForFluentd returns a Deployment object
 func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit, secretHash string) *appsv1.Deployment {

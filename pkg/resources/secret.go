@@ -61,6 +61,7 @@ func createKeyValuePairs(m map[string][]byte) string {
 	return b.String()
 }
 
+// GenerateHash returns the string value of the SHA256 checksum for sec.Data
 func GenerateHash(sec *corev1.Secret) string {
 	logger := log.WithValues("func", "GenerateHash")
 	h := sha256.New()
