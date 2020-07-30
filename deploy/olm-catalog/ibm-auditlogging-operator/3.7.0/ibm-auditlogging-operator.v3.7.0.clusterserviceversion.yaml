@@ -17,7 +17,7 @@ metadata:
             "name": "example-commonaudit"
           },
           "spec": {
-            "enabled": "true",
+            "enabled": true,
             "clusterIssuer": "cs-ca-clusterissuer",
             "fluentd": {
               "imageRegistry": "quay.io/opencloudio/",
@@ -35,18 +35,18 @@ metadata:
             },
             "outputs": {
               "splunk": {
-                "enableSIEM": "false",
+                "enableSIEM": false,
                 "host": "SPLUNK_SERVER_HOSTNAME",
-                "port": "8088",
+                "port": 8088,
                 "token": "SPLUNK_HEC_TOKEN",
-                "enableTLS": "false"
+                "enableTLS": false
               },
               "syslog": {
-                "enableSIEM": "false",
+                "enableSIEM": false,
                 "host": "QRADAR_SERVER_HOSTNAME",
-                "port": "514",
+                "port": 514,
                 "hostname": "QRADAR_LOG_SOURCE_IDENTIFIER",
-                "enableTLS": "false"
+                "enableTLS": false
               },
               "hostAliases": [
                 {
@@ -139,7 +139,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: AuditLogging is the Schema for the auditloggings API. AuditLogging is DEPRECATED and will be removed in the future.
+    - description: "[DEPRECATED] AuditLogging is the Schema for the auditloggings API." 
       kind: AuditLogging
       name: auditloggings.operator.ibm.com
       version: v1alpha1
