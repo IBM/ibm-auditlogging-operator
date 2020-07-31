@@ -23,8 +23,13 @@ BUILD_LOCALLY ?= 1
 # Use your own docker registry and image name for dev/test by overridding the IMGAGE_NAMe and IMAGE_REPO environment variable.
 # IBMDEV Set image and repo
 IMAGE_NAME ?= ibm-auditlogging-operator
-IMAGE_REPO ?= quay.io/opencloudio
-CSV_VERSION ?= 3.7.0
+ifeq ($(BUILD_LOCALLY),0)
+IMAGE_REPO ?= hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom
+else
+IMAGE_REPO ?= hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom
+endif
+VERSION ?= $(shell cat ./version/version.go | grep "Version =" | awk '{ print $$3}' | tr -d '"')
+CSV_VERSION ?= $(VERSION)
 
 # Set the registry and tag for the operand/operator images
 OPERAND_REGISTRY ?= $(IMAGE_REPO)
@@ -51,8 +56,6 @@ export GOBIN ?= $(GOBIN_DEFAULT)
 TESTARGS_DEFAULT := "-v"
 export TESTARGS ?= $(TESTARGS_DEFAULT)
 DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
-VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
-                 git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 LOCAL_OS := $(shell uname)
 ifeq ($(LOCAL_OS),Linux)
