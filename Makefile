@@ -33,8 +33,8 @@ CSV_VERSION ?= $(VERSION)
 
 # Set the registry and tag for the operand/operator images
 OPERAND_REGISTRY ?= $(IMAGE_REPO)
-FLUENTD_TAG ?= v1.6.2-ruby25
-POLICY_CTRL_TAG ?= 3.5.0
+FLUENTD_TAG ?= v1.6.2-bedrock-0
+POLICY_CTRL_TAG ?= 3.5.1
 
 # The namespce that operator and auditlogging will be deployed in
 NAMESPACE=ibm-common-services

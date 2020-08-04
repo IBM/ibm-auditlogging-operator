@@ -112,6 +112,9 @@ var Protocols = map[bool]string{
 	false: "http",
 }
 
+// SyslogIngestURLKey defines the Http endpoint
+const SyslogIngestURLKey = "AuditLoggingSyslogIngestURL"
+
 // BuildFluentdConfigMap returns a ConfigMap object
 func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*corev1.ConfigMap, error) {
 	reqLogger := log.WithValues("ConfigMap.Namespace", instance.Namespace, "ConfigMap.Name", name)
@@ -162,8 +165,10 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		}
 		dataMap[QRadarConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + HTTPIngestName:
-		p := strconv.Itoa(defaultHTTPPort)
+		var p = strconv.Itoa(defaultHTTPPort)
 		dataMap[HTTPIngestURLKey] = "https://" + AuditLoggingComponentName + "." + instance.Namespace + ":" + p + httpPath
+		p = strconv.Itoa(defaultSyslogPort)
+		dataMap[SyslogIngestURLKey] = "https://" + AuditLoggingComponentName + "." + instance.Namespace + ":" + p
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
