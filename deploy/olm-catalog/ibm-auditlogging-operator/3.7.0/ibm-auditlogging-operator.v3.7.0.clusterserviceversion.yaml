@@ -485,7 +485,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: ibm-auditlogging-operator
                 - name: POLICY_CTRL_TAG_OR_SHA
-                  value: sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409
+                  value: 3.5.1
                 - name: FLUENTD_TAG_OR_SHA
                   value: v1.6.2-bedrock-0
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
@@ -508,7 +508,7 @@ spec:
                   runAsNonRoot: true
               - args:
                 - --v=0
-                image: quay.io/opencloudio/audit-policy-controller@sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409
+                image: hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom/audit-policy-controller:3.5.1
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
@@ -545,8 +545,6 @@ spec:
                 volumeMounts:
                 - mountPath: /tmp
                   name: tmp
-              imagePullSecrets:
-              - name: docker-scratch
               serviceAccountName: ibm-auditlogging-operator
               volumes:
               - emptyDir: {}
