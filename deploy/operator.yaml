@@ -57,9 +57,9 @@ spec:
               value: "ibm-auditlogging-operator"
             # DO NOT DELETE. Add image SHAs here. See get_image_sha.sh
             - name: POLICY_CTRL_TAG_OR_SHA
-              value: "sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409"
+              value: 3.5.1
             - name: FLUENTD_TAG_OR_SHA
-              value: "sha256:d9bbc6c3f8dc0299abd0927285c40b8f61878aafaae3928340991ce0436ff854"
+              value: v1.6.2-bedrock-0
           resources:
             limits:
               cpu: 100m
@@ -76,7 +76,7 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
         - name: audit-policy-controller
-          image: quay.io/opencloudio/audit-policy-controller@sha256:6b681f6dee47b8c4cb3a54284d3112003fd6a88a4cdfff06eef7289f3fd2d409
+          image: hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom/audit-policy-controller:3.5.1
           imagePullPolicy: IfNotPresent
           args:
           - --v=0

@@ -25,6 +25,7 @@ import (
 )
 
 const defaultHTTPPort = 9880
+const defaultSyslogPort = 5140
 
 // BuildAuditService returns a Service object
 func BuildAuditService(instanceName string, namespace string) *corev1.Service {
@@ -47,6 +48,15 @@ func BuildAuditService(instanceName string, namespace string) *corev1.Service {
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
 						IntVal: defaultHTTPPort,
+					},
+				},
+				{
+					Name:     AuditLoggingComponentName + "-syslog",
+					Protocol: "TCP",
+					Port:     defaultSyslogPort,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: defaultSyslogPort,
 					},
 				},
 			},

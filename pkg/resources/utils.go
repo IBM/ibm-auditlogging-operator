@@ -30,7 +30,6 @@ const auditLoggingReleaseName = "common-audit-logging"
 const auditLoggingCrType = "auditlogging_cr"
 const productName = "IBM Cloud Platform Common Services"
 const productID = "068a62892a1e4db39641342e592daa25"
-const productVersion = "3.4.0"
 const productMetric = "FREE"
 
 const InstanceNamespace = "ibm-common-services"
@@ -153,7 +152,6 @@ func annotationsForMetering(journalAccess bool) map[string]string {
 	annotations := map[string]string{
 		"productName":                        productName,
 		"productID":                          productID,
-		"productVersion":                     productVersion,
 		"productMetric":                      productMetric,
 		"clusterhealth.ibm.com/dependencies": "cert-manager",
 	}
