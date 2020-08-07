@@ -77,12 +77,6 @@ metadata:
               "imageRegistry": "quay.io/opencloudio/",
               "journalPath": "/run/log/journal",
               "pullPolicy": "IfNotPresent"
-            },
-            "policyController": {
-              "frequency": "10",
-              "imageRegistry": "quay.io/opencloudio/",
-              "pullPolicy": "IfNotPresent",
-              "verbosity": "0"
             }
           }
         },
