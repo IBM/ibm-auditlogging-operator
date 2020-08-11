@@ -17,12 +17,6 @@
 package resources
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"sort"
-
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,28 +40,4 @@ func BuildSecret(instance *operatorv1.CommonAudit) *corev1.Secret {
 		},
 	}
 	return secret
-}
-
-func createKeyValuePairs(m map[string][]byte) string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	b := new(bytes.Buffer)
-	for _, k := range keys {
-		fmt.Fprintf(b, "%s=\"%s\"\n", k, m[k])
-	}
-	return b.String()
-}
-
-// GenerateHash returns the string value of the SHA256 checksum for sec.Data
-func GenerateHash(sec *corev1.Secret) string {
-	logger := log.WithValues("func", "GenerateHash")
-	h := sha256.New()
-	data := createKeyValuePairs(sec.Data)
-	if _, err := h.Write([]byte(data)); err != nil {
-		logger.Error(err, "Failed to generate hash for secret.")
-	}
-	return hex.EncodeToString(h.Sum(nil))
 }
