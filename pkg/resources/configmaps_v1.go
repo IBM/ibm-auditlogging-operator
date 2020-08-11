@@ -76,7 +76,8 @@ var sourceConfigSyslog = `
         <parse>
             @type json
         </parse>
-    </source>`
+    </source>
+`
 
 var filters = `
     <filter icp-audit.* syslog syslog.**>
