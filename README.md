@@ -136,7 +136,7 @@ As a developer, if you want to build and test this operator to try out and learn
   export GOPRIVATE="github.ibm.com"
 ```
 
-- For more information, follow the Operator SDK [Quickstart Guide](https://sdk.operatorframework.io/docs/golang/quickstart/)
+- For more information, follow the Operator SDK [Quickstart Guide](https://sdk.operatorframework.io/docs/building-operators/golang/quickstart/)
 
 - **IMPORTANT**: Anytime you modify `<kind>_types.go`, you must run `operator-sdk generate k8s`, `operator-sdk generate crds`, and `openapi-gen` again to update the CRD and the generated code.
 
@@ -168,8 +168,6 @@ As a developer, if you want to build and test this operator to try out and learn
 
 #### Operator SDK's Test Framework
 
-- [Unit Testing](https://sdk.operatorframework.io/docs/golang/legacy/unit-testing/)
-- [E2E Testing](https://sdk.operatorframework.io/docs/golang/legacy/e2e-tests/)
 - To run unit tests use, `make test`
 - To run e2e tests use, `make test-e2e`
 

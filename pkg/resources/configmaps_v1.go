@@ -73,16 +73,20 @@ var sourceConfigSyslog = `
             cert_path /fluentd/etc/https/tls.crt
             private_key_path /fluentd/etc/https/tls.key
         </transport>
+        <parse>
+            @type json
+        </parse>
     </source>`
 
-var filterSyslog = `
-    <filter syslog syslog.**>
-        @type parser
-        format json
-        key_name message
-        reserve_data true
-    </filter>
-`
+var filters = `
+    <filter icp-audit.* syslog syslog.**>
+        @type record_transformer
+        enable_ruby true
+        <record>
+          tag ${tag}
+          message ${record.to_json}
+        </record>
+    </filter>`
 
 const hecHost = `hec_host `
 const hecPort = `hec_port `
@@ -142,7 +146,7 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP + sourceConfigSyslog + filterSyslog
+		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filters
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
