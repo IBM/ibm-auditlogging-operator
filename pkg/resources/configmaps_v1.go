@@ -34,7 +34,7 @@ fluent.conf: |-
     @include /fluentd/etc/source.conf
     # Output plugins (Supports Splunk and Syslog)`
 var fluentdOutputConfigV1Data = `
-    <match icp-audit icp-audit.**>
+    <match icp-audit icp-audit.** syslog syslog.**>
         @type copy
 `
 var splunkConfigV1Data1 = `
@@ -73,7 +73,13 @@ var sourceConfigSyslog = `
             cert_path /fluentd/etc/https/tls.crt
             private_key_path /fluentd/etc/https/tls.key
         </transport>
-    </source>`
+        <parse>
+            @type regexp
+            expression /^[^{]*(?<message>{.*})\s*$/
+            types message:string
+        </parse>
+    </source>
+`
 
 var filterSyslog = `
     <filter syslog syslog.**>
@@ -142,7 +148,7 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP + sourceConfigSyslog + filterSyslog
+		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterHTTP + filterSyslog
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
