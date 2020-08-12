@@ -78,7 +78,8 @@ var sourceConfigSyslog = `
             expression /^[^{]*(?<message>{.*})\s*$/
             types message:string
         </parse>
-    </source>`
+    </source>
+`
 
 var filterSyslog = `
     <filter syslog syslog.**>

@@ -66,7 +66,7 @@ const SplunkConfigKey = "splunkHEC.conf"
 const QRadarConfigKey = "remoteSyslog.conf"
 
 // OutputPluginMatches defines the match tags for Splunk and QRadar outputs
-const OutputPluginMatches = "icp-audit icp-audit.**"
+const OutputPluginMatches = "icp-audit icp-audit.** syslog syslog.**"
 
 const httpPath = "/icp-audit.http"
 
@@ -101,7 +101,8 @@ var sourceConfigDataSystemd2 = `
           fields_strip_underscores true
           fields_lowercase true
         </entry>
-    </source>`
+    </source>
+`
 var sourceConfigDataHTTP1 = `
     <source>
         @type http
@@ -137,11 +138,12 @@ var filterHTTP = `
           tag ${tag}
           message ${record.to_json}
         </record>
-    </filter>`
+    </filter>
+`
 
 var splunkConfigData1 = `
 splunkHEC.conf: |-
-    <match icp-audit icp-audit.**>`
+    <match icp-audit icp-audit.** syslog syslog.**>`
 var splunkDefaults = `
         @type splunk_hec
         hec_host SPLUNK_SERVER_HOSTNAME
@@ -154,7 +156,7 @@ var splunkConfigData2 = `
 
 var qRadarConfigData1 = `
 remoteSyslog.conf: |-
-    <match icp-audit icp-audit.**>`
+    <match icp-audit icp-audit.** syslog syslog.**>`
 var qRadarDefaults = `
         @type copy
         <store>
@@ -237,7 +239,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		}
 		result += sourceConfigDataSystemd2
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterJournal + filterHTTP
+		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterJournal + filterHTTP + filterSyslog
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
