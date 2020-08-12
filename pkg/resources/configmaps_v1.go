@@ -34,7 +34,7 @@ fluent.conf: |-
     @include /fluentd/etc/source.conf
     # Output plugins (Supports Splunk and Syslog)`
 var fluentdOutputConfigV1Data = `
-    <match icp-audit icp-audit.**>
+    <match icp-audit icp-audit.** syslog syslog.**>
         @type copy
 `
 var splunkConfigV1Data1 = `
