@@ -147,7 +147,7 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + filterHTTP + sourceConfigSyslog + filterSyslog
+		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterHTTP + filterSyslog
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
