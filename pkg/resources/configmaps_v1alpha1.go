@@ -350,7 +350,7 @@ func EqualMatchTags(found *corev1.ConfigMap) bool {
 	} else {
 		key = QRadarConfigKey
 	}
-	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\* syslog syslog.\*\*`)
+	re := regexp.MustCompile(`match icp-audit icp-audit\.\*\* syslog syslog\.\*\*`)
 	var match = re.FindStringSubmatch(found.Data[key])
 	if len(match) < 1 {
 		logger.Info("Match tags not equal", "Expected", OutputPluginMatches)
