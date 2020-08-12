@@ -237,16 +237,9 @@ func (r *ReconcileCommonAudit) reconcileSecret(instance *operatorv1.CommonAudit)
 
 func (r *ReconcileCommonAudit) reconcileFluentdDeployment(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Deployment.Namespace", instance.Namespace, "instance.Name", instance.Name)
-	secret := &corev1.Secret{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.AuditLoggingClientCertSecName, Namespace: instance.Namespace}, secret)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Secert not found", "Secret.Name", secret.Name)
-		return reconcile.Result{}, nil
-	}
-	hash := res.GenerateHash(secret)
-	expected := res.BuildDeploymentForFluentd(instance, hash)
+	expected := res.BuildDeploymentForFluentd(instance)
 	found := &appsv1.Deployment{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: instance.Namespace}, found)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new Deployment
 		if err := controllerutil.SetControllerReference(instance, expected, r.scheme); err != nil {
