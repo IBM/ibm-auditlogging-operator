@@ -260,8 +260,10 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		}
 		dataMap[QRadarConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + HTTPIngestName:
-		p := strconv.Itoa(defaultHTTPPort)
+		var p = strconv.Itoa(defaultHTTPPort)
 		dataMap[HTTPIngestURLKey] = "https://" + AuditLoggingComponentName + "." + InstanceNamespace + ":" + p + httpPath
+		p = strconv.Itoa(defaultSyslogPort)
+		dataMap[SyslogIngestURLKey] = "https://" + AuditLoggingComponentName + "." + InstanceNamespace + ":" + p
 	default:
 		reqLogger.Info("Unknown ConfigMap name")
 	}
