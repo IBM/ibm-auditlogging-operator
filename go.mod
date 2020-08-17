@@ -1,6 +1,6 @@
 module github.com/ibm/ibm-auditlogging-operator
 
-go 1.13
+go 1.14
 
 require (
 	cloud.google.com/go v0.54.0 // indirect
