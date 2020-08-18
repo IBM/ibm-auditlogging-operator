@@ -96,19 +96,8 @@ func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
 	return !reflect.DeepEqual(found.Rules, expected.Rules)
 }
 
-// EqualClusterRoles returns a Boolean
-func EqualClusterRoles(expected *rbacv1.ClusterRole, found *rbacv1.ClusterRole) bool {
-	return !reflect.DeepEqual(found.Rules, expected.Rules)
-}
-
 // EqualRoleBindings returns a Boolean
 func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
-	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
-		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
-}
-
-// EqualClusterRoleBindings returns a Boolean
-func EqualClusterRoleBindings(expected *rbacv1.ClusterRoleBinding, found *rbacv1.ClusterRoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
 }
