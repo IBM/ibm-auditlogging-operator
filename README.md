@@ -6,7 +6,7 @@ The ibm-auditlogging-operator contains a Fluentd solution to forward audit data 
 
 ## Supported platforms
 
-Red Hat OpenShift Container Platform 4.2 or newer installed on one of the following platforms.
+Red Hat OpenShift Container Platform 4.3 or newer installed on one of the following platforms.
 
 - Linux x86_64
 - Linux on Power (ppc64le)
@@ -19,6 +19,7 @@ Red Hat OpenShift Container Platform 4.2 or newer installed on one of the follow
 - 3.6.1
 - 3.6.2
 - 3.7.0
+- 3.7.1
 
   Technology Preview - Included in version 3.6.0, 3.6.1, and 3.6.2 support for sending audit log records over HTTP.
 
