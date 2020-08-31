@@ -81,10 +81,10 @@ func getImageID(imageRegistry, imageName, envVarName string) string {
 		}
 	} else {
 		var tag string
-		if imageName == DefaultPCImageName {
-			tag = defaultPCImageTag
-		} else {
+		if imageName == DefaultFluentdImageName {
 			tag = defaultFluentdImageTag
+		} else {
+			tag = "latest"
 		}
 		// use the default tag to build the image ID
 		imageID = imageReg + imageName + ":" + tag

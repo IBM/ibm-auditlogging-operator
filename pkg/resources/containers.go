@@ -25,12 +25,9 @@ import (
 
 const DefaultImageRegistry = "quay.io/opencloudio/"
 const DefaultFluentdImageName = "fluentd"
-const defaultFluentdImageTag = "v1.6.2-bedrock-0"
-const DefaultPCImageName = "audit-policy-controller"
-const defaultPCImageTag = "3.5.0"
+const defaultFluentdImageTag = "v1.6.2-bedrock-1"
 
 const FluentdEnvVar = "FLUENTD_TAG_OR_SHA"
-const PolicyConrtollerEnvVar = "POLICY_CTRL_TAG_OR_SHA"
 
 var trueVar = true
 var falseVar = false

@@ -414,10 +414,8 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-auditlogging-operator
-                - name: POLICY_CTRL_TAG_OR_SHA
-                  value: sha256:0e3304831c52f6ad389bf6e1b13528b69374e2b12ad0cb01a63fbea7a03ee1dc
                 - name: FLUENTD_TAG_OR_SHA
-                  value: sha256:fa6a5922caed92ff38816a11a3098e17afd2300fb4688ac8ccf857365ffef9a5
+                  value: sha256:384ca8e6c3d64e1e8aed1dba580778ff853b46b24e2dc65820d385dec7ff5a8f
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
