@@ -133,7 +133,6 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-    operatorframework.io/os.zos: supported
   name: ibm-auditlogging-operator.v3.7.0
   namespace: ibm-common-services
 spec:
