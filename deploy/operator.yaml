@@ -58,7 +58,7 @@ spec:
             - name: POLICY_CTRL_TAG_OR_SHA
               value: sha256:a41c7ce5574d3b84a083b748ff82a41f2736743aa7299be10e89030daa4e2ec4
             - name: FLUENTD_TAG_OR_SHA
-              value: sha256:fa6a5922caed92ff38816a11a3098e17afd2300fb4688ac8ccf857365ffef9a5
+              value: sha256:384ca8e6c3d64e1e8aed1dba580778ff853b46b24e2dc65820d385dec7ff5a8f
           resources:
             limits:
               cpu: 100m

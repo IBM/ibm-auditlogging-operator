@@ -63,7 +63,6 @@ splunkHEC.conf: |-
         </buffer>
      </match>`
 const dummyFluentdSHA = "sha256:abc"
-const dummyPolicyControllerTag = "3.4.0"
 
 var dummyHostAliases = []corev1.HostAlias{
 	{
@@ -82,7 +81,6 @@ func TestAuditLoggingController(t *testing.T) {
 	)
 
 	os.Setenv(res.FluentdEnvVar, dummyFluentdSHA)
-	os.Setenv(res.PolicyConrtollerEnvVar, dummyPolicyControllerTag)
 
 	req := getReconcileRequest(name)
 	cr := buildAuditLogging(name)
