@@ -99,7 +99,7 @@ func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operat
 		sort.Strings(args)
 		sort.Strings(policyCtrlContainerArgs)
 		if !reflect.DeepEqual(args, policyCtrlContainerArgs) {
-			msg := "Configure audit policy controller through CSV instead of CR"
+			msg := "Configure audit-policy-controller through CSV instead of CR"
 			reqLogger.Info("[WARNING] "+msg, "args", args)
 			r.updateEvent(instance, msg, corev1.EventTypeWarning, "APIChanged")
 		}
