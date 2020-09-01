@@ -84,6 +84,7 @@ func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operat
 			reqLogger.Error(err, "Failed to get operator pod")
 			return reconcile.Result{}, err
 		}
+		// default policy controller args in csv: ["--v=0"]
 		policyCtrlContainerArgs := operatorPod.Spec.Containers[1].Args
 		var args = make([]string, 0)
 		if instance.Spec.PolicyController.Verbosity != "" {
@@ -91,7 +92,8 @@ func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operat
 		} else {
 			args = append(args, "--v=0")
 		}
-		if instance.Spec.PolicyController.Frequency != "" {
+		// policy controller image runs with an update frequency of 10s by default
+		if instance.Spec.PolicyController.Frequency != "" && instance.Spec.PolicyController.Frequency != "10" {
 			args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
 		}
 		sort.Strings(args)
