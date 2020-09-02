@@ -18,6 +18,8 @@ package auditlogging
 
 import (
 	"context"
+	"reflect"
+	"sort"
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
@@ -25,6 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -74,6 +77,33 @@ func (r *ReconcileAuditLogging) reconcileService(instance *operatorv1alpha1.Audi
 func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
 	// Policy controller container has been moved to operator pod in 3.7, remove redundant deployment
 	reqLogger := log.WithValues("func", "removeOldPolicyControllerDeploy", "instance.Name", instance.Name)
+	operatorNs, err := k8sutil.GetOperatorNamespace()
+	if err == nil {
+		operatorPod, err := k8sutil.GetPod(context.TODO(), r.client, operatorNs)
+		if err != nil {
+			reqLogger.Error(err, "Failed to get operator pod")
+			return reconcile.Result{}, err
+		}
+		// default policy controller args in csv: ["--v=0"]
+		policyCtrlContainerArgs := operatorPod.Spec.Containers[1].Args
+		var args = make([]string, 0)
+		if instance.Spec.PolicyController.Verbosity != "" {
+			args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
+		} else {
+			args = append(args, "--v=0")
+		}
+		// policy controller image runs with an update frequency of 10s by default
+		if instance.Spec.PolicyController.Frequency != "" && instance.Spec.PolicyController.Frequency != "10" {
+			args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
+		}
+		sort.Strings(args)
+		sort.Strings(policyCtrlContainerArgs)
+		if !reflect.DeepEqual(args, policyCtrlContainerArgs) {
+			msg := "Configure audit-policy-controller through CSV instead of CR"
+			reqLogger.Info("[WARNING] "+msg, "args", args)
+			r.updateEvent(instance, msg, corev1.EventTypeWarning, "APIChanged")
+		}
+	}
 	policyDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      res.AuditPolicyControllerDeploy,
@@ -81,7 +111,7 @@ func (r *ReconcileAuditLogging) removeOldPolicyControllerDeploy(instance *operat
 		},
 	}
 	// check if the deployment exists
-	err := r.client.Get(context.TODO(),
+	err = r.client.Get(context.TODO(),
 		types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: res.InstanceNamespace}, policyDeploy)
 	if err == nil {
 		// found deployment so delete it
