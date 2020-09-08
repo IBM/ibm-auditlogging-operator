@@ -94,11 +94,11 @@ spec:
             timeoutSeconds: 2
           resources:
             limits:
-              memory: 300Mi
-              cpu: 200m
+              memory: 400Mi
+              cpu: 100m
             requests:
               memory: 150Mi
-              cpu: 100m
+              cpu: 20m
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

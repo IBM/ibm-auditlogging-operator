@@ -198,4 +198,3 @@ Run these commands to collect logs:
 #### End-to-End testing
 
 - For more instructions on how to run end-to-end testing with the Operand Deployment Lifecycle Manager, see [ODLM guide](https://github.com/IBM/ibm-common-service-operator/blob/master/docs/install.md).
-- [E2E Testing Automation](https://github.ibm.com/IBMPrivateCloud/audit-logging-bats/wiki/End-To-End-Testing) for the ibm-audit-logging-operator
