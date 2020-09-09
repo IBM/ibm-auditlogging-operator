@@ -72,10 +72,16 @@ type CommonAuditSpecHostAliases struct {
 	Hostnames []string `json:"hostnames"`
 }
 
+// StatusVersion defines the Operator versions
+type StatusVersion struct {
+	Reconciled string `json:"reconciled"`
+}
+
 // CommonAuditStatus defines the observed state of CommonAudit
 type CommonAuditStatus struct {
 	// The list of pod names for fluentd
-	Nodes []string `json:"nodes"`
+	Nodes    []string      `json:"nodes"`
+	Versions StatusVersion `json:"versions,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

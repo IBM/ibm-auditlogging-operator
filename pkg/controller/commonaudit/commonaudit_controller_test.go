@@ -30,6 +30,7 @@ import (
 
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
+	opversion "github.com/ibm/ibm-auditlogging-operator/version"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	yaml "gopkg.in/yaml.v2"
@@ -223,6 +224,9 @@ func checkStatus(t *testing.T, r ReconcileCommonAudit, req reconcile.Request, na
 	sort.Strings(podNames)
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
+	}
+	if ca.Status.Versions.Reconciled != opversion.Version {
+		t.Errorf("reconciled %v did not match expected %v", ca.Status.Versions.Reconciled, opversion.Version)
 	}
 }
 

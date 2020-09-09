@@ -28,6 +28,7 @@ import (
 
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
+	opversion "github.com/ibm/ibm-auditlogging-operator/version"
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	yaml "gopkg.in/yaml.v2"
@@ -189,6 +190,9 @@ func checkFluentdConfig(t *testing.T, r ReconcileAuditLogging, req reconcile.Req
 	sort.Strings(podNames)
 	if !reflect.DeepEqual(podNames, nodes) {
 		t.Errorf("pod names %v did not match expected %v", nodes, podNames)
+	}
+	if al.Status.Versions.Reconciled != opversion.Version {
+		t.Errorf("reconciled %v did not match expected %v", al.Status.Versions.Reconciled, opversion.Version)
 	}
 
 	updateAuditLoggingCR(al, t, r, req)
