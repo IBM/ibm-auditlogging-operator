@@ -155,6 +155,9 @@ spec:
         - description: The list of Pods for the Audit Logging service
           displayName: Pod Names
           path: nodes
+        - description: Reconciled versions
+          displayName: Versions
+          path: versions
       resources:
         - kind: ConfigMap
           name: ''
@@ -199,6 +202,9 @@ spec:
         - description: The list of Pods for the Audit Logging service
           displayName: Pod Names
           path: nodes
+        - description: Reconciled versions
+          displayName: Versions
+          path: versions
       resources:
         - kind: ConfigMap
           name: ''
