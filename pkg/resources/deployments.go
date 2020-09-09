@@ -100,8 +100,25 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 								},
 							},
 						},
+						PodAntiAffinity: &corev1.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+								{
+									LabelSelector: &metav1.LabelSelector{
+										MatchExpressions: []metav1.LabelSelectorRequirement{
+											{
+												Key:      "app.kubernetes.io/name",
+												Operator: metav1.LabelSelectorOpIn,
+												Values: []string{
+													FluentdName,
+												},
+											},
+										},
+									},
+									TopologyKey: "kubernetes.io/hostname",
+								},
+							},
+						},
 					},
-					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     volumes,
 					Containers: []corev1.Container{
