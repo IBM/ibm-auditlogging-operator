@@ -53,10 +53,16 @@ type AuditLoggingSpecPolicyController struct {
 	Frequency     string `json:"frequency,omitempty"`
 }
 
+// StatusVersion defines the Operator versions
+type StatusVersion struct {
+	Reconciled string `json:"reconciled"`
+}
+
 // AuditLoggingStatus defines the observed state of AuditLogging
 type AuditLoggingStatus struct {
 	// Nodes defines the names of the audit pods
-	Nodes []string `json:"nodes"`
+	Nodes    []string      `json:"nodes"`
+	Versions StatusVersion `json:"versions,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -25,6 +25,7 @@ import (
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
+	opversion "github.com/ibm/ibm-auditlogging-operator/version"
 
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -139,6 +140,7 @@ func (r *ReconcileAuditLogging) Reconcile(request reconcile.Request) (reconcile.
 	// Set a default Status value
 	if len(instance.Status.Nodes) == 0 {
 		instance.Status.Nodes = res.DefaultStatusForCR
+		instance.Status.Versions.Reconciled = opversion.Version
 		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to set AuditLogging default status")
@@ -211,15 +213,21 @@ func (r *ReconcileAuditLogging) updateStatus(instance *operatorv1alpha1.AuditLog
 		reqLogger.Error(err, "Failed to list pods", "AuditLogging.Namespace", res.InstanceNamespace, "AuditLogging.Name", instance.Name)
 		return reconcile.Result{}, err
 	}
-	podNames := []string{}
+	var podNames []string
 	for _, pod := range podList.Items {
 		podNames = append(podNames, pod.Name)
 	}
-	sort.Strings(podNames)
+	// if no pods were found set the default status
+	if len(podNames) == 0 {
+		podNames = res.DefaultStatusForCR
+	} else {
+		sort.Strings(podNames)
+	}
 
 	// Update status.Nodes if needed
-	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
+	if !reflect.DeepEqual(podNames, instance.Status.Nodes) || opversion.Version != instance.Status.Versions.Reconciled {
 		instance.Status.Nodes = podNames
+		instance.Status.Versions.Reconciled = opversion.Version
 		reqLogger.Info("Updating Audit Logging status", "Name", instance.Name)
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {

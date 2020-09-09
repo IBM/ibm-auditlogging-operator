@@ -145,6 +145,14 @@ spec:
               items:
                 type: string
               type: array
+            versions:
+              description: StatusVersion defines the Operator versions
+              properties:
+                reconciled:
+                  type: string
+              required:
+              - reconciled
+              type: object
           required:
           - nodes
           type: object
