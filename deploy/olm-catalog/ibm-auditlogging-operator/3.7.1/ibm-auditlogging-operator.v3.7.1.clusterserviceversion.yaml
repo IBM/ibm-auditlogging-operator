@@ -422,7 +422,7 @@ spec:
                   value: ibm-auditlogging-operator
                 - name: FLUENTD_TAG_OR_SHA
                   value: sha256:384ca8e6c3d64e1e8aed1dba580778ff853b46b24e2dc65820d385dec7ff5a8f
-                image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+                image: quay.io/opencloudio/ibm-auditlogging-operator:3.7.1
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources:
