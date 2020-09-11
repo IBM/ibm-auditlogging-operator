@@ -421,7 +421,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: ibm-auditlogging-operator
                 - name: FLUENTD_TAG_OR_SHA
-                  value: sha256:384ca8e6c3d64e1e8aed1dba580778ff853b46b24e2dc65820d385dec7ff5a8f
+                  value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
                 image: quay.io/opencloudio/ibm-auditlogging-operator:3.7.1
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
@@ -442,7 +442,7 @@ spec:
                   runAsNonRoot: true
               - args:
                 - --v=0
-                image: quay.io/opencloudio/audit-policy-controller@sha256:0e3304831c52f6ad389bf6e1b13528b69374e2b12ad0cb01a63fbea7a03ee1dc
+                image: quay.io/opencloudio/audit-policy-controller@sha256:e505e7e3183fe6c54ce3ebe0e33e16d64a69e0a0cd04e8f8beaa255028f0ddb3
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
