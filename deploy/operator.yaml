@@ -39,7 +39,7 @@ spec:
       containers:
         - name: ibm-auditlogging-operator
           # Replace this with the built image name
-          image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+          image: quay.io/opencloudio/ibm-auditlogging-operator@sha256:cfb833ea873e46b286ff2276fe7379d6e7a825d54c0043d14620725d713e0f04
           command:
           - ibm-auditlogging-operator
           imagePullPolicy: Always
