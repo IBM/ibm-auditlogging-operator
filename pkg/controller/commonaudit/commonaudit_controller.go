@@ -97,15 +97,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	secondaryResourcePredicates := predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			labels := e.Meta.GetLabels()
-			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+			return reflect.DeepEqual(labels, res.LabelsForMetadata(res.FluentdName))
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			labels := e.MetaNew.GetLabels()
-			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+			return reflect.DeepEqual(labels, res.LabelsForMetadata(res.FluentdName))
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			labels := e.Meta.GetLabels()
-			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+			return reflect.DeepEqual(labels, res.LabelsForMetadata(res.FluentdName))
 		},
 	}
 
