@@ -59,9 +59,18 @@ func (r *ReconcileAuditLogging) reconcileServiceAccount(cr *operatorv1alpha1.Aud
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ServiceAccount")
 		return reconcile.Result{}, err
+	} else if result := res.EqualServiceAccounts(expectedRes, foundSvcAcct); result {
+		reqLogger.Info("Found ServiceAccount is incorrect", "Found", foundSvcAcct.ObjectMeta.Labels, "Expected", expectedRes.ObjectMeta.Labels)
+		foundSvcAcct.ObjectMeta.Labels = expectedRes.ObjectMeta.Labels
+		err = r.client.Update(context.TODO(), foundSvcAcct)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update role", "Name", foundSvcAcct.Name)
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Updating Role", "Role.Name", foundSvcAcct.Name)
+		// Updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
 	}
-	// No extra validation of the service account required
-
 	// No reconcile was necessary
 	return reconcile.Result{}, nil
 }

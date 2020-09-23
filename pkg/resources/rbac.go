@@ -29,9 +29,9 @@ const OperandServiceAccount = "ibm-auditlogging-operand"
 const RolePostfix = "-role"
 const RoleBindingPostfix = "-rolebinding"
 
-// BuildServiceAccount returns a ServiceAccoutn object
+// BuildServiceAccount returns a ServiceAccount object
 func BuildServiceAccount(namespace string) *corev1.ServiceAccount {
-	metaLabels := LabelsForMetadata(OperandServiceAccount)
+	metaLabels := LabelsForMetadata(FluentdName)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      OperandServiceAccount,
@@ -100,4 +100,9 @@ func EqualRoles(expected *rbacv1.Role, found *rbacv1.Role) bool {
 func EqualRoleBindings(expected *rbacv1.RoleBinding, found *rbacv1.RoleBinding) bool {
 	return !reflect.DeepEqual(found.Subjects, expected.Subjects) ||
 		!reflect.DeepEqual(found.RoleRef, expected.RoleRef)
+}
+
+// EqualServiceAccounts returns a Boolean
+func EqualServiceAccounts(expected *corev1.ServiceAccount, found *corev1.ServiceAccount) bool {
+	return !reflect.DeepEqual(expected.ObjectMeta.Labels, found.ObjectMeta.Labels)
 }
