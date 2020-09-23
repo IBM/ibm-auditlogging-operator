@@ -22,6 +22,9 @@ import (
 	"sort"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
 	operatorv1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1"
 	operatorv1alpha1 "github.com/ibm/ibm-auditlogging-operator/pkg/apis/operator/v1alpha1"
 	res "github.com/ibm/ibm-auditlogging-operator/pkg/resources"
@@ -80,7 +83,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner CommonAudit
+	// Watch for changes to secondary resources and requeue the owner CommonAudit
 	secondaryResourceTypes := []runtime.Object{
 		&appsv1.Deployment{},
 		&corev1.ConfigMap{},
@@ -91,13 +94,29 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&rbacv1.RoleBinding{},
 		&corev1.Service{},
 	}
+	secondaryResourcePredicates := predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			labels := e.Meta.GetLabels()
+			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			labels := e.MetaNew.GetLabels()
+			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			labels := e.Meta.GetLabels()
+			return res.EqualLabels(labels, res.LabelsForMetadata(res.FluentdName))
+		},
+	}
+
 	for _, restype := range secondaryResourceTypes {
 		log.Info("Watching", "restype", reflect.TypeOf(restype))
-		//err = c.Watch(&kind, &handler.EnqueueRequestForOwner{
 		err = c.Watch(&source.Kind{Type: restype}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &operatorv1.CommonAudit{},
-		})
+		},
+			secondaryResourcePredicates,
+		)
 		if err != nil {
 			return err
 		}
