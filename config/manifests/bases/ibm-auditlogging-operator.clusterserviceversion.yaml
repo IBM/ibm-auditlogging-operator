@@ -1,0 +1,58 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.0.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+  name: ibm-auditlogging-operator.vX.Y.Z
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: AuditLogging is the Schema for the auditloggings API
+      displayName: Audit Logging
+      kind: AuditLogging
+      name: auditloggings.operator.ibm.com
+      version: v1alpha1
+    - description: CommonAudit is the Schema for the commonaudits API
+      displayName: Common Audit
+      kind: CommonAudit
+      name: commonaudits.operator.ibm.com
+      version: v1
+  description: Operator used to install IBM audit logging service.
+  displayName: IBM Audit Logging Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - IBM
+  - Cloud
+  - Audit Logging
+  - Common Services
+  links:
+  - name: Ibm Auditlogging Operator
+    url: https://ibm-auditlogging-operator.domain
+  maintainers:
+  - email: support@ibm.com
+    name: IBM Support
+  maturity: alpha
+  provider:
+    name: IBM
+    url: ibm.com
+  version: 0.0.0

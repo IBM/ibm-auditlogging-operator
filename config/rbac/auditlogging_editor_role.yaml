@@ -1,0 +1,24 @@
+# permissions for end users to edit auditloggings.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: auditlogging-editor-role
+rules:
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - auditloggings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - auditloggings/status
+  verbs:
+  - get

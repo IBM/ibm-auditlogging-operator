@@ -1,4 +1,3 @@
-#
 # Copyright 2020 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,58 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
+.DEFAULT_GOAL:=help
 
 # Specify whether this repo is build locally or not, default values is '1';
 # If set to 1, then you need to also set 'DOCKER_USERNAME' and 'DOCKER_PASSWORD'
 # environment variables before build the repo.
 BUILD_LOCALLY ?= 1
 
-# Image URL to use all building/pushing image targets;
-# Use your own docker registry and image name for dev/test by overridding the IMGAGE_NAMe and IMAGE_REPO environment variable.
-# IBMDEV Set image and repo
-IMAGE_NAME ?= ibm-auditlogging-operator
-ifeq ($(BUILD_LOCALLY),0)
-IMAGE_REPO ?= hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom
-else
-IMAGE_REPO ?= hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom
-endif
-VERSION ?= $(shell cat ./version/version.go | grep "Version =" | awk '{ print $$3}' | tr -d '"')
-CSV_VERSION ?= $(VERSION)
-
-# Set the registry and tag for the operand/operator images
-OPERAND_REGISTRY ?= $(IMAGE_REPO)
-FLUENTD_TAG ?= v1.6.2-bedrock-0
-POLICY_CTRL_TAG ?= 3.5.1
-
-# The namespce that operator and auditlogging will be deployed in
-NAMESPACE=ibm-common-services
-# The namespce that commonaudit will be deployed in
-CA_NAMESPACE = test
-
-# Github host to use for checking the source tree;
-# Override this variable ue with your own value if you're working on forked repo.
-GIT_HOST ?= github.com/IBM
-
-PWD := $(shell pwd)
-BASE_DIR := $(shell basename $(PWD))
-
-# Keep an existing GOPATH, make a private one if it is undefined
-GOPATH_DEFAULT := $(PWD)/.go
-export GOPATH ?= $(GOPATH_DEFAULT)
-GOBIN_DEFAULT := $(GOPATH)/bin
-export GOBIN ?= $(GOBIN_DEFAULT)
-TESTARGS_DEFAULT := "-v"
-export TESTARGS ?= $(TESTARGS_DEFAULT)
-DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
-
+VCS_URL ?= https://github.com/IBM/ibm-auditlogging-operator
+VCS_REF ?= $(shell git rev-parse HEAD)
+VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+                git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+RELEASE_VERSION ?= $(shell cat ./version/version.go | grep "Version =" | awk '{ print $$3}' | tr -d '"')
 LOCAL_OS := $(shell uname)
 ifeq ($(LOCAL_OS),Linux)
     TARGET_OS ?= linux
     XARGS_FLAGS="-r"
+	STRIP_FLAGS=
 else ifeq ($(LOCAL_OS),Darwin)
     TARGET_OS ?= darwin
     XARGS_FLAGS=
+	STRIP_FLAGS="-x"
 else
     $(error "This system's OS $(LOCAL_OS) isn't recognized/supported")
 endif
@@ -80,233 +49,176 @@ else
     $(error "This system's ARCH $(ARCH) isn't recognized/supported")
 endif
 
+# Default image repo
+IMAGE_REPO ?= quay.io/opencloudio
 
-all: fmt check test coverage build images
+ifeq ($(BUILD_LOCALLY),0)
+REGISTRY ?= "hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom"
+else
+REGISTRY ?= "hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom"
+endif
 
-#IBMDEV If not using a set GOPATH env var, this check fails
-ifeq (,$(wildcard go.mod))
-	ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
-			$(error Please run 'make' from $(DEST). Current directory is $(PWD))
-	endif
+# Current Operator image name
+OPERATOR_IMAGE_NAME ?= ibm-auditlogging-operator
+# Current Operator bundle image name
+BUNDLE_IMAGE_NAME ?= ibm-auditlogging-operator-bundle
+# Current Operator version
+OPERATOR_VERSION ?= 3.7.2
+
+# Image URL to use all building/pushing image targets
+IMG ?= $(OPERATOR_IMAGE_NAME):latest
+
+# Options for 'bundle-build'
+ifneq ($(origin CHANNELS), undefined)
+BUNDLE_CHANNELS := --channels=$(CHANNELS)
+endif
+ifneq ($(origin DEFAULT_CHANNEL), undefined)
+BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
+endif
+BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
+
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+ifeq ($(BUILD_LOCALLY),0)
+    export CONFIG_DOCKER_TARGET = config-docker
+    export CONFIG_DOCKER_TARGET_QUAY = config-docker-quay
 endif
 
 include common/Makefile.common.mk
 
-############################################################
-# work section
-############################################################
-$(GOBIN):
-	@echo "create gobin"
-	@mkdir -p $(GOBIN)
+##@ Development
 
-work: $(GOBIN)
+install-controller-gen:
+ifeq (, $(shell which controller-gen))
+	@{ \
+	set -e ;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	}
+endif
 
-############################################################
-# format section
-############################################################
+install-kustomize:
+ifeq (, $(shell which kustomize))
+	@{ \
+	set -e ;\
+	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
+	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
+	}
+endif
 
-# All available format: format-go format-python
-# Default value will run all formats, override these make target with your requirements:
-#    eg: fmt: format-go format-protos
-fmt: format-go format-python
+# find or download kubebuilder
+# download kubebuilder if necessary
+kube-builder:
+ifeq (, $(wildcard /usr/local/kubebuilder))
+	@./common/scripts/install-kubebuilder.sh
+endif
 
-############################################################
-# check section
-############################################################
-
-check: lint
-
-# All available linters: lint-dockerfiles lint-scripts lint-yaml lint-copyright-banner lint-go lint-python lint-helm lint-markdown
-# Default value will run all linters, override these make target with your requirements:
-#    eg: lint: lint-go lint-yaml
-# The MARKDOWN_LINT_WHITELIST variable can be set with comma separated urls you want to whitelist
-lint: lint-all
-
-############################################################
-# test section
-############################################################
-
-test: ## Run unit test
-	@echo "Running the tests for $(IMAGE_NAME) on $(LOCAL_ARCH)..."
-	@go test $(TESTARGS) ./pkg/controller/...
-
-test-e2e: ## Run integration e2e tests
-	@echo ... Running e2e tests ...
-	@echo ... Running locally ...
-	- operator-sdk test local ./test/e2e --verbose --up-local --namespace=${NAMESPACE}
-
-############################################################
-# coverage section
-############################################################
-
-coverage: ## Run code coverage test
-	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
-
-############################################################
-# install operator sdk section
-############################################################
 
 install-operator-sdk:
 	@operator-sdk version 2> /dev/null ; if [ $$? -ne 0 ]; then ./common/scripts/install-operator-sdk.sh; fi
 
-############################################################
-# build section
-############################################################
+check: lint-all ## Check all files lint error
 
-build: build-amd64 build-ppc64le build-s390x
+code-dev: ## Run the default dev commands which are the go tidy, fmt, vet then execute the $ make code-gen
+	@echo Running the common required commands for developments purposes
+	- make bundle
+	- make code-tidy
+	- make code-fmt
+	@echo Running the common required commands for code delivery
+	- make check
+	- make test
 
-build-amd64:
-	@echo "Building the ${IMAGE_NAME} amd64 binary..."
-	@GOARCH=amd64 common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME) ./cmd/manager
+manager: generate code-fmt code-vet ## Build manager binary
+	go build -o bin/manager main.go
 
-build-ppc64le:
-	@echo "Building the ${IMAGE_NAME} ppc64le binary..."
-	@GOARCH=ppc64le common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-ppc64le ./cmd/manager
+run: generate code-fmt code-vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
+	go run ./main.go -v=2
 
-build-s390x:
-	@echo "Building the ${IMAGE_NAME} s390x binary..."
-	@GOARCH=s390x common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME)-s390x ./cmd/manager
+install: manifests  ## Install CRDs into a cluster
+	kustomize build config/crd | kubectl apply -f -
 
-############################################################
-# images section
-############################################################
+uninstall: manifests ## Uninstall CRDs from a cluster
+	kustomize build config/crd | kubectl delete -f -
 
-ifeq ($(BUILD_LOCALLY),0)
-    export CONFIG_DOCKER_TARGET = config-docker
-endif
+deploy: manifests ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+	cd config/manager && kustomize edit set image controller=$(IMAGE_REPO)/$(OPERATOR_IMAGE_NAME):$(OPERATOR_VERSION)
+	kustomize build config/default | kubectl apply -f -
 
-build-image-amd64: build-amd64
-	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION) -f build/Dockerfile .
+##@ Generate code and manifests
 
-build-image-ppc64le: build-ppc64le
-	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
-	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) -f build/Dockerfile.ppc64le .
+manifests: ## Generate manifests e.g. CRD, RBAC etc.
+	controller-gen $(CRD_OPTIONS) rbac:roleName=ibm-auditlogging-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-build-image-s390x: build-s390x
-	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
-	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION) -f build/Dockerfile.s390x .
+generate: ## Generate code e.g. API etc.
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-push-image-amd64: $(CONFIG_DOCKER_TARGET) build-image-amd64
-	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION)
+package-manifests:
+	@{ \
+	PKG_MANIFESTS_DIR=deploy/olm-catalog/ibm-auditlogging-operator/$(OPERATOR_VERSION) ;\
+	BUNDLE_MANIFESTS_DIR=bundle/manifests ;\
+	[[ ! -d $$PKG_MANIFESTS_DIR ]] && mkdir $$PKG_MANIFESTS_DIR ;\
+	cp $$BUNDLE_MANIFESTS_DIR/ibm-auditlogging-operator.clusterserviceversion.yaml $$PKG_MANIFESTS_DIR/ibm-auditlogging-operator.v$(OPERATOR_VERSION).clusterserviceversion.yaml ;\
+	cp $$BUNDLE_MANIFESTS_DIR/operator.ibm.com_auditloggings.yaml $$PKG_MANIFESTS_DIR/operator.ibm.com_auditloggins_crd.yaml ;\
+	cp $$BUNDLE_MANIFESTS_DIR/operator.ibm.com_commonaudits.yaml $$PKG_MANIFESTS_DIR/operator.ibm.com_commonaudits_crd.yaml ;\
+	}
 
-push-image-ppc64le: $(CONFIG_DOCKER_TARGET) build-image-ppc64le
-	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION)
+# Generate bundle manifests and metadata, then validate generated files.
+.PHONY: bundle
+bundle: manifests
+	operator-sdk generate kustomize manifests -q
+	cd config/manager && kustomize edit set image controller=$(IMG)
+	kustomize build config/manifests | operator-sdk generate bundle -q --overwrite --version $(OPERATOR_VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk bundle validate ./bundle
 
-push-image-s390x: $(CONFIG_DOCKER_TARGET) build-image-s390x
-	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION)
+##@ Test
+test: generate code-fmt manifests
+	go test ./... -coverprofile cover.out
 
-############################################################
-# multiarch-image section
-############################################################
+scorecard: operator-sdk ## Run scorecard test
+	@echo ... Running the scorecard test
+	- operator-sdk scorecard --verbose
 
-images: push-image-amd64 push-image-ppc64le push-image-s390x multiarch-image
+##@ Coverage
+coverage: ## Run code coverage test
+	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
 
-multiarch-image:
-	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
-	@chmod +x /tmp/manifest-tool
-	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
-	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
+##@ Build
 
-############################################################
-# SHA section
-############################################################
+build-operator-image: ## Build the operator image.
+	@echo "Building the $(OPERATOR_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
+	@docker build -t $(REGISTRY)/$(OPERATOR_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION) \
+	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
+	--build-arg GOARCH=$(LOCAL_ARCH) -f Dockerfile .
 
-.PHONY: get-all-image-sha
-get-all-image-sha: get-fluentd-image-sha get-audit-policy-controller-image-sha
-	@echo Got SHAs for all operand images
+build-bundle-image: ## Build the operator bundle image.
+	docker build -f bundle.Dockerfile -t $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION) .
 
-.PHONY: get-fluentd-image-sha
-get-fluentd-image-sha:
-	@echo Get SHA for fluentd:$(FLUENTD_OPERAND_TAG)
-	@common/scripts/get_image_sha.sh $(OPERAND_REGISTRY) fluentd $(FLUENTD_TAG) FLUENTD_TAG_OR_SHA
+##@ Release
 
-.PHONY: get-audit-policy-controller-image-sha
-get-audit-policy-controller-image-sha:
-	@echo Get SHA for audit-policy-controller:$(POLICY_CTRL_TAG)
-	@common/scripts/get_image_sha.sh $(OPERAND_REGISTRY) audit-policy-controller $(POLICY_CTRL_TAG) POLICY_CTRL_TAG_OR_SHA
+build-push-image: $(CONFIG_DOCKER_TARGET) build-operator-image  ## Build and push the operator images.
+	@echo "Pushing the $(OPERATOR_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
+	@docker push $(REGISTRY)/$(OPERATOR_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION)
 
-############################################################
-# local testing section
-############################################################
+build-push-bundle-image: $(CONFIG_DOCKER_TARGET_QUAY) build-bundle-image ## Build and push the bundle images.
+	@echo "Pushing the $(BUNDLE_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
+	@docker push $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION)
 
-install: ## Install all resources (CR/CRD's, RBCA and Operator)
-	@echo ....... Set environment variables ......
-	- export DEPLOY_DIR=deploy/crds
-	# - export WATCH_NAMESPACE=${NAMESPACE}
-	@echo ....... Creating namespaces .......
-	- kubectl create namespace ${NAMESPACE}
-	- kubectl create namespace ${CA_NAMESPACE}
-	@echo ....... Applying CRDS and Operator .......
-	- for crd in $(shell ls deploy/crds/*crd.yaml); do kubectl apply -f $${crd}; done
-	@echo ....... Applying RBAC .......
-	- kubectl apply -f deploy/service_account.yaml -n ${NAMESPACE}
-	- kubectl apply -f deploy/role.yaml -n ${NAMESPACE}
-	- kubectl apply -f deploy/role_binding.yaml -n ${NAMESPACE}
-	@echo ....... Applying Operator .......
-	# - kubectl apply -f deploy/operator.yaml -n ${NAMESPACE}
-	- kubectl apply -f deploy/olm-catalog/${BASE_DIR}/${CSV_VERSION}/${BASE_DIR}.v${CSV_VERSION}.clusterserviceversion.yaml -n ${NAMESPACE}
-	@echo ....... Creating the Instances .......
-	# - for cr in $(shell ls deploy/crds/*_cr.yaml); do kubectl -n ${NAMESPACE} apply -f $${cr}; doneMESPACE}
-	@echo ....... Creating the CommonAudit Instance in Namespace ${CA_NAMESPACE} .......
-	- kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${CA_NAMESPACE}
-	@echo ....... Creating the AuditLogging Instance in Namespace ${NAMESPACE}.......
-	- kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
+multiarch-image: $(CONFIG_DOCKER_TARGET) ## Generate multiarch images for operator image.
+	@MAX_PULLING_RETRY=20 RETRY_INTERVAL=30 common/scripts/multiarch_image.sh $(REGISTRY) $(OPERATOR_IMAGE_NAME) $(VERSION) $(RELEASE_VERSION)
 
-uninstall: ## Uninstall all that all performed in the $ make install
-	@echo ....... Uninstalling .......
-	@echo ....... Deleting CR .......
-	- for cr in $(shell ls deploy/crds/*_cr.yaml); do kubectl -n ${NAMESPACE} delete -f $${cr}; done
-	- kubectl delete --all commonaudit --all-namespaces
-	- kubectl delete --all auditpolicy --all-namespaces
-	@echo ....... Deleting Operator .......
-	# - kubectl delete -f deploy/operator.yaml -n ${NAMESPACE}
-	- kubectl delete -f deploy/olm-catalog/${BASE_DIR}/${CSV_VERSION}/${BASE_DIR}.v${CSV_VERSION}.clusterserviceversion.yaml -n ${NAMESPACE}
-	@echo ....... Deleting CRDs.......
-	- for crd in $(shell ls deploy/crds/*crd.yaml); do kubectl delete -f $${crd}; done
-	@echo ....... Deleting Rules and Service Account .......
-	- kubectl delete -f deploy/role_binding.yaml -n ${NAMESPACE}
-	- kubectl delete -f deploy/service_account.yaml -n ${NAMESPACE}
-	- kubectl delete -f deploy/role.yaml -n ${NAMESPACE}
-	@echo ...... Deleting Secrets .......
-	- kubectl get secret -n ${CA_NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${CA_NAMESPACE}
-	- kubectl get secret -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${NAMESPACE}
-	@echo ...... Deleting Namespaces .......
-	# - kubectl delete ns ${CA_NAMESPACE}
-	# - kubectl delete ns ${NAMESPACE}
+multiarch-bundle-image: $(CONFIG_DOCKER_TARGET_QUAY) ## Generate multiarch images for bundle image.
+	@MAX_PULLING_RETRY=20 RETRY_INTERVAL=30 common/scripts/multiarch_image.sh $(IMAGE_REPO) $(BUNDLE_IMAGE_NAME) $(VERSION) $(RELEASE_VERSION)
 
-install-local: ## Install operator using local controller instead of operator deployment
-	@echo ....... Installing .......
-	- export WATCH_NAMESPACE=""
-	@echo ....... Applying CRD and Operator .......
-	- kubectl apply -f deploy/crds/operator.ibm.com_auditloggings_crd.yaml
-	- kubectl apply -f deploy/crds/operator.ibm.com_commonaudits_crd.yaml
-	@echo ....... Creating AuditLogging CR .......
-	# - kubectl apply -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
-	- kubectl apply -f deploy/crds/operator.ibm.com_v1_commonaudit_cr.yaml -n ${NAMESPACE}
-	@echo ....... Running Operator .......
-	- operator-sdk run --local
-
-uninstall-local: ## Uninstall all that all performed in the $ make install-local
-	@echo ....... Uninstalling .......
-	@echo ....... Deleting CRs .......
-	- kubectl delete -f deploy/crds/operator.ibm.com_v1alpha1_auditlogging_cr.yaml -n ${NAMESPACE}
-	- kubectl delete --all commonaudit --all-namespaces
-	- kubectl delete --all auditpolicy --all-namespaces
-	@echo ....... Deleting CRDs.......
-	- for crd in $(shell ls deploy/crds/*crd.yaml); do kubectl delete -f $${crd}; done
-	@echo ...... Deleting Secrets .......
-	- kubectl get secret -n ${NAMESPACE} | grep audit | awk '{print $$1}' | xargs kubectl delete secret -n ${NAMESPACE}
-
-############################################################
-# CSV section
-############################################################
-csv: ## Push CSV package to the catalog
-	@RELEASE=${CSV_VERSION} common/scripts/push-csv.sh
-
-############################################################
-# clean section
-############################################################
-clean:
-	@rm -rf build/_output
-
-.PHONY: all work fmt check coverage lint test build image images multiarch-image clean
+##@ Help
+help: ## Display this help
+	@echo "Usage:\n  make \033[36m<target>\033[0m"
+	@awk 'BEGIN {FS = ":.*##"}; \
+		/^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } \
+		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

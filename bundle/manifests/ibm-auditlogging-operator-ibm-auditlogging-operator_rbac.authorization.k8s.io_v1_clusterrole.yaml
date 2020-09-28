@@ -1,0 +1,52 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: ibm-auditlogging-operator-ibm-auditlogging-operator
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - auditloggings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - auditloggings/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - commonaudits
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - commonaudits/status
+  verbs:
+  - get
+  - patch
+  - update

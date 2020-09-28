@@ -57,7 +57,7 @@ lint-helm:
 	@${FINDFILES} -name 'Chart.yaml' -print0 | ${XARGS} -L 1 dirname | ${CLEANXARGS} helm lint --strict
 
 lint-copyright-banner:
-	@${FINDFILES} \( -name '*.go' -o -name '*.cc' -o -name '*.h' -o -name '*.proto' -o -name '*.py' -o -name '*.sh' \) \( ! \( -name '*.gen.go' -o -name '*.pb.go' -o -name '*_pb2.py' \) \) -print0 |\
+	@${FINDFILES} \( -name '*.go' -o -name '*.cc' -o -name '*.h' -o -name '*.proto' -o -name '*.py' -o -name '*.sh' \) \( ! \( -name '*.gen.go' -o -name '*.pb.go' -o -name '*_pb2.py' -o -name 'defs.go' -o -name 'defs_test.go' -o -name 'defs.go' -o -name 'doc.go' -o -name '*_info.go' -o -name '*zz_*.go' -o -name '*.deepcopy.go' \) \) -print0 |\
 		${XARGS} common/scripts/lint_copyright_banner.sh
 
 lint-go:
@@ -74,7 +74,7 @@ else
 	@${FINDFILES} -name '*.md' -print0 | ${XARGS} awesome_bot --skip-save-results --allow_ssl --allow-timeout --allow-dupe --allow-redirect
 endif
 
-lint-all: lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown
+lint-all: lint-dockerfiles lint-helm lint-copyright-banner lint-go lint-python lint-markdown
 
 format-go:
 	@${FINDFILES} -name '*.go' \( ! \( -name '*.gen.go' -o -name '*.pb.go' \) \) -print0 | ${XARGS} goimports -w -local "github.com/IBM"
@@ -82,4 +82,19 @@ format-go:
 format-python:
 	@${FINDFILES} -name '*.py' -print0 | ${XARGS} autopep8 --max-line-length 160 --aggressive --aggressive -i
 
-.PHONY: lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python
+# Run go fmt for this project
+code-fmt:
+	@echo go fmt
+	go fmt $$(go list ./... )
+
+# Run go mod tidy to update dependencies
+code-tidy:
+	@echo go mod tidy
+	go mod tidy -v
+
+# Run go vet for this project. More info: https://golang.org/cmd/vet/
+code-vet:
+	@echo go vet
+	go vet $$(go list ./... )
+
+.PHONY: code-fmt code-tidy lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python
