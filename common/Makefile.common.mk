@@ -36,6 +36,14 @@ get-cluster-credentials: activate-serviceaccount
 config-docker: get-cluster-credentials
 	@common/scripts/config_docker.sh
 
+find-certmgr-crds:
+	@{ \
+	curl -L -O "https://github.com/jetstack/cert-manager/releases/download/v0.10.1/cert-manager-openshift.yaml" ;\
+	mkdir crds ;\
+	mv cert-manager-openshift.yaml crds/ ;\
+	rm -rf cert-manager-openshift.yaml ;\
+	}
+
 ############################################################
 # lint section
 ############################################################
@@ -97,4 +105,4 @@ code-vet:
 	@echo go vet
 	go vet $$(go list ./... )
 
-.PHONY: code-fmt code-tidy lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python
+.PHONY: code-fmt code-tidy lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python find-certmgr-crds

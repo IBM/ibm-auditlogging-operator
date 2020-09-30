@@ -17,7 +17,10 @@
 package controllers
 
 import (
+	"crypto/rand"
+	"fmt"
 	"os"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -42,14 +45,16 @@ import (
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
-const useExistingCluster = "USE_EXISTING_CLUSTER"
+const (
+	useExistingCluster = "USE_EXISTING_CLUSTER"
+	timeout            = time.Second * 30
+	interval           = time.Millisecond * 250
+)
 
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
 	testEnv   *envtest.Environment
-	// scheme    = runtime.NewScheme()
 )
 
 func TestAPIs(t *testing.T) {
@@ -65,7 +70,7 @@ var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		UseExistingCluster: UseExistingCluster(),
-		CRDDirectoryPaths:  []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:  []string{filepath.Join("..", "config", "crd", "bases"), filepath.Join("..", "crds")},
 	}
 
 	var err error
@@ -113,9 +118,13 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
+		//defer GinkgoRecover()
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	k8sClient = k8sManager.GetClient()
+	Expect(k8sClient).ToNot(BeNil())
 
 	close(done)
 }, 60)
@@ -132,4 +141,11 @@ func UseExistingCluster() *bool {
 		use = true
 	}
 	return &use
+}
+
+// createNSName generates random namespace names.
+func createNSName(prefix string) string {
+	suffix := make([]byte, 20)
+	rand.Read(suffix)
+	return fmt.Sprintf("%s-%x", prefix, suffix)
 }

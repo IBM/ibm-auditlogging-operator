@@ -178,8 +178,12 @@ bundle: manifests
 	operator-sdk bundle validate ./bundle
 
 ##@ Test
-test: generate code-fmt manifests
-	go test ./... -coverprofile cover.out
+test: ## Run unit test on prow
+	@rm -rf crds
+	- make find-certmgr-crds
+	@echo "Running unit tests for the controllers."
+	@go test ./controllers/... -coverprofile cover.out
+	@rm -rf crds
 
 scorecard: operator-sdk ## Run scorecard test
 	@echo ... Running the scorecard test
@@ -188,6 +192,17 @@ scorecard: operator-sdk ## Run scorecard test
 ##@ Coverage
 coverage: ## Run code coverage test
 	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
+
+unit-test: generate code-fmt code-vet manifests ## Run unit test
+ifeq (, $(USE_EXISTING_CLUSTER))
+	@rm -rf crds
+	- make kube-builder
+	- make find-certmgr-crds
+endif
+	@echo "Running unit tests for the controllers."
+	@go test ./controllers/... -coverprofile cover.out
+	@rm -rf crds
+
 
 ##@ Build
 

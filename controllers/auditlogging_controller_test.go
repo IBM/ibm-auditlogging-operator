@@ -15,3 +15,125 @@
 //
 
 package controllers
+
+import (
+	"context"
+
+	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
+
+	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
+
+	rbacv1 "k8s.io/api/rbac/v1"
+
+	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+
+	corev1 "k8s.io/api/core/v1"
+
+	res "github.com/IBM/ibm-auditlogging-operator/controllers/resources"
+
+	opversion "github.com/IBM/ibm-auditlogging-operator/version"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	testdata "github.com/IBM/ibm-auditlogging-operator/controllers/testutil"
+)
+
+var _ = Describe("AuditLogging controller", func() {
+	const requestName = "example-auditlogging"
+	var (
+		ctx              context.Context
+		requestNamespace string
+		auditLogging     *operatorv1alpha1.AuditLogging
+		namespacedName   types.NamespacedName
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		requestNamespace = constant.InstanceNamespace
+		By("Creating the Namespace")
+		Expect(k8sClient.Create(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
+
+		auditLogging = testdata.AuditLoggingObj(requestName)
+		// AuditLogging is cluster scoped and does not have a namespace
+		namespacedName = types.NamespacedName{Name: requestName, Namespace: ""}
+		By("Creating a new AuditLogging")
+		Expect(k8sClient.Create(ctx, auditLogging)).Should(Succeed())
+	})
+
+	AfterEach(func() {
+		By("Deleting the AuditLogging")
+		Expect(k8sClient.Delete(ctx, auditLogging)).Should(Succeed())
+		By("Deleting the Namespace")
+		Expect(k8sClient.Delete(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
+	})
+
+	Context("When creating an AuditLogging instance", func() {
+		It("Should create all secondary resources", func() {
+			createdAuditLogging := &operatorv1alpha1.AuditLogging{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, namespacedName, createdAuditLogging)
+			}, timeout, interval).Should(BeNil())
+
+			By("Check status of AuditLogging")
+			audit := &operatorv1alpha1.AuditLogging{}
+			Eventually(func() string {
+				Expect(k8sClient.Get(ctx, namespacedName, audit)).Should(Succeed())
+				return audit.Status.Versions.Reconciled
+			}, timeout, interval).Should(Equal(opversion.Version))
+
+			By("Check if ConfigMaps were created")
+			foundCM := &corev1.ConfigMap{}
+			for _, cm := range res.FluentdConfigMaps {
+				Eventually(func() error {
+					return k8sClient.Get(ctx, types.NamespacedName{Name: cm, Namespace: requestNamespace}, foundCM)
+				}, timeout, interval).Should(Succeed())
+			}
+
+			By("Check if Certificates were created")
+			foundHTTPSCert := &certmgr.Certificate{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingHTTPSCertName, Namespace: requestNamespace}, foundHTTPSCert)
+			}, timeout, interval).Should(Succeed())
+
+			foundCert := &certmgr.Certificate{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingCertName, Namespace: requestNamespace}, foundCert)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if SA was created")
+			foundSA := &corev1.ServiceAccount{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.OperandServiceAccount, Namespace: requestNamespace}, foundSA)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if Role was created")
+			foundRole := &rbacv1.Role{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-role", Namespace: requestNamespace}, foundRole)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if RoleBinding was created")
+			foundRB := &rbacv1.RoleBinding{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-rolebinding", Namespace: requestNamespace}, foundRB)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if Service was created")
+			foundSvc := &corev1.Service{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: constant.AuditLoggingComponentName, Namespace: requestNamespace}, foundSvc)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if DaemonSet was created")
+			foundDaemonst := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: requestNamespace}, foundDaemonst)
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+})
