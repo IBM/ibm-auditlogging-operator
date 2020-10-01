@@ -198,19 +198,9 @@ ifeq ($(BUILD_LOCALLY),0)
     export CONFIG_DOCKER_TARGET = config-docker
 endif
 
-build: build-amd64 build-ppc64le build-s390x
-
-build-amd64:
-	@echo "Building the ${IMAGE_NAME} amd64 binary..."
-	@GOARCH=amd64 common/scripts/gobuild.sh ./bin/manager ./main.go
-
-build-ppc64le:
-	@echo "Building the ${IMAGE_NAME} ppc64le binary..."
-	@GOARCH=ppc64le common/scripts/gobuild.sh bin/manager-ppc64le ./main.go
-
-build-s390x:
-	@echo "Building the ${IMAGE_NAME} s390x binary..."
-	@GOARCH=s390x common/scripts/gobuild.sh bin/manager-s390x ./main.go
+build:
+	@echo "Building the ibm-auditlogging-operator binary"
+	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o manager main.go
 
 build-bundle-image: ## Build the operator bundle image.
 	$(eval ARCH := $(shell uname -m|sed 's/x86_64/amd64/'))

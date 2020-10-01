@@ -1,7 +1,7 @@
 domain: ibm.com
 layout: go.kubebuilder.io/v2
 projectName: ibm-auditlogging-operator
-repo: github.com/ibm/ibm-auditlogging-operator
+repo: github.com/IBM/ibm-auditlogging-operator
 resources:
 - group: operator
   kind: CommonAudit
