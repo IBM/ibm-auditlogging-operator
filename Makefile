@@ -21,9 +21,7 @@ BUILD_LOCALLY ?= 1
 
 VCS_URL ?= https://github.com/IBM/ibm-auditlogging-operator
 VCS_REF ?= $(shell git rev-parse HEAD)
-VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
-                git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
-RELEASE_VERSION ?= $(shell cat ./version/version.go | grep "Version =" | awk '{ print $$3}' | tr -d '"')
+VERSION ?= $(shell cat ./version/version.go | grep "Version =" | awk '{ print $$3}' | tr -d '"')
 LOCAL_OS := $(shell uname)
 ifeq ($(LOCAL_OS),Linux)
     TARGET_OS ?= linux
@@ -53,19 +51,20 @@ endif
 ifeq ($(BUILD_LOCALLY),0)
 IMAGE_REPO ?= "hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom"
 else
-IMAGE_REPO ?= "hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom"
+IMAGE_REPO ?= "quay.io/hbradfield"
 endif
 OPERAND_REGISTRY ?= $(IMAGE_REPO)
 
 # Current Operator image name
-OPERATOR_IMAGE_NAME ?= ibm-auditlogging-operator
+IMAGE_NAME ?= ibm-auditlogging-operator
 # Current Operator bundle image name
 BUNDLE_IMAGE_NAME ?= ibm-auditlogging-operator-bundle
 # Current Operator version
-OPERATOR_VERSION ?= 3.7.2
+OPERATOR_VERSION ?= $(VERSION)
+CSV_VERSION ?= $(OPERATOR_VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(OPERATOR_IMAGE_NAME):latest
+IMG ?= $(IMAGE_NAME):latest
 
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
@@ -147,7 +146,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 	kustomize build config/crd | kubectl delete -f -
 
 deploy: manifests ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-	cd config/manager && kustomize edit set image controller=$(IMAGE_REPO)/$(OPERATOR_IMAGE_NAME):$(OPERATOR_VERSION)
+	cd config/manager && kustomize edit set image controller=$(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION)
 	kustomize build config/default | kubectl apply -f -
 
 ##@ Generate code and manifests
@@ -199,22 +198,32 @@ ifeq ($(BUILD_LOCALLY),0)
     export CONFIG_DOCKER_TARGET = config-docker
 endif
 
-build:
-	@echo "Building the ibm-auditlogging-operator binary"
-	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o manager main.go
+build: build-amd64 build-ppc64le build-s390x
+
+build-amd64:
+	@echo "Building the ${IMAGE_NAME} amd64 binary..."
+	@GOARCH=amd64 common/scripts/gobuild.sh ./bin/manager ./main.go
+
+build-ppc64le:
+	@echo "Building the ${IMAGE_NAME} ppc64le binary..."
+	@GOARCH=ppc64le common/scripts/gobuild.sh bin/manager-ppc64le ./main.go
+
+build-s390x:
+	@echo "Building the ${IMAGE_NAME} s390x binary..."
+	@GOARCH=s390x common/scripts/gobuild.sh bin/manager-s390x ./main.go
 
 build-bundle-image: ## Build the operator bundle image.
 	$(eval ARCH := $(shell uname -m|sed 's/x86_64/amd64/'))
 	docker build -f bundle.Dockerfile -t $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(ARCH):$(VERSION) .
 
-build-image-amd64: build-amd64
+build-image-amd64:
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION) -f Dockerfile .
 
-build-image-ppc64le: build-ppc64le
+build-image-ppc64le:
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) -f Dockerfile.ppc64le .
 
-build-image-s390x: build-s390x
+build-image-s390x:
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION) -f Dockerfile.s390x .
 

@@ -2,4 +2,5 @@
 resources:
 - operator_v1_commonaudit.yaml
 - operator_v1alpha1_auditlogging.yaml
+- audit.policies_v1alpha1_auditpolicy.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

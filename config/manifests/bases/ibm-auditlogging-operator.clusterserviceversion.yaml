@@ -2,57 +2,451 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "operator.ibm.com/v1",
+          "kind": "CommonAudit",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/instance": "common-audit-logging",
+              "app.kubernetes.io/managed-by": "ibm-auditlogging-operator",
+              "app.kubernetes.io/name": "common-audit-logging"
+            },
+            "name": "example-commonaudit"
+          },
+          "spec": {
+            "clusterIssuer": "cs-ca-clusterissuer",
+            "enabled": true,
+            "fluentd": {
+              "imageRegistry": "quay.io/opencloudio/",
+              "pullPolicy": "IfNotPresent",
+              "resources": {
+                "limits": {
+                  "cpu": "500m",
+                  "memory": "600Mi"
+                },
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "200Mi"
+                }
+              }
+            },
+            "outputs": {
+              "hostAliases": [
+                {
+                  "hostnames": [
+                    "test.fyre.ibm.com"
+                  ],
+                  "ip": "9.12.34.56"
+                }
+              ],
+              "splunk": {
+                "enableSIEM": true,
+                "enableTLS": false,
+                "host": "master",
+                "port": 8088,
+                "token": "abc-123"
+              },
+              "syslog": {
+                "enableSIEM": false,
+                "enableTLS": false,
+                "host": "test.fyre.ibm.com",
+                "hostname": "qradar_source_id",
+                "port": 514
+              }
+            },
+            "replicas": 1
+          }
+        },
+        {
+          "apiVersion": "operator.ibm.com/v1alpha1",
+          "kind": "AuditLogging",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/instance": "common-audit-logging",
+              "app.kubernetes.io/managed-by": "ibm-auditlogging-operator",
+              "app.kubernetes.io/name": "common-audit-logging"
+            },
+            "name": "example-auditlogging"
+          },
+          "spec": {
+            "fluentd": {
+              "clusterIssuer": "cs-ca-clusterissuer",
+              "enabled": false,
+              "imageRegistry": "quay.io/opencloudio/",
+              "journalPath": "/run/log/journal",
+              "pullPolicy": "IfNotPresent"
+            }
+          }
+        },
+        {
+          "apiVersion": "audit.policies.ibm.com/v1alpha1",
+          "kind": "AuditPolicy",
+          "metadata": {
+            "labels": {
+                "app.kubernetes.io/instance": "common-audit-logging",
+                "app.kubernetes.io/managed-by": "ibm-auditlogging-operator",
+                "app.kubernetes.io/name": "common-audit-logging"
+            },
+            "name": "example-auditpolicy"
+          },
+          "spec": {
+            "namespaceSelector": {
+              "include": [
+                "ibm-common-services"
+              ]
+            },
+            "remediationAction": "inform"
+          }
+        },
+        {
+          "apiVersion": "operator.ibm.com/v1alpha1",
+          "kind": "OperandBindInfo",
+          "metadata": {
+            "name": "ibm-auditlogging-bindinfo"
+          },
+          "spec": {
+            "operand": "ibm-auditlogging-operator",
+            "registry": "common-service",
+            "description": "Binding information for auditlogging adopters",
+            "bindings": {
+              "public": {
+                "secret": "audit-server-certs",
+                "configmap": "audit-logging-fluentd-ds-http-ingesturl"
+              }
+            }
+          }
+        }
+      ]
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: ibm-auditlogging-operator.vX.Y.Z
+  name: ibm-auditlogging-operator.v3.7.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: AuditLogging is the Schema for the auditloggings API
-      displayName: Audit Logging
-      kind: AuditLogging
-      name: auditloggings.operator.ibm.com
-      version: v1alpha1
-    - description: CommonAudit is the Schema for the commonaudits API
-      displayName: Common Audit
-      kind: CommonAudit
-      name: commonaudits.operator.ibm.com
-      version: v1
+      - description: AuditLogging is the Schema for the auditloggings API
+        displayName: Audit Logging
+        kind: AuditLogging
+        name: auditloggings.operator.ibm.com
+        version: v1alpha1
+      - description: CommonAudit is the Schema for the commonaudits API
+        displayName: Common Audit
+        kind: CommonAudit
+        name: commonaudits.operator.ibm.com
+        version: v1
+      - description: AuditPolcy is the Schema for the auditlpolicies API
+        kind: AuditPolicy
+        name: auditpolicies.audit.policies.ibm.com
+        version: v1alpha1
+        displayName: AuditPolicy
   description: Operator used to install IBM audit logging service.
   displayName: IBM Audit Logging Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+    - base64data: ""
+      mediatype: ""
   install:
     spec:
-      deployments: null
-    strategy: ""
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - '*'
+              resources:
+                - '*'
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - certmanager.k8s.io
+              resources:
+                - clusterissuers
+              verbs:
+                - use
+            - apiGroups:
+                - certmanager.k8s.io
+              resources:
+                - certificates
+              verbs:
+                - '*'
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+                - services
+                - services/finalizers
+                - events
+                - configmaps
+                - secrets
+                - serviceaccounts
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+                - daemonsets
+                - replicasets
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - operator.ibm.com
+              resources:
+                - '*'
+                - commonaudits
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - rbac.authorization.k8s.io
+              resources:
+                - roles
+                - rolebindings
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - rbac.authorization.k8s.io
+              resources:
+                - clusterroles
+                - clusterrolebindings
+              verbs:
+                - delete
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - deployments/status
+              verbs:
+                - get
+                - update
+                - patch
+            - apiGroups:
+                - audit.policies.ibm.com
+              resources:
+                - auditpolicies
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - audit.policies.ibm.com
+              resources:
+                - auditpolicies/status
+              verbs:
+                - get
+                - update
+                - patch
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - restricted
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - use
+          serviceAccountName: ibm-auditlogging-operator
+      deployments:
+        - name: ibm-auditlogging-operator-controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                control-plane: controller-manager
+                name: ibm-auditlogging-operator
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  openshift.io/scc: restricted
+                  productID: 068a62892a1e4db39641342e592daa25
+                  productMetric: FREE
+                  productName: IBM Cloud Platform Common Services
+                labels:
+                  app.kubernetes.io/instance: common-audit-logging
+                  app.kubernetes.io/managed-by: ibm-auditlogging-operator
+                  app.kubernetes.io/name: common-audit-logging
+                  control-plane: controller-manager
+                  name: ibm-auditlogging-operator
+              spec:
+                affinity:
+                  nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      nodeSelectorTerms:
+                        - matchExpressions:
+                            - key: beta.kubernetes.io/arch
+                              operator: In
+                              values:
+                                - amd64
+                                - ppc64le
+                                - s390x
+                containers:
+                  - args:
+                      - --metrics-addr=127.0.0.1:8080
+                      - --enable-leader-election
+                    command:
+                      - /manager
+                    env:
+                      - name: WATCH_NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.annotations['olm.targetNamespaces']
+                      - name: FLUENTD_TAG_OR_SHA
+                        value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
+                    image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+                    imagePullPolicy: Always
+                    name: manager
+                    resources:
+                      limits:
+                        cpu: 100m
+                        memory: 300Mi
+                      requests:
+                        cpu: 50m
+                        memory: 150Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      privileged: false
+                      readOnlyRootFilesystem: true
+                      runAsNonRoot: true
+                  - args:
+                      - --v=0
+                    image: quay.io/opencloudio/audit-policy-controller@sha256:e505e7e3183fe6c54ce3ebe0e33e16d64a69e0a0cd04e8f8beaa255028f0ddb3
+                    imagePullPolicy: IfNotPresent
+                    livenessProbe:
+                      exec:
+                        command:
+                          - sh
+                          - -c
+                          - pgrep audit-policy -l
+                      initialDelaySeconds: 30
+                      timeoutSeconds: 5
+                    name: audit-policy-controller
+                    readinessProbe:
+                      exec:
+                        command:
+                          - sh
+                          - -c
+                          - exec echo start audit-policy-controller
+                      initialDelaySeconds: 10
+                      timeoutSeconds: 2
+                    resources:
+                      limits:
+                        cpu: 100m
+                        memory: 400Mi
+                      requests:
+                        cpu: 20m
+                        memory: 150Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      privileged: false
+                      readOnlyRootFilesystem: true
+                      runAsNonRoot: true
+                  - args:
+                      - --secure-listen-address=0.0.0.0:8443
+                      - --upstream=http://127.0.0.1:8080/
+                      - --logtostderr=true
+                      - --v=10
+                    image: gcr.io/kubebuilder/kube-rbac-proxy:v0.5.0
+                    name: kube-rbac-proxy
+                    ports:
+                      - containerPort: 8443
+                        name: https
+                    resources: {}
+                serviceAccountName: ibm-auditlogging-operator
+                terminationGracePeriodSeconds: 10
+      permissions:
+        - rules:
+            - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - servicemonitors
+              verbs:
+                - get
+                - create
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - privileged
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - use
+            - apiGroups:
+                - apps
+              resourceNames:
+                - ibm-auditlogging-operator
+              resources:
+                - deployments/finalizers
+              verbs:
+                - update
+          serviceAccountName: ibm-auditlogging-operator
+    strategy: deployment
   installModes:
-  - supported: true
-    type: OwnNamespace
-  - supported: true
-    type: SingleNamespace
-  - supported: false
-    type: MultiNamespace
-  - supported: true
-    type: AllNamespaces
+    - supported: true
+      type: OwnNamespace
+    - supported: true
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
   keywords:
-  - IBM
-  - Cloud
-  - Audit Logging
-  - Common Services
+    - IBM
+    - Cloud
+    - Audit Logging
+    - Common Services
   links:
-  - name: Ibm Auditlogging Operator
-    url: https://ibm-auditlogging-operator.domain
+    - name: Ibm Auditlogging Operator
+      url: https://ibm-auditlogging-operator.domain
   maintainers:
-  - email: support@ibm.com
-    name: IBM Support
+    - email: support@ibm.com
+      name: IBM Support
   maturity: alpha
   provider:
     name: IBM
     url: ibm.com
-  version: 0.0.0
+  version: 3.7.2
