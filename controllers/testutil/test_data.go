@@ -20,6 +20,8 @@ import (
 	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,6 @@ import (
 const (
 	Forwarding     = true
 	ClusterIssuer  = "test-ca-issuer"
-	Replicas       = 3
 	ImageRegistry  = "test-registry.com/test-repo"
 	PullPolicy     = "Always"
 	SplunkHost     = "test-splunk.fyre.ibm.com"
@@ -47,8 +48,28 @@ const (
 	QRadarHostname = "test-syslog"
 	QRadarTLS      = false
 	QRadarEnable   = true
+
+	BadPort = 1111
 )
 
+const DummySplunkConfig = `
+splunkHEC.conf: |-
+     <store>
+        @type splunk_hec
+        hec_host master
+        hec_port 8089
+        hec_token abc-123
+        protocol https
+        ca_file /fluentd/etc/tls/splunkCA.pem
+        source ${tag}
+        <buffer>
+          # ...
+        </buffer>
+     </store>`
+
+var trueVar = true
+var falseVar = false
+var rootUser = int64(0)
 var cpu25 = resource.NewMilliQuantity(300, resource.DecimalSI)         // 300m
 var memory100 = resource.NewQuantity(100*1024*1024, resource.BinarySI) // 100Mi
 var Resources = corev1.ResourceRequirements{
@@ -68,6 +89,25 @@ var HostAliases = []corev1.HostAlias{
 		IP:        QRadarIP,
 		Hostnames: []string{QRadarHost},
 	},
+}
+var Replicas = int32(3)
+var BadPorts = []corev1.ServicePort{
+	{
+		Name:     constant.AuditLoggingComponentName,
+		Protocol: "TCP",
+		Port:     BadPort,
+		TargetPort: intstr.IntOrString{
+			Type:   intstr.Int,
+			IntVal: BadPort,
+		},
+	},
+}
+var BadCommonAuditSecurityCtx = corev1.SecurityContext{
+	AllowPrivilegeEscalation: &trueVar,
+	Privileged:               &trueVar,
+	ReadOnlyRootFilesystem:   &trueVar,
+	RunAsNonRoot:             &falseVar,
+	RunAsUser:                &rootUser,
 }
 
 func CommonAuditObj(name, namespace string) *operatorv1.CommonAudit {

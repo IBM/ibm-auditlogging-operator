@@ -53,11 +53,6 @@ type AuditLoggingReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// TODO: fix rbac
-// +kubebuilder:rbac:groups=operator.ibm.com,resources=auditloggings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.ibm.com,resources=auditloggings/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=*,resources=*,verbs=*
-
 func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_auditlogging").WithValues("request", req.NamespacedName)

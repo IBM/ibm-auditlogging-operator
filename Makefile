@@ -139,7 +139,7 @@ manager: generate code-fmt code-vet ## Build manager binary
 	go build -o bin/manager main.go
 
 run: generate code-fmt code-vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	go run ./main.go -v=2
+	WATCH_NAMESPACE="" go run ./main.go
 
 install: manifests  ## Install CRDs into a cluster
 	kustomize build config/crd | kubectl apply -f -

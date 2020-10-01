@@ -47,8 +47,8 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 const (
 	useExistingCluster = "USE_EXISTING_CLUSTER"
-	timeout            = time.Second * 30
-	interval           = time.Millisecond * 250
+	timeout            = time.Second * 300
+	interval           = time.Second * 5
 )
 
 var (
@@ -118,7 +118,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
-		//defer GinkgoRecover()
+		defer GinkgoRecover()
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()

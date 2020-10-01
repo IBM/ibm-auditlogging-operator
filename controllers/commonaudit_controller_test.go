@@ -81,10 +81,9 @@ var _ = Describe("CommonAudit controller", func() {
 			}, timeout, interval).Should(BeNil())
 
 			By("Check status of CommonAudit")
-			caInstance := &operatorv1.CommonAudit{}
 			Eventually(func() string {
-				Expect(k8sClient.Get(ctx, namespacedName, caInstance)).Should(Succeed())
-				return caInstance.Status.Versions.Reconciled
+				Expect(k8sClient.Get(ctx, namespacedName, createdCommonAudit)).Should(Succeed())
+				return createdCommonAudit.Status.Versions.Reconciled
 			}, timeout, interval).Should(Equal(opversion.Version))
 
 			By("Check if ConfigMaps were created")
@@ -177,7 +176,17 @@ var _ = Describe("CommonAudit controller", func() {
 				return k8sClient.Update(ctx, ca)
 			}, timeout, interval).Should(Succeed())
 
-			By("Checking ConfigMaps are updated")
+			By("Checking " + res.FluentdDaemonSetName + "-" + res.ConfigName + " is updated")
+			fluentdConfig := &corev1.ConfigMap{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+					res.ConfigName, Namespace: requestNamespace}, fluentdConfig)
+			}, timeout, interval).Should(Succeed())
+			configData := fluentdConfig.Data[res.FluentdConfigKey]
+			Expect(configData).Should(ContainSubstring(res.SplunkPlugin))
+			Expect(configData).Should(ContainSubstring(res.QradarPlugin))
+
+			By("Checking " + res.FluentdDaemonSetName + "-" + res.SplunkConfigName + " is updated")
 			splunkCM := &corev1.ConfigMap{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
@@ -197,6 +206,7 @@ var _ = Describe("CommonAudit controller", func() {
 			tls := testdata.GetFluentdConfig(res.RegexProtocol, splunkData)
 			Expect(tls).Should(Equal(res.Protocols[testdata.SplunkTLS]))
 
+			By("Checking " + res.FluentdDaemonSetName + "-" + res.QRadarConfigName + " is updated")
 			qRadarCM := &corev1.ConfigMap{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
@@ -222,25 +232,63 @@ var _ = Describe("CommonAudit controller", func() {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: requestNamespace}, deploy)
 			}, timeout, interval).Should(Succeed())
 			Expect(deploy.Spec.Template.Spec.HostAliases).Should(Equal(testdata.HostAliases))
+			Expect(deploy.Spec.Replicas).Should(Equal(&testdata.Replicas))
+			Expect(deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullPolicy(testdata.PullPolicy)))
+			Expect(deploy.Spec.Template.Spec.Containers[0].Image).Should(ContainSubstring(testdata.ImageRegistry))
+			Expect(deploy.Spec.Template.Spec.Containers[0].Resources).Should(Equal(testdata.Resources))
+
+			By("Checking Certificate is updated")
+			cert := &certmgr.Certificate{}
+			Eventually(func() string {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingHTTPSCertName, Namespace: requestNamespace}, cert)).Should(Succeed())
+				return cert.Spec.IssuerRef.Name
+			}, timeout, interval).Should(Equal(testdata.ClusterIssuer))
 		})
 	})
 
-	Context("When deleting secondary resources", func() {
-		It("Should recreate them", func() {
-			By("Deleting ConfigMaps")
+	Context("When updating secondary resources not through the CR", func() {
+		It("Should check and update them with the expected configs accordingly", func() {
+			By("Updating Service with bad ports")
+			svc := &corev1.Service{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: constant.AuditLoggingComponentName, Namespace: requestNamespace}, svc)
+			}, timeout, interval).Should(Succeed())
+			svc.Spec.Ports = testdata.BadPorts
+			Expect(k8sClient.Update(ctx, svc)).Should(Succeed())
+
+			Eventually(func() []corev1.ServicePort {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: constant.AuditLoggingComponentName, Namespace: requestNamespace}, svc))
+				return svc.Spec.Ports
+			}, timeout, interval).Should(Equal(res.BuildAuditService(requestName, requestNamespace).Spec.Ports))
+
+			By("Updating Deployment with bad security context")
+			deploy := &appsv1.Deployment{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: requestNamespace}, deploy)
+			}, timeout, interval).Should(Succeed())
+			deploy.Spec.Template.Spec.Containers[0].SecurityContext = &testdata.BadCommonAuditSecurityCtx
+			Expect(k8sClient.Update(ctx, deploy)).Should(Succeed())
+
+			Eventually(func() *corev1.SecurityContext {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: requestNamespace}, deploy))
+				return deploy.Spec.Template.Spec.Containers[0].SecurityContext
+			}, timeout, interval).Should(Equal(res.BuildDeploymentForFluentd(commonAudit).Spec.Template.Spec.Containers[0].SecurityContext))
+
+			By("Updating ConfigMap directly")
 			foundCM := &corev1.ConfigMap{}
-			for _, cm := range res.FluentdConfigMaps {
-				Eventually(func() error {
-					return k8sClient.Get(ctx, types.NamespacedName{Name: cm, Namespace: requestNamespace}, foundCM)
-				}, timeout, interval).Should(Succeed())
-				Expect(k8sClient.Delete(ctx, foundCM)).Should(Succeed())
-			}
-			By("Getting ConfigMaps")
-			for _, cm := range res.FluentdConfigMaps {
-				Eventually(func() error {
-					return k8sClient.Get(ctx, types.NamespacedName{Name: cm, Namespace: requestNamespace}, foundCM)
-				}, timeout, interval).Should(Succeed())
-			}
+			// config
+			Eventually(func() error {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+					res.ConfigName, Namespace: requestNamespace}, foundCM)).Should(Succeed())
+				foundCM.Data[res.EnableAuditLogForwardKey] = strconv.FormatBool(testdata.Forwarding)
+				return k8sClient.Update(ctx, foundCM)
+			}, timeout, interval).Should(Succeed())
+
+			Eventually(func() string {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+					res.ConfigName, Namespace: requestNamespace}, foundCM)).Should(Succeed())
+				return foundCM.Data[res.EnableAuditLogForwardKey]
+			}, timeout, interval).Should(Equal("false"))
 		})
 	})
 })

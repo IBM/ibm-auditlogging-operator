@@ -112,8 +112,8 @@ var RegexHostname = regexp.MustCompile(hostname + `.*`)
 var RegexProtocol = regexp.MustCompile(protocol + `.*`)
 var RegexTLS = regexp.MustCompile(tls + `.*`)
 
-var qradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
-var splunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
+var QradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
+var SplunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
 
 const matchTags = `<match icp-audit icp-audit.**>`
 
@@ -202,10 +202,10 @@ func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	if instance.Spec.Outputs.Splunk.EnableSIEM || instance.Spec.Outputs.Syslog.EnableSIEM {
 		result += fluentdOutputConfigV1Data
 		if instance.Spec.Outputs.Splunk.EnableSIEM {
-			result += yamlLine(2, splunkPlugin, true)
+			result += yamlLine(2, SplunkPlugin, true)
 		}
 		if instance.Spec.Outputs.Syslog.EnableSIEM {
-			result += yamlLine(2, qradarPlugin, true)
+			result += yamlLine(2, QradarPlugin, true)
 		}
 		result += yamlLine(1, `</match>`, false)
 	}

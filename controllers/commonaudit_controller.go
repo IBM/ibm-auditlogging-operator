@@ -52,10 +52,6 @@ type CommonAuditReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// TODO: fix rbac
-// +kubebuilder:rbac:groups=operator.ibm.com,resources=commonaudits,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.ibm.com,resources=commonaudits/status,verbs=get;update;patch
-
 func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_commonaudit").WithValues("request", req.NamespacedName)

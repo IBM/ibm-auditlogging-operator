@@ -130,9 +130,9 @@ var _ = Describe("AuditLogging controller", func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("Check if DaemonSet was created")
-			foundDaemonst := &appsv1.DaemonSet{}
+			foundDaemonset := &appsv1.DaemonSet{}
 			Eventually(func() error {
-				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: requestNamespace}, foundDaemonst)
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName, Namespace: requestNamespace}, foundDaemonset)
 			}, timeout, interval).Should(Succeed())
 		})
 	})
