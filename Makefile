@@ -49,14 +49,13 @@ else
     $(error "This system's ARCH $(ARCH) isn't recognized/supported")
 endif
 
-# Default image repo
-IMAGE_REPO ?= quay.io/opencloudio
 
 ifeq ($(BUILD_LOCALLY),0)
-REGISTRY ?= "hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom"
+IMAGE_REPO ?= "hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom"
 else
-REGISTRY ?= "hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom"
+IMAGE_REPO ?= "hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom"
 endif
+OPERAND_REGISTRY ?= $(IMAGE_REPO)
 
 # Current Operator image name
 OPERATOR_IMAGE_NAME ?= ibm-auditlogging-operator
@@ -128,9 +127,9 @@ check: lint-all ## Check all files lint error
 
 code-dev: ## Run the default dev commands which are the go tidy, fmt, vet then execute the $ make code-gen
 	@echo Running the common required commands for developments purposes
-	- make bundle
 	- make code-tidy
 	- make code-fmt
+	- make code-vet
 	@echo Running the common required commands for code delivery
 	- make check
 	- make test
@@ -159,28 +158,29 @@ manifests: ## Generate manifests e.g. CRD, RBAC etc.
 generate: ## Generate code e.g. API etc.
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-package-manifests:
-	@{ \
-	PKG_MANIFESTS_DIR=deploy/olm-catalog/ibm-auditlogging-operator/$(OPERATOR_VERSION) ;\
-	BUNDLE_MANIFESTS_DIR=bundle/manifests ;\
-	[[ ! -d $$PKG_MANIFESTS_DIR ]] && mkdir $$PKG_MANIFESTS_DIR ;\
-	cp $$BUNDLE_MANIFESTS_DIR/ibm-auditlogging-operator.clusterserviceversion.yaml $$PKG_MANIFESTS_DIR/ibm-auditlogging-operator.v$(OPERATOR_VERSION).clusterserviceversion.yaml ;\
-	cp $$BUNDLE_MANIFESTS_DIR/operator.ibm.com_auditloggings.yaml $$PKG_MANIFESTS_DIR/operator.ibm.com_auditloggins_crd.yaml ;\
-	cp $$BUNDLE_MANIFESTS_DIR/operator.ibm.com_commonaudits.yaml $$PKG_MANIFESTS_DIR/operator.ibm.com_commonaudits_crd.yaml ;\
-	}
-
-# Generate bundle manifests and metadata, then validate generated files.
-.PHONY: bundle
-bundle: manifests
-	operator-sdk generate kustomize manifests -q
-	cd config/manager && kustomize edit set image controller=$(IMG)
-	kustomize build config/manifests | operator-sdk generate bundle -q --overwrite --version $(OPERATOR_VERSION) $(BUNDLE_METADATA_OPTS)
+bundle-manifests:
+	kustomize build config/manifests | operator-sdk generate bundle \
+	-q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+
+generate-all: manifests kustomize operator-sdk ## Generate bundle manifests, metadata and package manifests
+	operator-sdk generate kustomize manifests -q
+	- make bundle-manifests CHANNELS=beta,stable-v1 DEFAULT_CHANNEL=stable-v1
 
 ##@ Test
 test: ## Run unit test on prow
 	@rm -rf crds
 	- make find-certmgr-crds
+	@echo "Running unit tests for the controllers."
+	@go test ./controllers/... -coverprofile cover.out
+	@rm -rf crds
+
+unit-test: generate code-fmt code-vet manifests ## Run unit test
+ifeq (, $(USE_EXISTING_CLUSTER))
+	@rm -rf crds
+	- make kube-builder
+	- make find-certmgr-crds
+endif
 	@echo "Running unit tests for the controllers."
 	@go test ./controllers/... -coverprofile cover.out
 	@rm -rf crds
@@ -193,43 +193,58 @@ scorecard: operator-sdk ## Run scorecard test
 coverage: ## Run code coverage test
 	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
 
-unit-test: generate code-fmt code-vet manifests ## Run unit test
-ifeq (, $(USE_EXISTING_CLUSTER))
-	@rm -rf crds
-	- make kube-builder
-	- make find-certmgr-crds
-endif
-	@echo "Running unit tests for the controllers."
-	@go test ./controllers/... -coverprofile cover.out
-	@rm -rf crds
-
-
 ##@ Build
 
-build-operator-image: ## Build the operator image.
-	@echo "Building the $(OPERATOR_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
-	@docker build -t $(REGISTRY)/$(OPERATOR_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION) \
-	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
-	--build-arg GOARCH=$(LOCAL_ARCH) -f Dockerfile .
+ifeq ($(BUILD_LOCALLY),0)
+    export CONFIG_DOCKER_TARGET = config-docker
+endif
+
+build:
+	@echo "Building the ibm-auditlogging-operator binary"
+	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o manager main.go
 
 build-bundle-image: ## Build the operator bundle image.
-	docker build -f bundle.Dockerfile -t $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION) .
+	$(eval ARCH := $(shell uname -m|sed 's/x86_64/amd64/'))
+	docker build -f bundle.Dockerfile -t $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(ARCH):$(VERSION) .
+
+build-image-amd64: build-amd64
+	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION) -f Dockerfile .
+
+build-image-ppc64le: build-ppc64le
+	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
+	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) -f Dockerfile.ppc64le .
+
+build-image-s390x: build-s390x
+	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
+	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION) -f Dockerfile.s390x .
+
+push-image-amd64: $(CONFIG_DOCKER_TARGET) build-image-amd64
+	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION)
+
+push-image-ppc64le: $(CONFIG_DOCKER_TARGET) build-image-ppc64le
+	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION)
+
+push-image-s390x: $(CONFIG_DOCKER_TARGET) build-image-s390x
+	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION)
+
+push-bundle-image: $(CONFIG_DOCKER_TARGET) build-bundle-image
+	@docker push $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(ARCH):$(VERSION)
 
 ##@ Release
 
-build-push-image: $(CONFIG_DOCKER_TARGET) build-operator-image  ## Build and push the operator images.
-	@echo "Pushing the $(OPERATOR_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
-	@docker push $(REGISTRY)/$(OPERATOR_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION)
+images: push-image-amd64 push-image-ppc64le push-image-s390x push-bundle-image multiarch-image multiarch-bundle-image
 
-build-push-bundle-image: $(CONFIG_DOCKER_TARGET_QUAY) build-bundle-image ## Build and push the bundle images.
-	@echo "Pushing the $(BUNDLE_IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
-	@docker push $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION)
+multiarch-image:
+	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
+	@chmod +x /tmp/manifest-tool
+	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
+	/tmp/manifest-tool pu
 
-multiarch-image: $(CONFIG_DOCKER_TARGET) ## Generate multiarch images for operator image.
-	@MAX_PULLING_RETRY=20 RETRY_INTERVAL=30 common/scripts/multiarch_image.sh $(REGISTRY) $(OPERATOR_IMAGE_NAME) $(VERSION) $(RELEASE_VERSION)
-
-multiarch-bundle-image: $(CONFIG_DOCKER_TARGET_QUAY) ## Generate multiarch images for bundle image.
-	@MAX_PULLING_RETRY=20 RETRY_INTERVAL=30 common/scripts/multiarch_image.sh $(IMAGE_REPO) $(BUNDLE_IMAGE_NAME) $(VERSION) $(RELEASE_VERSION)
+multiarch-bundle-image:
+	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
+	@chmod +x /tmp/manifest-tool
+	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME):$(VERSION) --target $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME) --ignore-missing
+	/tmp/manifest-tool pu
 
 ##@ Help
 help: ## Display this help
