@@ -285,7 +285,7 @@ spec:
                 - use
           serviceAccountName: ibm-auditlogging-operator
       deployments:
-        - name: ibm-auditlogging-operator-controller-manager
+        - name: ibm-auditlogging-operator
           spec:
             replicas: 1
             selector:
@@ -320,7 +320,7 @@ spec:
                                 - s390x
                 containers:
                   - args:
-                      - --metrics-addr=127.0.0.1:8080
+                      - --metrics-addr=:8383
                       - --enable-leader-election
                     command:
                       - /manager
