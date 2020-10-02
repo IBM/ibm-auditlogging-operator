@@ -162,7 +162,7 @@ bundle-manifests:
 	-q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
-generate-all: manifests kustomize operator-sdk ## Generate bundle manifests, metadata and package manifests
+generate-all: manifests ## Generate bundle manifests, metadata and package manifests
 	operator-sdk generate kustomize manifests -q
 	- make bundle-manifests CHANNELS=beta,stable-v1 DEFAULT_CHANNEL=stable-v1
 
@@ -200,7 +200,7 @@ endif
 
 build:
 	@echo "Building the ibm-auditlogging-operator binary"
-	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o manager main.go
+	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o bin/manager main.go
 
 build-bundle-image: ## Build the operator bundle image.
 	$(eval ARCH := $(shell uname -m|sed 's/x86_64/amd64/'))
