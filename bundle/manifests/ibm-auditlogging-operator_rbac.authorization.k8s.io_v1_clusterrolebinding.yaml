@@ -2,11 +2,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   creationTimestamp: null
-  name: ibm-auditlogging-operator-manager-rolebinding
+  name: ibm-auditlogging-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: ibm-auditlogging-operator
 subjects:
 - kind: ServiceAccount
   name: default
