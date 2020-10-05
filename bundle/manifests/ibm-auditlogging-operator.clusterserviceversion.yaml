@@ -382,9 +382,7 @@ spec:
                 - /manager
                 env:
                 - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                  value: ""
                 - name: FLUENTD_TAG_OR_SHA
                   value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
