@@ -9,5 +9,5 @@ roleRef:
   name: ibm-auditlogging-operator-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: ibm-auditlogging-operator-system
+  name: ibm-auditlogging-operator
+  namespace: ibm-common-services
