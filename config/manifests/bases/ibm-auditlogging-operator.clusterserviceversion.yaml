@@ -4,6 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
+    description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   name: ibm-auditlogging-operator.vX.Y.Z
