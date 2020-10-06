@@ -63,6 +63,11 @@ BUNDLE_IMAGE_NAME ?= ibm-auditlogging-operator-bundle
 OPERATOR_VERSION ?= $(VERSION)
 CSV_VERSION ?= $(OPERATOR_VERSION)
 
+# The namespce that operator and auditlogging will be deployed in
+NAMESPACE=ibm-common-services
+# The namespce that commonaudit will be deployed in
+CA_NAMESPACE = test
+
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_NAME):latest
 
@@ -144,6 +149,26 @@ install: manifests  ## Install CRDs into a cluster
 
 uninstall: manifests ## Uninstall CRDs from a cluster
 	kustomize build config/crd | kubectl delete -f -
+
+install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
+	@echo ....... Creating namespace .......
+	- kubectl create namespace ${CA_NAMESPACE}
+	@echo ....... Applying manifests .......
+	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl apply -f $${manifest} -n ${NAMESPACE}; done
+	@echo ....... Creating the Instances .......
+# 	- kubectl apply -f config/samples/operator_v1_commonaudit.yaml -n ${CA_NAMESPACE}
+	- kubectl apply -f config/samples/operator_v1alpha1_auditlogging.yaml -n ${NAMESPACE}
+
+uninstall-all: ## Uninstall all resources (CR/CRD's, RBCA and Operator)
+	@echo ....... Deleting namespace .......
+	- kubectl delete namespace ${CA_NAMESPACE}
+	@echo ....... Deleting the Instances .......
+	- kubectl delete --all commonaudit --all-namespaces
+	- kubectl delete --all auditpolicy --all-namespaces
+	@echo ....... Deleting manifests .......
+	- kubectl delete sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl delete -f $${manifest} -n ${NAMESPACE}; done
 
 deploy: manifests ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	cd config/manager && kustomize edit set image controller=$(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION)
