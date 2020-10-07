@@ -151,3 +151,13 @@ func AnnotationsForMetering(journalAccess bool) map[string]string {
 	annotations["openshift.io/scc"] = scc
 	return annotations
 }
+
+// GetCSNamespace returns the Namespace common services are in
+func GetCSNamespace() string {
+	csNamespace := os.Getenv(constant.OperatorNamespaceKey)
+	// If running locally or installMode is All-Namespaces use "ibm-common-services"
+	if csNamespace == "" || csNamespace == "openshift-operators" {
+		csNamespace = constant.InstanceNamespace
+	}
+	return csNamespace
+}
