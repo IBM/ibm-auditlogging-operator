@@ -106,7 +106,7 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   name: ibm-auditlogging-operator.v3.8.0
-  namespace: ibm-common-services
+  namespace: ibm-common-service-operator
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -226,6 +226,7 @@ spec:
             - ""
           resources:
             - namespaces
+            - pods
           verbs:
             - get
             - list
@@ -390,108 +391,102 @@ spec:
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
-          - apiGroups:
-              - monitoring.coreos.com
-            resources:
-              - servicemonitors
-            verbs:
-              - get
-              - create
-          - apiGroups:
-              - security.openshift.io
-            resourceNames:
-              - privileged
-            resources:
-              - securitycontextconstraints
-            verbs:
-              - use
-          - apiGroups:
-              - apps
-            resourceNames:
-              - ibm-auditlogging-operator
-            resources:
-              - deployments/finalizers
-            verbs:
-              - update
-          - apiGroups:
-              - '*'
-            resources:
-              - '*'
-            verbs:
-              - get
-              - list
-          - apiGroups:
-              - certmanager.k8s.io
-            resources:
-              - clusterissuers
-            verbs:
-              - use
-          - apiGroups:
-              - certmanager.k8s.io
-            resources:
-              - certificates
-            verbs:
-              - '*'
-          - apiGroups:
-              - ""
-            resources:
-              - pods
-              - services
-              - services/finalizers
-              - events
-              - configmaps
-              - secrets
-              - serviceaccounts
-            verbs:
-              - create
-              - delete
-              - get
-              - list
-              - patch
-              - update
-              - watch
-          - apiGroups:
-              - apps
-            resources:
-              - deployments
-              - daemonsets
-              - replicasets
-            verbs:
-              - create
-              - delete
-              - get
-              - list
-              - patch
-              - update
-              - watch
-          - apiGroups:
-              - apps
-            resources:
-              - deployments/status
-            verbs:
-              - get
-              - update
-              - patch
-          - apiGroups:
-              - security.openshift.io
-            resourceNames:
-              - restricted
-            resources:
-              - securitycontextconstraints
-            verbs:
-              - use
-          - apiGroups:
-              - rbac.authorization.k8s.io
-            resources:
-              - roles
-              - rolebindings
-            verbs:
-              - create
-              - delete
-              - get
-              - list
-              - update
-              - watch
+        - apiGroups:
+            - monitoring.coreos.com
+          resources:
+            - servicemonitors
+          verbs:
+            - get
+            - create
+        - apiGroups:
+            - security.openshift.io
+          resourceNames:
+            - privileged
+          resources:
+            - securitycontextconstraints
+          verbs:
+            - use
+        - apiGroups:
+            - apps
+          resourceNames:
+            - ibm-auditlogging-operator
+          resources:
+            - deployments/finalizers
+          verbs:
+            - update
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+        - apiGroups:
+            - certmanager.k8s.io
+          resources:
+            - certificates
+          verbs:
+            - '*'
+        - apiGroups:
+            - ""
+          resources:
+            - pods
+            - services
+            - services/finalizers
+            - events
+            - configmaps
+            - secrets
+            - serviceaccounts
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
+        - apiGroups:
+            - apps
+          resources:
+            - deployments
+            - daemonsets
+            - replicasets
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
+        - apiGroups:
+            - apps
+          resources:
+            - deployments/status
+          verbs:
+            - get
+            - update
+            - patch
+        - apiGroups:
+            - security.openshift.io
+          resourceNames:
+            - restricted
+          resources:
+            - securitycontextconstraints
+          verbs:
+            - use
+        - apiGroups:
+            - rbac.authorization.k8s.io
+          resources:
+            - roles
+            - rolebindings
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
         serviceAccountName: ibm-auditlogging-operator
     strategy: deployment
   installModes:
