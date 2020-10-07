@@ -90,8 +90,10 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return reconcile.Result{}, nil
 	}
 
+	csNamespace := util.GetCSNamespace()
+
 	commonAuditList := &operatorv1.CommonAuditList{}
-	if err := r.Client.List(context.TODO(), commonAuditList, client.InNamespace(constant.InstanceNamespace)); err == nil &&
+	if err := r.Client.List(context.TODO(), commonAuditList, client.InNamespace(csNamespace)); err == nil &&
 		len(commonAuditList.Items) > 0 {
 		msg := "CommonAudit cannot run alongside AuditLogging in the same namespace. Delete one or the other to proceed."
 		r.Log.Info(msg)
@@ -104,7 +106,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	var recResult reconcile.Result
 	var recErr error
-	reconcilers := []func(*operatorv1alpha1.AuditLogging) (reconcile.Result, error){
+	reconcilers := []func(*operatorv1alpha1.AuditLogging, string) (reconcile.Result, error){
 		r.removeOldPolicyControllerDeploy,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
@@ -116,7 +118,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		r.updateStatus,
 	}
 	for _, rec := range reconcilers {
-		recResult, recErr = rec(instance)
+		recResult, recErr = rec(instance, csNamespace)
 		if recErr != nil || recResult.Requeue {
 			return recResult, recErr
 		}
@@ -125,9 +127,8 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// Prior to version 3.6, audit-logging used two separate service accounts.
 	// Delete service accounts if they were leftover from a previous version.
 	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
-	r.removeOldRBAC()
+	r.removeOldRBAC(csNamespace)
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
-	r.Log.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
 
@@ -142,14 +143,14 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(constant.InstanceNamespace),
+		client.InNamespace(namespace),
 		client.MatchingLabels(util.LabelsForSelector(constant.FluentdName, instance.Name)),
 	}
 	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
-		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", constant.InstanceNamespace, "AuditLogging.Name", instance.Name)
+		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", namespace, "AuditLogging.Name", instance.Name)
 		return reconcile.Result{}, err
 	}
 	var podNames []string

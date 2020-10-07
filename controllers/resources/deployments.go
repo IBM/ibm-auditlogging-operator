@@ -280,7 +280,7 @@ func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 }
 
 // BuildDaemonForFluentd returns a Daemonset object
-func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
+func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace string) *appsv1.DaemonSet {
 	metaLabels := util.LabelsForMetadata(constant.FluentdName)
 	selectorLabels := util.LabelsForSelector(constant.FluentdName, instance.Name)
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
@@ -297,7 +297,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
-			Namespace: constant.InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DaemonSetSpec{

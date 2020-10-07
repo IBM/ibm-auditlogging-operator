@@ -56,6 +56,10 @@ spec:
           # DO NOT DELETE. Add image SHAs here. See get_image_sha.sh
           - name: FLUENTD_TAG_OR_SHA
             value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
+          - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 100m

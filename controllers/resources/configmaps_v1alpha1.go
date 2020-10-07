@@ -213,8 +213,8 @@ func UpdateMatchTags(found *corev1.ConfigMap) string {
 }
 
 // BuildConfigMap returns a ConfigMap object
-func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*corev1.ConfigMap, error) {
-	log.WithValues("ConfigMap.Namespace", constant.InstanceNamespace, "ConfigMap.Name", name)
+func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string, namespace string) (*corev1.ConfigMap, error) {
+	log.WithValues("ConfigMap.Namespace", namespace, "ConfigMap.Name", name)
 	metaLabels := util.LabelsForMetadata(constant.FluentdName)
 	dataMap := make(map[string]string)
 	var err error
@@ -265,9 +265,9 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 		dataMap[QRadarConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + HTTPIngestName:
 		var p = strconv.Itoa(defaultHTTPPort)
-		dataMap[HTTPIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + constant.InstanceNamespace + ":" + p + httpPath
+		dataMap[HTTPIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + namespace + ":" + p + httpPath
 		p = strconv.Itoa(defaultSyslogPort)
-		dataMap[SyslogIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + constant.InstanceNamespace + ":" + p
+		dataMap[SyslogIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + namespace + ":" + p
 	default:
 		log.Info("Unknown ConfigMap name")
 	}
@@ -278,7 +278,7 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string) (*core
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: constant.InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Data: dataMap,
