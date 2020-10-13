@@ -196,7 +196,7 @@ test: ## Run unit test on prow
 	@rm -rf crds
 	- make find-certmgr-crds
 	@echo "Running unit tests for the controllers."
-	@go test ./controllers/... -coverprofile cover.out
+	@go test -v ./controllers/...
 	@rm -rf crds
 
 unit-test: generate code-fmt code-vet manifests ## Run unit test
@@ -206,7 +206,7 @@ ifeq (, $(USE_EXISTING_CLUSTER))
 	- make find-certmgr-crds
 endif
 	@echo "Running unit tests for the controllers."
-	@go test ./controllers/... -coverprofile cover.out
+	@go test -v ./controllers/... -coverprofile cover.out
 	@rm -rf crds
 
 scorecard: operator-sdk ## Run scorecard test
