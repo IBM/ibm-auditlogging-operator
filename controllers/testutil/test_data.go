@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -125,9 +126,9 @@ var ExpectedSplunkConfig = `
 splunkHEC.conf: |-
     <store>
         @type splunk_hec
-        hec_host test-splunk.fyre.ibm.com
-        hec_port 8088
-        hec_token aaaa
+        hec_host ` + SplunkHost + `
+        hec_port ` + strconv.Itoa(SplunkPort) + `
+        hec_token ` + SplunkToken + `
         protocol http
         ca_file /fluentd/etc/tls/splunkCA.pem
         source ${tag}
@@ -137,10 +138,10 @@ var ExpectedQRadarConfig = `
 remoteSyslog.conf: |-
     <store>
         @type remote_syslog
-        host test-qradar.fyre.ibm.com
-        port 514
-        hostname test-syslog
-        tls false
+        host ` + QRadarHost + `
+        port ` + strconv.Itoa(QRadarPort) + `
+        hostname ` + QRadarHostname + `
+        tls ` + strconv.FormatBool(QRadarTLS) + `
         protocol tcp
         ca_file /fluentd/etc/tls/qradar.crt
         packet_size 4096
@@ -176,9 +177,9 @@ var BadQRadarConfigMissingTLS = `
 remoteSyslog.conf: |-
     <store>
         @type remote_syslog
-        host test-qradar.fyre.ibm.com
-        port 514
-        hostname test-syslog
+        host ` + QRadarHost + `
+        port ` + strconv.Itoa(QRadarPort) + `
+        hostname ` + QRadarHostname + `
         protocol tcp
         ca_file /fluentd/etc/tls/qradar.crt
         packet_size 4096
