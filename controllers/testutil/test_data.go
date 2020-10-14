@@ -110,6 +110,88 @@ var BadCommonAuditSecurityCtx = corev1.SecurityContext{
 	RunAsUser:                &rootUser,
 }
 
+var ExpectedFluentdConfig = `
+fluent.conf: |-
+    # Input plugins (Supports Systemd and HTTP)
+    @include /fluentd/etc/source.conf
+    # Output plugins (Supports Splunk and Syslog)
+    <match icp-audit icp-audit.** syslog syslog.**>
+        @type copy
+        @include /fluentd/etc/splunkHEC.conf
+        @include /fluentd/etc/remoteSyslog.conf
+    </match>`
+
+var ExpectedSplunkConfig = `
+splunkHEC.conf: |-
+    <store>
+        @type splunk_hec
+        hec_host test-splunk.fyre.ibm.com
+        hec_port 8088
+        hec_token aaaa
+        protocol http
+        ca_file /fluentd/etc/tls/splunkCA.pem
+        source ${tag}
+    </store>`
+
+var ExpectedQRadarConfig = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host test-qradar.fyre.ibm.com
+        port 514
+        hostname test-syslog
+        tls false
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
+var BadQRadarConfig = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host qradar.fyre.ibm.com
+        port 614
+        hostname test-syslog
+        tls true
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <buffer>
+            @type file
+        </buffer>
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
+var BadQRadarConfigMissingTLS = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host test-qradar.fyre.ibm.com
+        port 514
+        hostname test-syslog
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <buffer>
+            @type file
+        </buffer>
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
 func CommonAuditObj(name, namespace string) *operatorv1.CommonAudit {
 	return &operatorv1.CommonAudit{
 		ObjectMeta: metav1.ObjectMeta{

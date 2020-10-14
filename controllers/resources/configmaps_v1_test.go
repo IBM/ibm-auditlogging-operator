@@ -53,86 +53,27 @@ var _ = Describe("ConfigMaps", func() {
 
 	Context("Build Fluentd Config", func() {
 		It("Should include enabled output plugins", func() {
-
 			result := buildFluentdConfig(commonAudit)
-			expectedResult := `
-fluent.conf: |-
-    # Input plugins (Supports Systemd and HTTP)
-    @include /fluentd/etc/source.conf
-    # Output plugins (Supports Splunk and Syslog)
-    <match icp-audit icp-audit.** syslog syslog.**>
-        @type copy
-        @include /fluentd/etc/splunkHEC.conf
-        @include /fluentd/etc/remoteSyslog.conf
-    </match>`
-			Expect(result).Should(Equal(expectedResult))
+			Expect(result).Should(Equal(testdata.ExpectedFluentdConfig))
 		})
 	})
 	Context("Build Fluentd Splunk Config", func() {
 		It("Should build Splunk configmap with instance host, port, and token", func() {
-
 			result := buildFluentdSplunkConfig(commonAudit)
-			expectedResult := `
-splunkHEC.conf: |-
-    <store>
-        @type splunk_hec
-        hec_host test-splunk.fyre.ibm.com
-        hec_port 8088
-        hec_token aaaa
-        protocol http
-        ca_file /fluentd/etc/tls/splunkCA.pem
-        source ${tag}
-    </store>`
-			Expect(result).Should(Equal(expectedResult))
+			Expect(result).Should(Equal(testdata.ExpectedSplunkConfig))
 		})
 	})
 	Context("Build Fluentd QRadar Config", func() {
 		It("Should build Syslog configmap with instance host, port, and hostname", func() {
 			result := buildFluentdQRadarConfig(commonAudit)
-			expectedResult := `
-remoteSyslog.conf: |-
-    <store>
-        @type remote_syslog
-        host test-qradar.fyre.ibm.com
-        port 514
-        hostname test-syslog
-        tls false
-        protocol tcp
-        ca_file /fluentd/etc/tls/qradar.crt
-        packet_size 4096
-        program fluentd
-        <format>
-            @type single_value
-            message_key message
-        </format>
-    </store>`
-			Expect(result).Should(Equal(expectedResult))
+			Expect(result).Should(Equal(testdata.ExpectedQRadarConfig))
 		})
 	})
 	Context("Update SIEM Config", func() {
 		It("Should update found configmap with instance configs", func() {
 			dq := DataQRadar{}
 			dataMap := make(map[string]string)
-			data := `
-remoteSyslog.conf: |-
-    <store>
-        @type remote_syslog
-        host qradar.fyre.ibm.com
-        port 614
-        hostname test-syslog
-        tls true
-        protocol tcp
-        ca_file /fluentd/etc/tls/qradar.crt
-        packet_size 4096
-        program fluentd
-        <buffer>
-            @type file
-        </buffer>
-        <format>
-            @type single_value
-            message_key message
-        </format>
-    </store>`
+			data := testdata.BadQRadarConfig
 			err := yaml.Unmarshal([]byte(data), &dq)
 			Expect(err).NotTo(HaveOccurred())
 			dataMap[QRadarConfigKey] = dq.Value
@@ -170,25 +111,7 @@ remoteSyslog.conf: |-
 			dq := DataQRadar{}
 			dataMap := make(map[string]string)
 			// tls is missing
-			data := `
-remoteSyslog.conf: |-
-    <store>
-        @type remote_syslog
-        host test-qradar.fyre.ibm.com
-        port 514
-        hostname test-syslog
-        protocol tcp
-        ca_file /fluentd/etc/tls/qradar.crt
-        packet_size 4096
-        program fluentd
-        <buffer>
-            @type file
-        </buffer>
-        <format>
-            @type single_value
-            message_key message
-        </format>
-    </store>`
+			data := testdata.BadQRadarConfigMissingTLS
 			err := yaml.Unmarshal([]byte(data), &dq)
 			Expect(err).NotTo(HaveOccurred())
 			dataMap[QRadarConfigKey] = dq.Value
