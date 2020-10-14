@@ -135,9 +135,6 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 	switch name {
 	case FluentdDaemonSetName + "-" + ConfigName:
 		dataMap[EnableAuditLogForwardKey] = strconv.FormatBool(instance.Spec.EnableAuditLoggingForwarding)
-		type Data struct {
-			Value string `yaml:"fluent.conf"`
-		}
 		d := Data{}
 		data = buildFluentdConfig(instance)
 		err = yaml.Unmarshal([]byte(data), &d)
@@ -146,9 +143,6 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		}
 		dataMap[FluentdConfigKey] = d.Value
 	case FluentdDaemonSetName + "-" + SourceConfigName:
-		type DataS struct {
-			Value string `yaml:"source.conf"`
-		}
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)

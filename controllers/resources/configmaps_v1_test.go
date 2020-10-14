@@ -57,6 +57,20 @@ var _ = Describe("ConfigMaps", func() {
 			Expect(result).Should(Equal(testdata.ExpectedFluentdConfig))
 		})
 	})
+	Context("Build Fluentd ConfigMap named "+FluentdDaemonSetName+"-"+SourceConfigName, func() {
+		It("Should build source configmap", func() {
+			result, err := BuildFluentdConfigMap(commonAudit, FluentdDaemonSetName+"-"+SourceConfigName)
+			Expect(err).ToNot(HaveOccurred())
+
+			ds := DataS{}
+			dataMap := make(map[string]string)
+			err = yaml.Unmarshal([]byte(testdata.ExpectedSourceConfig), &ds)
+			Expect(err).ToNot(HaveOccurred())
+			dataMap[SourceConfigKey] = ds.Value
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result.Data).Should(Equal(dataMap))
+		})
+	})
 	Context("Build Fluentd Splunk Config", func() {
 		It("Should build Splunk configmap with instance host, port, and token", func() {
 			result := buildFluentdSplunkConfig(commonAudit)

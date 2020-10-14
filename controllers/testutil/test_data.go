@@ -122,6 +122,59 @@ fluent.conf: |-
         @include /fluentd/etc/remoteSyslog.conf
     </match>`
 
+var ExpectedSourceConfig = `
+source.conf: |-
+    <source>
+        @type http
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+        port 9880
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /fluentd/etc/https/ca.crt
+          cert_path /fluentd/etc/https/tls.crt
+          private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
+    </source>
+
+    <source>
+        @type syslog
+        port 5140
+        bind 0.0.0.0
+        tag syslog
+        <transport tls>
+            ca_path /fluentd/etc/https/ca.crt
+            cert_path /fluentd/etc/https/tls.crt
+            private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+            @type regexp
+            expression /^[^{]*(?<message>{.*})\s*$/
+            types message:string
+        </parse>
+    </source>
+
+    <filter icp-audit.*>
+        @type record_transformer
+        enable_ruby true
+        <record>
+          tag ${tag}
+          message ${record.to_json}
+        </record>
+    </filter>
+
+    <filter syslog syslog.**>
+        @type parser
+        format json
+        key_name message
+        reserve_data true
+    </filter>
+`
+
 var ExpectedSplunkConfig = `
 splunkHEC.conf: |-
     <store>

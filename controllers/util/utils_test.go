@@ -62,7 +62,8 @@ var _ = Describe("Utils", func() {
 			envVarName := "TEST_IMG_SHA"
 			testSHA := "sha256:a1a1a1a15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7"
 			expectedResult := imageRegistry + "/" + imageName + "@" + testSHA
-			os.Setenv(envVarName, testSHA)
+			err := os.Setenv(envVarName, testSHA)
+			Expect(err).ToNot(HaveOccurred())
 
 			result := GetImageID(imageRegistry, imageName, envVarName)
 			Expect(result).Should(Equal(expectedResult))
