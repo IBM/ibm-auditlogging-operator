@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -182,9 +183,15 @@ var _ = Describe("CommonAudit controller", func() {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
 					res.ConfigName, Namespace: requestNamespace}, fluentdConfig)
 			}, timeout, interval).Should(Succeed())
-			configData := fluentdConfig.Data[res.FluentdConfigKey]
-			Expect(configData).Should(ContainSubstring(res.SplunkPlugin))
-			Expect(configData).Should(ContainSubstring(res.QradarPlugin))
+
+			var configData string
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDaemonSetName + "-" +
+					res.ConfigName, Namespace: requestNamespace}, fluentdConfig)
+				Expect(err).Should(BeNil())
+				configData = fluentdConfig.Data[res.FluentdConfigKey]
+				return strings.Contains(configData, res.SplunkPlugin) && strings.Contains(configData, res.QradarPlugin)
+			}, timeout, interval).Should(BeTrue())
 
 			By("Checking " + res.FluentdDaemonSetName + "-" + res.SplunkConfigName + " is updated")
 			splunkCM := &corev1.ConfigMap{}
