@@ -116,7 +116,7 @@ metadata:
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
   name: ibm-auditlogging-operator.v3.8.0
-  namespace: placeholder
+  namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -278,7 +278,7 @@ spec:
           - use
         serviceAccountName: ibm-auditlogging-operator
       deployments:
-      - name: ibm-auditlogging-operator-ibm-auditlogging-operator
+      - name: ibm-auditlogging-operator
         spec:
           replicas: 1
           selector:

@@ -155,6 +155,10 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	- kubectl create namespace ${CA_NAMESPACE}
 	@echo ....... Applying manifests .......
 	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl create -f config/rbac/role.yaml
+	- kubectl create -f config/rbac/role_binding.yaml
+	- kubectl create -f config/rbac/leader_election_role.yaml
+	- kubectl create -f config/rbac/leader_election_role_binding.yaml
 	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl apply -f $${manifest} -n ${NAMESPACE}; done
 	@echo ....... Creating the Instances .......
 # 	- kubectl apply -f config/samples/operator_v1_commonaudit.yaml -n ${CA_NAMESPACE}
