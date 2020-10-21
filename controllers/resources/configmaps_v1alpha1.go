@@ -190,6 +190,14 @@ var FluentdConfigMaps = []string{
 	FluentdDaemonSetName + "-" + HTTPIngestName,
 }
 
+type Data struct {
+	Value string `yaml:"fluent.conf"`
+}
+
+type DataS struct {
+	Value string `yaml:"source.conf"`
+}
+
 // DataSplunk defines the struct for splunk-hec-config
 type DataSplunk struct {
 	Value string `yaml:"splunkHEC.conf"`

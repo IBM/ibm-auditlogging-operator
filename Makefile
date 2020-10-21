@@ -92,7 +92,7 @@ include common/Makefile.common.mk
 
 ##@ Development
 
-install-controller-gen:
+install-controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
@@ -104,7 +104,7 @@ ifeq (, $(shell which controller-gen))
 	}
 endif
 
-install-kustomize:
+install-kustomize: ## Install kustomize
 ifeq (, $(shell which kustomize))
 	@{ \
 	set -e ;\
@@ -124,12 +124,12 @@ ifeq (, $(wildcard /usr/local/kubebuilder))
 endif
 
 
-install-operator-sdk:
+install-operator-sdk: ## Install operator-sdk
 	@operator-sdk version 2> /dev/null ; if [ $$? -ne 0 ]; then ./common/scripts/install-operator-sdk.sh; fi
 
-check: lint-all ## Check all files lint error
+check: lint-all ## Check all files for lint error
 
-code-dev: ## Run the default dev commands which are the go tidy, fmt, vet then execute the $ make code-gen
+code-dev: ## Run the default dev commands (go tidy, fmt, vet) then execute $ make code-gen
 	@echo Running the common required commands for developments purposes
 	- make code-tidy
 	- make code-fmt
@@ -138,7 +138,7 @@ code-dev: ## Run the default dev commands which are the go tidy, fmt, vet then e
 	- make check
 	- make test
 
-manager: generate code-fmt code-vet ## Build manager binary
+manager: generate code-fmt code-vet ## Generate code e.g. API etc and build manager binary
 	go build -o bin/manager main.go
 
 run: generate code-fmt code-vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
@@ -155,6 +155,10 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	- kubectl create namespace ${CA_NAMESPACE}
 	@echo ....... Applying manifests .......
 	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl create -f config/rbac/role.yaml
+	- kubectl create -f config/rbac/role_binding.yaml
+	- kubectl create -f config/rbac/leader_election_role.yaml
+	- kubectl create -f config/rbac/leader_election_role_binding.yaml
 	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl apply -f $${manifest} -n ${NAMESPACE}; done
 	@echo ....... Creating the Instances .......
 # 	- kubectl apply -f config/samples/operator_v1_commonaudit.yaml -n ${CA_NAMESPACE}
@@ -182,7 +186,7 @@ manifests: ## Generate manifests e.g. CRD, RBAC etc.
 generate: ## Generate code e.g. API etc.
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-bundle-manifests:
+bundle-manifests: ## Generate bundle manifests
 	kustomize build config/manifests | operator-sdk generate bundle \
 	-q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
@@ -196,7 +200,7 @@ test: ## Run unit test on prow
 	@rm -rf crds
 	- make find-certmgr-crds
 	@echo "Running unit tests for the controllers."
-	@go test ./controllers/... -coverprofile cover.out
+	@go test -v ./controllers/...
 	@rm -rf crds
 
 unit-test: generate code-fmt code-vet manifests ## Run unit test
@@ -206,7 +210,7 @@ ifeq (, $(USE_EXISTING_CLUSTER))
 	- make find-certmgr-crds
 endif
 	@echo "Running unit tests for the controllers."
-	@go test ./controllers/... -coverprofile cover.out
+	@go test -v ./controllers/... -coverprofile cover.out
 	@rm -rf crds
 
 scorecard: operator-sdk ## Run scorecard test
@@ -223,48 +227,48 @@ ifeq ($(BUILD_LOCALLY),0)
     export CONFIG_DOCKER_TARGET = config-docker
 endif
 
-build:
+build: ## Build operator binary
 	@echo "Building the ibm-auditlogging-operator binary"
 	@CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o bin/manager main.go
 
-build-bundle-image: ## Build the operator bundle image.
+build-bundle-image: ## Build operator bundle image
 	$(eval ARCH := $(shell uname -m|sed 's/x86_64/amd64/'))
 	docker build -f bundle.Dockerfile -t $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(ARCH):$(VERSION) .
 
-build-image-amd64:
+build-image-amd64: ## Build amd64 operator image
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION) -f Dockerfile .
 
-build-image-ppc64le:
+build-image-ppc64le: ## Build ppcle64 operator image
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) -f Dockerfile.ppc64le .
 
-build-image-s390x:
+build-image-s390x: ## Build s390x operator image
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION) -f Dockerfile.s390x .
 
-push-image-amd64: $(CONFIG_DOCKER_TARGET) build-image-amd64
+push-image-amd64: $(CONFIG_DOCKER_TARGET) build-image-amd64 ## Push amd64 operator image
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION)
 
-push-image-ppc64le: $(CONFIG_DOCKER_TARGET) build-image-ppc64le
+push-image-ppc64le: $(CONFIG_DOCKER_TARGET) build-image-ppc64le ## Push ppc64le operator image
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION)
 
-push-image-s390x: $(CONFIG_DOCKER_TARGET) build-image-s390x
+push-image-s390x: $(CONFIG_DOCKER_TARGET) build-image-s390x ## Push s390x operator image
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION)
 
-push-bundle-image: $(CONFIG_DOCKER_TARGET) build-bundle-image
+push-bundle-image: $(CONFIG_DOCKER_TARGET) build-bundle-image ## Push operator bundle image
 	@docker push $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME)-$(ARCH):$(VERSION)
 
 ##@ Release
 
-images: push-image-amd64 push-image-ppc64le push-image-s390x push-bundle-image multiarch-image multiarch-bundle-image
+images: push-image-amd64 push-image-ppc64le push-image-s390x push-bundle-image multiarch-image multiarch-bundle-image ## Generate all images
 
-multiarch-image:
+multiarch-image: ## Generate multiarch images for operator image
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
 	@chmod +x /tmp/manifest-tool
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
 	/tmp/manifest-tool pu
 
-multiarch-bundle-image:
+multiarch-bundle-image: ## Generate multiarch images for operator bundle image
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
 	@chmod +x /tmp/manifest-tool
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME):$(VERSION) --target $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME) --ignore-missing

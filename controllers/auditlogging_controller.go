@@ -124,10 +124,6 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	// Prior to version 3.6, audit-logging used two separate service accounts.
-	// Delete service accounts if they were leftover from a previous version.
-	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
-	r.removeOldRBAC(csNamespace)
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)

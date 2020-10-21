@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -109,6 +110,141 @@ var BadCommonAuditSecurityCtx = corev1.SecurityContext{
 	RunAsNonRoot:             &falseVar,
 	RunAsUser:                &rootUser,
 }
+
+var ExpectedFluentdConfig = `
+fluent.conf: |-
+    # Input plugins (Supports Systemd and HTTP)
+    @include /fluentd/etc/source.conf
+    # Output plugins (Supports Splunk and Syslog)
+    <match icp-audit icp-audit.** syslog syslog.**>
+        @type copy
+        @include /fluentd/etc/splunkHEC.conf
+        @include /fluentd/etc/remoteSyslog.conf
+    </match>`
+
+var ExpectedSourceConfig = `
+source.conf: |-
+    <source>
+        @type http
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+        port 9880
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /fluentd/etc/https/ca.crt
+          cert_path /fluentd/etc/https/tls.crt
+          private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
+    </source>
+
+    <source>
+        @type syslog
+        port 5140
+        bind 0.0.0.0
+        tag syslog
+        <transport tls>
+            ca_path /fluentd/etc/https/ca.crt
+            cert_path /fluentd/etc/https/tls.crt
+            private_key_path /fluentd/etc/https/tls.key
+        </transport>
+        <parse>
+            @type regexp
+            expression /^[^{]*(?<message>{.*})\s*$/
+            types message:string
+        </parse>
+    </source>
+
+    <filter icp-audit.*>
+        @type record_transformer
+        enable_ruby true
+        <record>
+          tag ${tag}
+          message ${record.to_json}
+        </record>
+    </filter>
+
+    <filter syslog syslog.**>
+        @type parser
+        format json
+        key_name message
+        reserve_data true
+    </filter>
+`
+
+var ExpectedSplunkConfig = `
+splunkHEC.conf: |-
+    <store>
+        @type splunk_hec
+        hec_host ` + SplunkHost + `
+        hec_port ` + strconv.Itoa(SplunkPort) + `
+        hec_token ` + SplunkToken + `
+        protocol http
+        ca_file /fluentd/etc/tls/splunkCA.pem
+        source ${tag}
+    </store>`
+
+var ExpectedQRadarConfig = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host ` + QRadarHost + `
+        port ` + strconv.Itoa(QRadarPort) + `
+        hostname ` + QRadarHostname + `
+        tls ` + strconv.FormatBool(QRadarTLS) + `
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
+var BadQRadarConfig = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host qradar.fyre.ibm.com
+        port 614
+        hostname test-syslog
+        tls true
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <buffer>
+            @type file
+        </buffer>
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
+
+var BadQRadarConfigMissingTLS = `
+remoteSyslog.conf: |-
+    <store>
+        @type remote_syslog
+        host ` + QRadarHost + `
+        port ` + strconv.Itoa(QRadarPort) + `
+        hostname ` + QRadarHostname + `
+        protocol tcp
+        ca_file /fluentd/etc/tls/qradar.crt
+        packet_size 4096
+        program fluentd
+        <buffer>
+            @type file
+        </buffer>
+        <format>
+            @type single_value
+            message_key message
+        </format>
+    </store>`
 
 func CommonAuditObj(name, namespace string) *operatorv1.CommonAudit {
 	return &operatorv1.CommonAudit{
