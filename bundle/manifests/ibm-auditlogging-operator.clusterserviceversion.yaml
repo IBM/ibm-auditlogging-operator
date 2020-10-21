@@ -104,10 +104,10 @@ metadata:
     capabilities: Basic Install
     categories: Security
     certified: "false"
-    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:X.Y.Z
-    createdAt: "2020-10-16T15:30:00Z"
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.8.0
+    createdAt: "2020-10-21T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
-    olm.skipRange: '>=3.5.0 <X.Y.Z'
+    olm.skipRange: '>=3.5.0 <3.8.0'
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   labels:
