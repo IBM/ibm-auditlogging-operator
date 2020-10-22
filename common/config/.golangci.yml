@@ -48,7 +48,7 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - unused
+#    - unused
     - varcheck
   # don't enable:
   # - bodyclose
