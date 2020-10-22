@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 
+	batchv1 "k8s.io/api/batch/v1"
+
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -70,6 +72,33 @@ func (r *AuditLoggingReconciler) reconcileService(instance *operatorv1alpha1.Aud
 		}
 		// Updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *AuditLoggingReconciler) reconcileJob(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
+	found := &batchv1.Job{}
+	expected := res.BuildJobForAuditLogging(instance.Name, namespace)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: expected.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Creating a new Job", "Job.Namespace", expected.Namespace, "Job.Name", expected.Name)
+		err = r.Client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			r.Log.Error(err, "Failed to create new Service", "Service.Namespace", expected.Namespace,
+				"Service.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Service created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		r.Log.Error(err, "Failed to get Job")
+		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }

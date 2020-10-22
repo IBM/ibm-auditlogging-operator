@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 
+	batchv1 "k8s.io/api/batch/v1"
+
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -85,6 +87,12 @@ var _ = Describe("AuditLogging controller", func() {
 				Expect(k8sClient.Get(ctx, namespacedName, audit)).Should(Succeed())
 				return audit.Status.Versions.Reconciled
 			}, timeout, interval).Should(Equal(opversion.Version))
+
+			By("Check if Job was created")
+			foundJob := &batchv1.Job{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.JobName, Namespace: requestNamespace}, foundJob)
+			}, timeout, interval).Should(Succeed())
 
 			By("Check if ConfigMaps were created")
 			foundCM := &corev1.ConfigMap{}

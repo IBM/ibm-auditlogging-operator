@@ -142,7 +142,7 @@ manager: generate code-fmt code-vet ## Generate code e.g. API etc and build mana
 	go build -o bin/manager main.go
 
 run: generate code-fmt code-vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	WATCH_NAMESPACE="" go run ./main.go
+	WATCH_NAMESPACE="ibm-common-services" go run ./main.go
 
 install: manifests  ## Install CRDs into a cluster
 	kustomize build config/crd | kubectl apply -f -
@@ -155,6 +155,7 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	- kubectl create namespace ${CA_NAMESPACE}
 	@echo ....... Applying manifests .......
 	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl create sa ibm-auditlogging-cleanup -n ${NAMESPACE}
 	- kubectl create -f config/rbac/role.yaml
 	- kubectl create -f config/rbac/role_binding.yaml
 	- kubectl create -f config/rbac/leader_election_role.yaml
@@ -172,6 +173,11 @@ uninstall-all: ## Uninstall all resources (CR/CRD's, RBCA and Operator)
 	- kubectl delete --all auditpolicy --all-namespaces
 	@echo ....... Deleting manifests .......
 	- kubectl delete sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl delete sa ibm-auditlogging-cleanup -n ${NAMESPACE}
+	- kubectl delete -f config/rbac/role.yaml
+	- kubectl delete -f config/rbac/role_binding.yaml
+	- kubectl delete -f config/rbac/leader_election_role.yaml
+	- kubectl delete -f config/rbac/leader_election_role_binding.yaml
 	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl delete -f $${manifest} -n ${NAMESPACE}; done
 
 deploy: manifests ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config

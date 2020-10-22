@@ -48,6 +48,22 @@ const defaultJournalPath = "/run/log/journal"
 
 const AuditPolicyControllerDeploy = "audit-policy-controller"
 
+var commonNodeAffinity = &corev1.NodeAffinity{
+	RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+		NodeSelectorTerms: []corev1.NodeSelectorTerm{
+			{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "beta.kubernetes.io/arch",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   architectureList,
+					},
+				},
+			},
+		},
+	},
+}
+
 // BuildDeploymentForFluentd returns a Deployment object
 func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
 	log.WithValues("func", "BuildDeploymentForFluentd")
@@ -61,7 +77,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	fluentdMainContainer.Image = util.GetImageID(instance.Spec.Fluentd.ImageRegistry, constant.DefaultFluentdImageName, constant.FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
-	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
+	fluentdMainContainer.SecurityContext = &restrictedSecurityContext
 	var replicas = defaultReplicas
 	if instance.Spec.Replicas > 0 {
 		replicas = instance.Spec.Replicas
@@ -88,21 +104,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 					ServiceAccountName:            OperandServiceAccount,
 					TerminationGracePeriodSeconds: &seconds30,
 					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "beta.kubernetes.io/arch",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   architectureList,
-											},
-										},
-									},
-								},
-							},
-						},
+						NodeAffinity: commonNodeAffinity,
 						PodAntiAffinity: &corev1.PodAntiAffinity{
 							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 								{
@@ -323,23 +325,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace st
 					ServiceAccountName:            OperandServiceAccount,
 					TerminationGracePeriodSeconds: &seconds30,
 					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "beta.kubernetes.io/arch",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   architectureList,
-											},
-										},
-									},
-								},
-							},
-						},
+						NodeAffinity: commonNodeAffinity,
 					},
-					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     commonVolumes,
 					Containers: []corev1.Container{

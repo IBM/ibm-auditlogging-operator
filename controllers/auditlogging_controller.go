@@ -20,6 +20,8 @@ import (
 	"context"
 	"reflect"
 
+	batchv1 "k8s.io/api/batch/v1"
+
 	"sort"
 	"time"
 
@@ -107,6 +109,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	var recResult reconcile.Result
 	var recErr error
 	reconcilers := []func(*operatorv1alpha1.AuditLogging, string) (reconcile.Result, error){
+		r.reconcileJob,
 		r.removeOldPolicyControllerDeploy,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
@@ -135,7 +138,7 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.AuditLogging{}).
 		Owns(&appsv1.DaemonSet{}).Owns(&corev1.ConfigMap{}).Owns(&certmgr.Certificate{}).Owns(&corev1.ServiceAccount{}).
-		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).Owns(&batchv1.Job{}).
 		Complete(r)
 }
 

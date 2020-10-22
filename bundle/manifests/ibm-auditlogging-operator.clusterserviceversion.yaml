@@ -146,6 +146,15 @@ spec:
             - create
             - patch
         serviceAccountName: ibm-auditlogging-operator
+      - rules:
+        - apiGroups:
+            - rbac.authorization.k8s.io
+          resources:
+            - clusterroles
+            - clusterrolebindings
+          verbs:
+            - delete
+        serviceAccountName: ibm-auditlogging-cleanup
       deployments:
       - name: ibm-auditlogging-operator
         spec:
@@ -241,18 +250,16 @@ spec:
           verbs:
             - update
         - apiGroups:
-            - '*'
-          resources:
-            - '*'
-          verbs:
-            - get
-            - list
-        - apiGroups:
             - certmanager.k8s.io
           resources:
             - certificates
           verbs:
-            - '*'
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
         - apiGroups:
             - ""
           resources:
@@ -267,7 +274,6 @@ spec:
             - delete
             - get
             - list
-            - patch
             - update
             - watch
         - apiGroups:
@@ -281,7 +287,6 @@ spec:
             - delete
             - get
             - list
-            - patch
             - update
             - watch
         - apiGroups:
@@ -320,7 +325,26 @@ spec:
             - get
             - update
             - patch
+        - apiGroups:
+            - batch
+          resources:
+            - jobs
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
         serviceAccountName: ibm-auditlogging-operator
+      - rules:
+          - apiGroups:
+              - ""
+            resources:
+              - serviceaccounts
+            verbs:
+              - delete
+        serviceAccountName: ibm-auditlogging-cleanup
     strategy: deployment
   installModes:
   - supported: true
