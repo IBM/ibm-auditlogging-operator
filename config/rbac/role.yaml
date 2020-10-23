@@ -11,7 +11,9 @@ rules:
   - apiGroups:
       - operator.ibm.com
     resources:
-      - '*'
+      - auditlogging
+      - auditlogging/status
+      - auditlogging/finalizers
     verbs:
       - create
       - delete
@@ -20,12 +22,6 @@ rules:
       - patch
       - update
       - watch
-  - apiGroups:
-      - certmanager.k8s.io
-    resources:
-      - clusterissuers
-    verbs:
-      - use
   - apiGroups:
       - ""
     resources:
@@ -45,6 +41,20 @@ metadata:
     app.kubernetes.io/name: common-audit-logging
   name: ibm-auditlogging-operator
 rules:
+  - apiGroups:
+      - operator.ibm.com
+    resources:
+      - commonaudit
+      - commonaudit/status
+      - commonaudit/finalizers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -158,7 +168,12 @@ rules:
       - list
       - update
       - watch
-
+  - apiGroups:
+      - certmanager.k8s.io
+    resources:
+      - issuers
+    verbs:
+      - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

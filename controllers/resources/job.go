@@ -28,6 +28,7 @@ import (
 
 const jobServiceAccountName = "ibm-auditlogging-cleanup"
 const JobName = "audit-logging-cleanup"
+const jobNamespaceEnvVar = "CR_NAMESPACE"
 
 func BuildJobForAuditLogging(instanceName string, namespace string) *batchv1.Job {
 	metaLabels := utils.LabelsForMetadata(JobName)
@@ -78,7 +79,7 @@ func buildJobContainer(namespace string) []corev1.Container {
 			Command: []string{"/manager"},
 			Env: []corev1.EnvVar{
 				{
-					Name:  "CR_NAMESPACE",
+					Name:  jobNamespaceEnvVar,
 					Value: namespace,
 				},
 			},
