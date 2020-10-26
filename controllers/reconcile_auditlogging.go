@@ -338,14 +338,16 @@ func (r *AuditLoggingReconciler) reconcileAuditCertificate(instance *operatorv1a
 		r.Log.Error(err, "Failed to get Certificate")
 		return reconcile.Result{}, err
 	} else if result := res.EqualCerts(expectedCert, foundCert); result {
-		// If spec is incorrect, delete it and requeue
+		// If spec is incorrect, update it and requeue
 		r.Log.Info("Found Certificate spec is incorrect", "Found", foundCert.Spec, "Expected", expectedCert.Spec)
-		err = r.Client.Delete(context.TODO(), foundCert)
+		foundCert.Spec = expectedCert.Spec
+		err = r.Client.Update(context.TODO(), foundCert)
 		if err != nil {
-			r.Log.Error(err, "Failed to delete certificate", "Name", foundCert.Name)
+			r.Log.Error(err, "Failed to update Certificate", "Namespace", foundCert.ObjectMeta.Namespace, "Name", foundCert.Name)
 			return reconcile.Result{}, err
 		}
-		// Deleted - return and requeue
+		r.Log.Info("Updating Fluentd Certificate", "Certificate.Name", foundCert.Name)
+		// Spec updated - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
