@@ -219,7 +219,7 @@ scorecard: operator-sdk ## Run scorecard test
 
 ##@ Coverage
 coverage: ## Run code coverage test
-	@common/scripts/codecov.sh ${BUILD_LOCALLY} "pkg/controller"
+	@common/scripts/codecov.sh ${BUILD_LOCALLY} "controllers/"
 
 ##@ Build
 
@@ -260,7 +260,7 @@ push-bundle-image: $(CONFIG_DOCKER_TARGET) build-bundle-image ## Push operator b
 
 ##@ Release
 
-images: push-image-amd64 push-image-ppc64le push-image-s390x push-bundle-image multiarch-image ## Generate all images
+images: push-image-amd64 push-image-ppc64le push-image-s390x multiarch-image ## Generate all images
 
 multiarch-image: ## Generate multiarch images for operator image
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
