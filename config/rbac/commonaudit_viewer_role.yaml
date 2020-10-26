@@ -1,0 +1,20 @@
+# permissions for end users to view commonaudits.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: commonaudit-viewer-role
+rules:
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - commonaudits
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.ibm.com
+  resources:
+  - commonaudits/status
+  verbs:
+  - get

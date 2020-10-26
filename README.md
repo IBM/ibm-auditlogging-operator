@@ -155,22 +155,16 @@ As a developer, if you want to build and test this operator to try out and learn
 
 - [Install linters](https://github.com/IBM/go-repo-template/blob/master/docs/development.md)
 
-#### Run the operator on a cluster
+#### Run the operator
 
 - `make install`
+- `make run`
 - Run tests on the cluster.
 - `make uninstall`
 
-#### Run the operator locally
-
-- `make install-local`
-- Run tests on the cluster.
-- `make uninstall-local`
-
-#### Operator SDK's Test Framework
+#### Test Framework
 
 - To run unit tests use, `make test`
-- To run e2e tests use, `make test-e2e`
 
 #### Debugging the Operator
 

@@ -36,6 +36,14 @@ get-cluster-credentials: activate-serviceaccount
 config-docker: get-cluster-credentials
 	@common/scripts/config_docker.sh
 
+find-certmgr-crds:
+	@{ \
+	curl -L -O "https://github.com/jetstack/cert-manager/releases/download/v0.10.1/cert-manager-openshift.yaml" ;\
+	mkdir crds ;\
+	mv cert-manager-openshift.yaml crds/ ;\
+	rm -rf cert-manager-openshift.yaml ;\
+	}
+
 ############################################################
 # lint section
 ############################################################
@@ -74,7 +82,7 @@ else
 	@${FINDFILES} -name '*.md' -print0 | ${XARGS} awesome_bot --skip-save-results --allow_ssl --allow-timeout --allow-dupe --allow-redirect
 endif
 
-lint-all: lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown
+lint-all: lint-dockerfiles lint-helm lint-copyright-banner lint-go lint-python lint-markdown
 
 format-go:
 	@${FINDFILES} -name '*.go' \( ! \( -name '*.gen.go' -o -name '*.pb.go' \) \) -print0 | ${XARGS} goimports -w -local "github.com/IBM"
@@ -82,4 +90,19 @@ format-go:
 format-python:
 	@${FINDFILES} -name '*.py' -print0 | ${XARGS} autopep8 --max-line-length 160 --aggressive --aggressive -i
 
-.PHONY: lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python
+# Run go fmt for this project
+code-fmt:
+	@echo go fmt
+	go fmt $$(go list ./... )
+
+# Run go mod tidy to update dependencies
+code-tidy:
+	@echo go mod tidy
+	go mod tidy -v
+
+# Run go vet for this project. More info: https://golang.org/cmd/vet/
+code-vet:
+	@echo go vet
+	go vet $$(go list ./... )
+
+.PHONY: code-fmt code-tidy lint-dockerfiles lint-scripts lint-yaml lint-helm lint-copyright-banner lint-go lint-python lint-markdown lint-all format-go format-python find-certmgr-crds

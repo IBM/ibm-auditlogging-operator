@@ -14,8 +14,17 @@
 // limitations under the License.
 //
 
-package version
+package constant
 
-var (
-	Version = "3.8.0"
-)
+const AuditLoggingComponentName = "common-audit-logging"
+const AuditLoggingReleaseName = "common-audit-logging"
+const AuditLoggingCrType = "auditlogging_cr"
+const ProductName = "IBM Cloud Platform Common Services"
+const ProductID = "068a62892a1e4db39641342e592daa25"
+const ProductMetric = "FREE"
+const InstanceNamespace = "ibm-common-services"
+const FluentdName = "fluentd"
+const DefaultImageRegistry = "quay.io/opencloudio/"
+const DefaultFluentdImageName = "fluentd"
+const DefaultFluentdImageTag = "v1.6.2-bedrock-1"
+const FluentdEnvVar = "FLUENTD_TAG_OR_SHA"

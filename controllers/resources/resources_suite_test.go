@@ -14,8 +14,16 @@
 // limitations under the License.
 //
 
-package version
+package resources
 
-var (
-	Version = "3.8.0"
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"testing"
 )
+
+func TestResources(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Resources Suite")
+}
