@@ -314,7 +314,7 @@ func (r *AuditLoggingReconciler) reconcileAuditCerts(instance *operatorv1alpha1.
 }
 
 func (r *AuditLoggingReconciler) reconcileAuditCertificate(instance *operatorv1alpha1.AuditLogging, name string, namespace string) (reconcile.Result, error) {
-	expectedCert := res.BuildCertsForAuditLogging(namespace, instance.Spec.Fluentd.ClusterIssuer, name)
+	expectedCert := res.BuildCertsForAuditLogging(namespace, instance.Spec.Fluentd.Issuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

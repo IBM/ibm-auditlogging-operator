@@ -286,7 +286,7 @@ func (r *CommonAuditReconciler) reconcileAuditCerts(instance *operatorv1.CommonA
 }
 
 func (r *CommonAuditReconciler) reconcileAuditCertificate(instance *operatorv1.CommonAudit, name string) (reconcile.Result, error) {
-	expectedCert := res.BuildCertsForAuditLogging(instance.Namespace, instance.Spec.ClusterIssuer, name)
+	expectedCert := res.BuildCertsForAuditLogging(instance.Namespace, instance.Spec.Issuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

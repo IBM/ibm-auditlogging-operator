@@ -37,6 +37,7 @@ spec:
           description: CommonAuditSpec defines the desired state of CommonAudit
           properties:
             clusterIssuer:
+              description: ClusterIssuer deprecated, use Issuer
               type: string
             enabled:
               description: EnableAuditLoggingForwarding defines if audit logs should
@@ -77,6 +78,8 @@ spec:
                       type: object
                   type: object
               type: object
+            issuer:
+              type: string
             outputs:
               description: CommonAuditSpecOutputs defines the configurations for forwarding
                 audit logs to Splunk or Syslog

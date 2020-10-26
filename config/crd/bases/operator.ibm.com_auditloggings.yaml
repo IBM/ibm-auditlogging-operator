@@ -40,13 +40,17 @@ spec:
               description: Fluentd defines the desired state of Fluentd
               properties:
                 clusterIssuer:
+                  description: ClusterIssuer deprecated, use Issuer
                   type: string
                 enabled:
                   type: boolean
                 imageRegistry:
                   type: string
                 imageTag:
-                  description: ImageTag deprecated. Define image sha or tag in operator.yaml
+                  description: ImageTag no longer supported. Define image sha or tag
+                    in operator.yaml
+                  type: string
+                issuer:
                   type: string
                 journalPath:
                   type: string

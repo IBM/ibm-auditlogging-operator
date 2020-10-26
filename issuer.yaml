@@ -1,0 +1,12 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+ name: cs-ca-issuer
+ namespace: ibm-common-services
+ labels:
+  app.kubernetes.io/instance: ibm-cert-manager-operator
+  app.kubernetes.io/managed-by: ibm-cert-manager-operator
+  app.kubernetes.io/name: cert-manager
+spec:
+ ca:
+  secretName: cs-ca-certificate-secret

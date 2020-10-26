@@ -11,9 +11,9 @@ rules:
   - apiGroups:
       - operator.ibm.com
     resources:
-      - auditlogging
-      - auditlogging/status
-      - auditlogging/finalizers
+      - auditloggings
+      - auditloggings/status
+      - auditloggings/finalizers
     verbs:
       - create
       - delete
@@ -44,9 +44,9 @@ rules:
   - apiGroups:
       - operator.ibm.com
     resources:
-      - commonaudit
-      - commonaudit/status
-      - commonaudit/finalizers
+      - commonaudits
+      - commonaudits/status
+      - commonaudits/finalizers
     verbs:
       - create
       - delete
