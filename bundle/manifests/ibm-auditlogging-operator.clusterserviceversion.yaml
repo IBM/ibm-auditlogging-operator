@@ -16,7 +16,6 @@ metadata:
             "name": "example-commonaudit"
           },
           "spec": {
-            "issuer": "cs-ca-issuer",
             "enabled": true,
             "fluentd": {
               "imageRegistry": "quay.io/opencloudio/",
@@ -72,7 +71,6 @@ metadata:
           },
           "spec": {
             "fluentd": {
-              "issuer": "cs-ca-issuer",
               "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
               "journalPath": "/run/log/journal",
@@ -351,6 +349,12 @@ spec:
           resources:
             - issuers
           verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
             - use
         serviceAccountName: ibm-auditlogging-operator
       - rules:

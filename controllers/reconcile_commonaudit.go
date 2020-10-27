@@ -275,6 +275,104 @@ func (r *CommonAuditReconciler) reconcileFluentdDeployment(instance *operatorv1.
 	return reconcile.Result{}, nil
 }
 
+func (r *CommonAuditReconciler) reconcileCertPreReqs(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	var recResult reconcile.Result
+	var recErr error
+	recResult, recErr = r.reconcileIssuer(res.BuildGodIssuer, instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.reconcileRootCACert(instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	recResult, recErr = r.reconcileIssuer(res.BuildRootCAIssuer, instance)
+	if recErr != nil || recResult.Requeue {
+		return recResult, recErr
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *CommonAuditReconciler) reconcileIssuer(f func(namespace string) *certmgr.Issuer, instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	expected := f(instance.Namespace)
+	found := &certmgr.Issuer{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: expected.ObjectMeta.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Set instance as the owner and controller of the Issuer
+		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Creating a new Issuer", "Issuer.Namespace", expected.Namespace, "Issuer.Name", expected.Name)
+		err = r.Client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			r.Log.Error(err, "Failed to create new Issuer", "Issuer.Namespace", expected.Namespace,
+				"Certificate.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Issuer created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		r.Log.Error(err, "Failed to get Issuer")
+		return reconcile.Result{}, err
+	} else if result := res.EqualIssuers(expected, found); result {
+		// If spec is incorrect, update it and requeue
+		r.Log.Info("Found Issuer spec is incorrect", "Found", found.Spec, "Expected", expected.Spec)
+		found.Spec = expected.Spec
+		err = r.Client.Update(context.TODO(), found)
+		if err != nil {
+			r.Log.Error(err, "Failed to update Issuer", "Namespace", found.ObjectMeta.Namespace, "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Updating Issuer", "Issuer.Name", found.Name)
+		// Spec updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *CommonAuditReconciler) reconcileRootCACert(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	expectedCert := res.BuildRootCACert(instance.Namespace)
+	foundCert := &certmgr.Certificate{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
+	if err != nil && errors.IsNotFound(err) {
+		// Set instance as the owner and controller of the Certificate
+		if err := controllerutil.SetControllerReference(instance, expectedCert, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Creating a new Certificate", "Certificate.Namespace", expectedCert.Namespace, "Certificate.Name", expectedCert.Name)
+		err = r.Client.Create(context.TODO(), expectedCert)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			r.Log.Error(err, "Failed to create new Certificate", "Certificate.Namespace", expectedCert.Namespace,
+				"Certificate.Name", expectedCert.Name)
+			return reconcile.Result{}, err
+		}
+		// Certificate created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		r.Log.Error(err, "Failed to get Certificate")
+		return reconcile.Result{}, err
+	} else if result := res.EqualCerts(expectedCert, foundCert); result {
+		// If spec is incorrect, update it and requeue
+		r.Log.Info("Found Certificate spec is incorrect", "Found", foundCert.Spec, "Expected", expectedCert.Spec)
+		foundCert.Spec = expectedCert.Spec
+		err = r.Client.Update(context.TODO(), foundCert)
+		if err != nil {
+			r.Log.Error(err, "Failed to update Certificate", "Namespace", foundCert.ObjectMeta.Namespace, "Name", foundCert.Name)
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Updating Certificate", "Certificate.Name", foundCert.Name)
+		// Spec updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *CommonAuditReconciler) reconcileAuditCerts(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
@@ -286,7 +384,11 @@ func (r *CommonAuditReconciler) reconcileAuditCerts(instance *operatorv1.CommonA
 }
 
 func (r *CommonAuditReconciler) reconcileAuditCertificate(instance *operatorv1.CommonAudit, name string) (reconcile.Result, error) {
-	expectedCert := res.BuildCertsForAuditLogging(instance.Namespace, instance.Spec.Issuer, name)
+	issuer := res.RootIssuer
+	if instance.Spec.Issuer != "" {
+		issuer = instance.Spec.Issuer
+	}
+	expectedCert := res.BuildCertsForAuditLogging(instance.Namespace, issuer, name)
 	foundCert := &certmgr.Certificate{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expectedCert.Name, Namespace: expectedCert.ObjectMeta.Namespace}, foundCert)
 	if err != nil && errors.IsNotFound(err) {

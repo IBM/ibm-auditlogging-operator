@@ -8,7 +8,6 @@ metadata:
     app.kubernetes.io/name: common-audit-logging
 spec:
   enabled: true
-  issuer: cs-ca-issuer
   replicas: 1
   fluentd:
     imageRegistry: quay.io/opencloudio/

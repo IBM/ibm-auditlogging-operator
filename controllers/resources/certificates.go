@@ -31,6 +31,7 @@ const AuditLoggingHTTPSCertName = "fluentd-https"
 const AuditLoggingServerCertSecName = "audit-server-certs"
 const AuditLoggingCertName = "fluentd"
 const DefaultIssuer = "cs-ca-issuer"
+const RootCert = "audit-root-ca-cert"
 
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(namespace string, issuer string, name string) *certmgr.Certificate {
@@ -67,8 +68,28 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 	} else {
 		certificate.Spec.SecretName = AuditLoggingClientCertSecName
 	}
-
 	return certificate
+}
+
+// BuildRootCACert returns a Certificate object
+func BuildRootCACert(namespace string) *certmgr.Certificate {
+	metaLabels := utils.LabelsForMetadata(constant.FluentdName)
+	return &certmgr.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      RootCert,
+			Namespace: namespace,
+			Labels:    metaLabels,
+		},
+		Spec: certmgr.CertificateSpec{
+			SecretName: RootCert,
+			IsCA:       true,
+			CommonName: RootCert,
+			IssuerRef: certmgr.ObjectReference{
+				Name: GodIssuer,
+				Kind: certmgr.IssuerKind,
+			},
+		},
+	}
 }
 
 // EqualCerts returns a Boolean
