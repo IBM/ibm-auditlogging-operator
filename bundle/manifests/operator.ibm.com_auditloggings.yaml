@@ -42,6 +42,8 @@ spec:
                 imageTag:
                   description: ImageTag deprecated. Define image sha or tag in operator.yaml
                   type: string
+                issuer:
+                  type: string
                 journalPath:
                   type: string
                 pullPolicy:

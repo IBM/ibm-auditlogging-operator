@@ -65,6 +65,8 @@ spec:
                       type: object
                   type: object
               type: object
+            issuer:
+              type: string
             outputs:
               description: CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog
               properties:
