@@ -219,7 +219,10 @@ scorecard: operator-sdk ## Run scorecard test
 
 ##@ Coverage
 coverage: ## Run code coverage test
+	@rm -rf crds
+	- make find-certmgr-crds
 	@common/scripts/codecov.sh ${BUILD_LOCALLY} "controllers/"
+	@rm -rf crds
 
 ##@ Build
 
