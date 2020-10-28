@@ -138,7 +138,7 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.AuditLogging{}).
 		Owns(&appsv1.DaemonSet{}).Owns(&corev1.ConfigMap{}).Owns(&certmgr.Certificate{}).Owns(&corev1.ServiceAccount{}).
-		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).Owns(&batchv1.Job{}).
+		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).Owns(&batchv1.Job{}).Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
 
