@@ -22,6 +22,8 @@ import (
 	"sort"
 	"time"
 
+	res "github.com/IBM/ibm-auditlogging-operator/controllers/resources"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -145,7 +147,7 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(constant.InstanceNamespace),
+		client.InNamespace(namespace),
 		client.MatchingLabels(util.LabelsForSelector(constant.FluentdName, instance.Name)),
 	}
 	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
@@ -156,6 +158,20 @@ func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLo
 	for _, pod := range podList.Items {
 		podNames = append(podNames, pod.Name)
 	}
+
+	// Get audit-policy-controller pod too
+	listOpts = []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabels(util.LabelsForSelector(res.AuditPolicyControllerDeploy, instance.Name)),
+	}
+	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
+		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", namespace, "AuditLogging.Name", instance.Name)
+		return reconcile.Result{}, err
+	}
+	for _, pod := range podList.Items {
+		podNames = append(podNames, pod.Name)
+	}
+
 	// if no pods were found set the default status
 	if len(podNames) == 0 {
 		podNames = util.DefaultStatusForCR
