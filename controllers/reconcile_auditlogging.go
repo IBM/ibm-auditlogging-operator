@@ -304,7 +304,6 @@ func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *o
 		return r.removeDisabledPolicyControllerDeploy(namespace)
 	}
 	expected := res.BuildDeploymentForPolicyController(instance, namespace)
-	r.Log.Info("Creating Policy Controller", "PolicyController.Namespace", expected.Namespace, "instance.Name", expected.Name)
 	found := &appsv1.Deployment{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
