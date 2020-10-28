@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/name: common-audit-logging
 spec:
   enabled: true
+  clusterIssuer: cs-ca-clusterissuer
   replicas: 1
   fluentd:
     imageRegistry: quay.io/opencloudio/
