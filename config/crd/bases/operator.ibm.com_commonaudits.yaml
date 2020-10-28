@@ -37,6 +37,7 @@ spec:
           description: CommonAuditSpec defines the desired state of CommonAudit
           properties:
             clusterIssuer:
+              description: ClusterIssuer deprecated, use Issuer
               type: string
             enabled:
               description: EnableAuditLoggingForwarding defines if audit logs should
