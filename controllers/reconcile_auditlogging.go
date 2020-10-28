@@ -284,14 +284,14 @@ func (r *AuditLoggingReconciler) removeDisabledPolicyControllerDeploy(namespace 
 		// found deployment so delete it
 		err := r.Client.Delete(context.TODO(), policyDeploy)
 		if err != nil {
-			r.Log.Error(err, "Failed to delete old policy controller deployment")
+			r.Log.Error(err, "Failed to delete policy controller deployment")
 			return reconcile.Result{}, err
 		}
-		r.Log.Info("Deleted old policy controller deployment")
+		r.Log.Info("Deleted policy controller deployment")
 		return reconcile.Result{Requeue: true}, nil
 	} else if !errors.IsNotFound(err) {
 		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old policy controller deployment")
+		r.Log.Error(err, "Failed to get policy controller deployment")
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -301,7 +301,6 @@ func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *o
 
 	// If policy is disabled , remove..
 	if !instance.Spec.PolicyController.EnableAuditPolicy {
-		r.Log.Info("Delete old policy controller deployment")
 		return r.removeDisabledPolicyControllerDeploy(namespace)
 	}
 	expected := res.BuildDeploymentForPolicyController(instance, namespace)

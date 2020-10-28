@@ -61,6 +61,7 @@ var _ = Describe("AuditLogging controller", func() {
 		Expect(k8sClient.Create(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
 
 		auditLogging = testdata.AuditLoggingObj(requestName)
+		auditLogging.Spec.PolicyController.EnableAuditPolicy = true
 		// AuditLogging is cluster scoped and does not have a namespace
 		namespacedName = types.NamespacedName{Name: requestName, Namespace: ""}
 		By("Creating a new AuditLogging")
@@ -75,7 +76,7 @@ var _ = Describe("AuditLogging controller", func() {
 	})
 
 	Context("When creating an AuditLogging instance", func() {
-		It("Should create all secondary resources except for policy controller", func() {
+		It("Should create all secondary resources", func() {
 			createdAuditLogging := &operatorv1alpha1.AuditLogging{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, namespacedName, createdAuditLogging)
@@ -92,6 +93,12 @@ var _ = Describe("AuditLogging controller", func() {
 			foundJob := &batchv1.Job{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.JobName, Namespace: requestNamespace}, foundJob)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if Policy Controller deployment was created")
+			foundDeploy := &appsv1.Deployment{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: requestNamespace}, foundDeploy)
 			}, timeout, interval).Should(Succeed())
 
 			By("Check if ConfigMaps were created")
