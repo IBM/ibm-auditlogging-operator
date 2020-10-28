@@ -31,10 +31,17 @@ var log = logf.Log.WithName("resources")
 var trueVar = true
 var falseVar = false
 var rootUser = int64(0)
+var replicas = int32(1)
+
+// HB re-evaluate resources for policy controller hardcoded
 var cpu25 = resource.NewMilliQuantity(25, resource.DecimalSI)          // 25m
+var cpu100 = resource.NewMilliQuantity(100, resource.DecimalSI)        // 100m
+var cpu200 = resource.NewMilliQuantity(200, resource.DecimalSI)        // 200m
 var cpu300 = resource.NewMilliQuantity(300, resource.DecimalSI)        // 300m
 var memory100 = resource.NewQuantity(100*1024*1024, resource.BinarySI) // 100Mi
+var memory150 = resource.NewQuantity(150*1024*1024, resource.BinarySI) // 150Mi
 var memory400 = resource.NewQuantity(400*1024*1024, resource.BinarySI) // 400Mi
+var memory450 = resource.NewQuantity(450*1024*1024, resource.BinarySI) // 450Mi
 
 var defaultFluentdResources = corev1.ResourceRequirements{
 	Limits: map[corev1.ResourceName]resource.Quantity{
@@ -67,6 +74,13 @@ var restrictedSecurityContext = corev1.SecurityContext{
 	Capabilities:             &commonCapabilities,
 }
 
+var policyControllerSecurityContext = corev1.SecurityContext{
+	AllowPrivilegeEscalation: &falseVar,
+	Privileged:               &falseVar,
+	ReadOnlyRootFilesystem:   &trueVar,
+	RunAsNonRoot:             &trueVar,
+	Capabilities:             &commonCapabilities,
+}
 var commonTolerations = []corev1.Toleration{
 	{
 		Key:      "dedicated",
@@ -134,6 +148,53 @@ var fluentdMainContainer = corev1.Container{
 		SuccessThreshold:    1,
 		FailureThreshold:    3,
 	},
+}
+
+var policyControllerMainContainer = corev1.Container{
+	Image:           constant.DefaultImageRegistry + constant.DefaultPCImageName + ":" + constant.DefaultPCImageTag,
+	Name:            AuditPolicyControllerDeploy,
+	ImagePullPolicy: corev1.PullIfNotPresent,
+	VolumeMounts: []corev1.VolumeMount{
+		{
+			Name:      "tmp",
+			MountPath: "/tmp",
+		},
+	},
+	LivenessProbe: &corev1.Probe{
+		Handler: corev1.Handler{
+			Exec: &corev1.ExecAction{
+				Command: []string{
+					"sh",
+					"-c",
+					"pgrep audit-policy -l",
+				},
+			},
+		},
+		InitialDelaySeconds: 30,
+		TimeoutSeconds:      5,
+	},
+	ReadinessProbe: &corev1.Probe{
+		Handler: corev1.Handler{
+			Exec: &corev1.ExecAction{
+				Command: []string{
+					"sh",
+					"-c",
+					"exec echo start audit-policy-controller",
+				},
+			},
+		},
+		InitialDelaySeconds: 10,
+		TimeoutSeconds:      2,
+	},
+	Resources: corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *cpu200,
+			corev1.ResourceMemory: *memory450},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *cpu100,
+			corev1.ResourceMemory: *memory150},
+	},
+	SecurityContext: &policyControllerSecurityContext,
 }
 
 // EqualContainers returns a Boolean

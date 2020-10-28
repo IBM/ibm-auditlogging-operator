@@ -48,11 +48,12 @@ type AuditLoggingSpecFluentd struct {
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec.
 type AuditLoggingSpecPolicyController struct {
-	ImageRegistry string `json:"imageRegistry,omitempty"`
-	ImageTag      string `json:"imageTag,omitempty"`
-	PullPolicy    string `json:"pullPolicy,omitempty"`
-	Verbosity     string `json:"verbosity,omitempty"`
-	Frequency     string `json:"frequency,omitempty"`
+	EnableAuditPolicy bool   `json:"enabled,omitempty"`
+	ImageRegistry     string `json:"imageRegistry,omitempty"`
+	ImageTag          string `json:"imageTag,omitempty"`
+	PullPolicy        string `json:"pullPolicy,omitempty"`
+	Verbosity         string `json:"verbosity,omitempty"`
+	Frequency         string `json:"frequency,omitempty"`
 }
 
 // StatusVersion defines the Operator versions

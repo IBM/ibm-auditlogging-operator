@@ -155,6 +155,7 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	- kubectl create namespace ${CA_NAMESPACE}
 	@echo ....... Applying manifests .......
 	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl create sa ibm-audit-policy-controller -n ${NAMESPACE}
 	- kubectl create sa ibm-auditlogging-cleanup -n ${NAMESPACE}
 	- kubectl create -f config/rbac/role.yaml
 	- kubectl create -f config/rbac/role_binding.yaml
@@ -173,6 +174,7 @@ uninstall-all: ## Uninstall all resources (CR/CRD's, RBCA and Operator)
 	- kubectl delete --all auditpolicy --all-namespaces
 	@echo ....... Deleting manifests .......
 	- kubectl delete sa ibm-auditlogging-operator -n ${NAMESPACE}
+	- kubectl delete sa ibm-audit-policy-controller -n ${NAMESPACE}
 	- kubectl delete sa ibm-auditlogging-cleanup -n ${NAMESPACE}
 	- kubectl delete -f config/rbac/role.yaml
 	- kubectl delete -f config/rbac/role_binding.yaml
@@ -272,13 +274,13 @@ multiarch-image: ## Generate multiarch images for operator image
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
 	@chmod +x /tmp/manifest-tool
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME) --ignore-missing
-	/tmp/manifest-tool pu
+	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
 
 multiarch-bundle-image: ## Generate multiarch images for operator bundle image
 	@curl -L -o /tmp/manifest-tool https://github.com/estesp/manifest-tool/releases/download/v1.0.0/manifest-tool-linux-amd64
 	@chmod +x /tmp/manifest-tool
 	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME):$(VERSION) --target $(IMAGE_REPO)/$(BUNDLE_IMAGE_NAME) --ignore-missing
-	/tmp/manifest-tool pu
+	/tmp/manifest-tool push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(IMAGE_REPO)/$(IMAGE_NAME)-ARCH:$(VERSION) --target $(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION) --ignore-missing
 
 ##@ Help
 help: ## Display this help

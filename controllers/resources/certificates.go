@@ -51,6 +51,7 @@ func BuildCertsForAuditLogging(namespace string, issuer string, name string) *ce
 		},
 		Spec: certmgr.CertificateSpec{
 			CommonName: name,
+
 			IssuerRef: certmgr.ObjectReference{
 				Name: certIssuer,
 				Kind: certmgr.IssuerKind,

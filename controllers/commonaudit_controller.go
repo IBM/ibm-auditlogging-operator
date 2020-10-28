@@ -127,6 +127,7 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		}
 	}
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
+	r.Log.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
 

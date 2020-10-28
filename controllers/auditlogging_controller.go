@@ -19,9 +19,6 @@ package controllers
 import (
 	"context"
 	"reflect"
-
-	batchv1 "k8s.io/api/batch/v1"
-
 	"sort"
 	"time"
 
@@ -38,6 +35,7 @@ import (
 
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
@@ -55,6 +53,7 @@ type AuditLoggingReconciler struct {
 	Recorder record.EventRecorder
 }
 
+// Reconcile reconciles
 func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_auditlogging").WithValues("request", req.NamespacedName)
@@ -110,7 +109,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	var recErr error
 	reconcilers := []func(*operatorv1alpha1.AuditLogging, string) (reconcile.Result, error){
 		r.reconcileJob,
-		r.removeOldPolicyControllerDeploy,
+		r.reconcilePolicyControllerDeployment,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
 		r.reconcileServiceAccount,
@@ -126,14 +125,15 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			return recResult, recErr
 		}
 	}
-
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
+	r.Log.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
 	time.Sleep(5 * time.Second)
 
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager setups up the manager
 func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.AuditLogging{}).
@@ -145,11 +145,11 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(namespace),
+		client.InNamespace(constant.InstanceNamespace),
 		client.MatchingLabels(util.LabelsForSelector(constant.FluentdName, instance.Name)),
 	}
 	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
-		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", namespace, "AuditLogging.Name", instance.Name)
+		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", constant.InstanceNamespace, "AuditLogging.Name", instance.Name)
 		return reconcile.Result{}, err
 	}
 	var podNames []string

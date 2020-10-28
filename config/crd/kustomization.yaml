@@ -4,6 +4,10 @@
 resources:
 - bases/operator.ibm.com_commonaudits.yaml
 - bases/operator.ibm.com_auditloggings.yaml
+<<<<<<< HEAD
+=======
+- bases/audit.policies.ibm.com_auditpolicies_crd.yaml
+>>>>>>> 4b6a9cb95388ef576220d7ed653598bb5d13744f
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

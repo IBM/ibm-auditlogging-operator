@@ -75,7 +75,7 @@ var _ = Describe("AuditLogging controller", func() {
 	})
 
 	Context("When creating an AuditLogging instance", func() {
-		It("Should create all secondary resources", func() {
+		It("Should create all secondary resources except for policy controller", func() {
 			createdAuditLogging := &operatorv1alpha1.AuditLogging{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, namespacedName, createdAuditLogging)

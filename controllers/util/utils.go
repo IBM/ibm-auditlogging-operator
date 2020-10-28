@@ -78,6 +78,8 @@ func GetImageID(imageRegistry, imageName, envVarName string) string {
 			tag = constant.DefaultFluentdImageTag
 		} else if imageName == constant.DefaultJobImageName {
 			tag = constant.DefaultJobImageTag
+		} else if imageName == constant.DefaultPCImageName {
+			tag = constant.DefaultPCImageTag
 		} else {
 			tag = "latest"
 		}

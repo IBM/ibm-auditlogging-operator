@@ -112,6 +112,7 @@ var _ = Describe("CommonAudit controller", func() {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.RootIssuer, Namespace: requestNamespace}, foundIssuer)
 			}, timeout, interval).Should(Succeed())
 
+			By("Check if Certificate was created")
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingHTTPSCertName, Namespace: requestNamespace}, foundCert)
 			}, timeout, interval).Should(Succeed())

@@ -4,10 +4,13 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
+<<<<<<< HEAD:bundle/manifests/operator.ibm.com_commonaudits.yaml
   labels:
     app.kubernetes.io/instance: common-audit-logging
     app.kubernetes.io/managed-by: ibm-auditlogging-operator
     app.kubernetes.io/name: common-audit-logging
+=======
+>>>>>>> 4b6a9cb95388ef576220d7ed653598bb5d13744f:deploy/crds/operator.ibm.com_commonaudits_crd.yaml
   name: commonaudits.operator.ibm.com
 spec:
   group: operator.ibm.com

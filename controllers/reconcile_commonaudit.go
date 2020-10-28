@@ -259,7 +259,7 @@ func (r *CommonAuditReconciler) reconcileFluentdDeployment(instance *operatorv1.
 	} else if err != nil {
 		r.Log.Error(err, "Failed to get Deployment")
 		return reconcile.Result{}, err
-	} else if !res.EqualDeployments(expected, found) {
+	} else if !res.EqualDeployments(expected, found, false) {
 		// If spec is incorrect, update it and requeue
 		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		found.Spec = expected.Spec

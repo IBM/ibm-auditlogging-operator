@@ -19,10 +19,9 @@ package controllers
 import (
 	"context"
 
-	batchv1 "k8s.io/api/batch/v1"
-
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
@@ -98,34 +97,6 @@ func (r *AuditLoggingReconciler) reconcileJob(instance *operatorv1alpha1.AuditLo
 		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
 		r.Log.Error(err, "Failed to get Job")
-		return reconcile.Result{}, err
-	}
-	return reconcile.Result{}, nil
-}
-
-func (r *AuditLoggingReconciler) removeOldPolicyControllerDeploy(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
-	// Policy controller container has been moved to operator pod in 3.7, remove redundant deployment
-	policyDeploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy,
-			Namespace: namespace,
-		},
-	}
-	// check if the deployment exists
-	err := r.Client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, policyDeploy)
-	if err == nil {
-		// found deployment so delete it
-		err := r.Client.Delete(context.TODO(), policyDeploy)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete old policy controller deployment")
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Deleted old policy controller deployment")
-		return reconcile.Result{Requeue: true}, nil
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old policy controller deployment")
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -299,6 +270,80 @@ func (r *AuditLoggingReconciler) reconcileFluentdDaemonSet(instance *operatorv1a
 	return reconcile.Result{}, nil
 }
 
+func (r *AuditLoggingReconciler) removeDisabledPolicyControllerDeploy(namespace string) (reconcile.Result, error) {
+	policyDeploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      res.AuditPolicyControllerDeploy,
+			Namespace: namespace,
+		},
+	}
+	// check if the deployment exists
+	err := r.Client.Get(context.TODO(),
+		types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, policyDeploy)
+	if err == nil {
+		// found deployment so delete it
+		err := r.Client.Delete(context.TODO(), policyDeploy)
+		if err != nil {
+			r.Log.Error(err, "Failed to delete old policy controller deployment")
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Deleted old policy controller deployment")
+		return reconcile.Result{Requeue: true}, nil
+	} else if !errors.IsNotFound(err) {
+		// if err is NotFound do nothing, else print an error msg
+		r.Log.Error(err, "Failed to get old policy controller deployment")
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
+
+	// If policy is disabled , remove..
+	if !instance.Spec.PolicyController.EnableAuditPolicy {
+		r.Log.Info("Delete old policy controller deployment")
+		return r.removeDisabledPolicyControllerDeploy(namespace)
+	}
+	expected := res.BuildDeploymentForPolicyController(instance, namespace)
+	r.Log.Info("Creating Policy Controller", "PolicyController.Namespace", expected.Namespace, "instance.Name", expected.Name)
+	found := &appsv1.Deployment{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Deployment
+		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Creating a new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace, "Deployment.Name", expected.Name)
+		err = r.Client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			r.Log.Error(err, "Failed to create new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace,
+				"Deployment.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Deployment created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		r.Log.Error(err, "Failed to get Deployment")
+		return reconcile.Result{}, err
+	} else if !res.EqualDeployments(expected, found, true) {
+		// If spec is incorrect, update it and requeue
+		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+		found.Spec = expected.Spec
+		err = r.Client.Update(context.TODO(), found)
+		if err != nil {
+			r.Log.Error(err, "Failed to update Deployment", "Namespace", constant.InstanceNamespace, "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)
+		// Spec updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *AuditLoggingReconciler) reconcileAuditCerts(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
@@ -385,96 +430,6 @@ func (r *AuditLoggingReconciler) reconcileServiceAccount(cr *operatorv1alpha1.Au
 
 	// No reconcile was necessary
 	return reconcile.Result{}, nil
-}
-
-func (r *AuditLoggingReconciler) removeOldRBAC(namespace string) {
-	fluentdSA := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.FluentdDaemonSetName + "-svcacct",
-			Namespace: namespace,
-		},
-	}
-	// check if the service account exists
-	err := r.Client.Get(context.TODO(),
-		types.NamespacedName{Name: res.FluentdDaemonSetName + "-svcacct", Namespace: namespace}, fluentdSA)
-	if err == nil {
-		// found service account so delete it
-		err := r.Client.Delete(context.TODO(), fluentdSA)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete old fluentd service account")
-		} else {
-			r.Log.Info("Deleted old fluentd service account")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old fluentd service account")
-	}
-
-	policySA := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + "-svcacct",
-			Namespace: namespace,
-		},
-	}
-	// check if the service account exists
-	err = r.Client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + "-svcacct", Namespace: namespace}, policySA)
-	if err == nil {
-		// found service account so delete it
-		err := r.Client.Delete(context.TODO(), policySA)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete old policy controller service account")
-		} else {
-			r.Log.Info("Deleted old policy controller service account")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old policy controller service account")
-	}
-
-	cr := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + res.RolePostfix,
-			Namespace: namespace,
-		},
-	}
-	// check if the clusterrole exists
-	err = r.Client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RolePostfix, Namespace: namespace}, cr)
-	if err == nil {
-		// found clusterrole so delete it
-		err := r.Client.Delete(context.TODO(), cr)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete old policy controller clusterrole")
-		} else {
-			r.Log.Info("Deleted old policy controller clusterrole")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old policy controller clusterrole")
-	}
-
-	crb := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      res.AuditPolicyControllerDeploy + res.RoleBindingPostfix,
-			Namespace: namespace,
-		},
-	}
-	// check if the clusterrolebinding exists
-	err = r.Client.Get(context.TODO(),
-		types.NamespacedName{Name: res.AuditPolicyControllerDeploy + res.RoleBindingPostfix, Namespace: namespace}, crb)
-	if err == nil {
-		// found clusterrolebinding so delete it
-		err := r.Client.Delete(context.TODO(), crb)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete old policy controller clusterrolebinding")
-		} else {
-			r.Log.Info("Deleted old policy controller clusterrolebinding")
-		}
-	} else if !errors.IsNotFound(err) {
-		// if err is NotFound do nothing, else print an error msg
-		r.Log.Error(err, "Failed to get old policy controller clusterrolebinding")
-	}
 }
 
 func (r *AuditLoggingReconciler) reconcileRole(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {

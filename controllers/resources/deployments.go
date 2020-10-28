@@ -37,16 +37,20 @@ var architectureList = []string{"amd64", "ppc64le", "s390x"}
 var seconds30 int64 = 30
 var defaultReplicas = int32(1)
 
+// FluentdDaemonSetName is the name of the fluentd daemonset name
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
+
+// FluentdDeploymentName is the name of the fluentd deployment
 const FluentdDeploymentName = "audit-logging-fluentd"
+
+// AuditPolicyControllerDeploy is the name of the audit-policy-controller deployment
+const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 
 const defaultJournalPath = "/run/log/journal"
-
-const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 var commonNodeAffinity = &corev1.NodeAffinity{
 	RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
@@ -62,6 +66,69 @@ var commonNodeAffinity = &corev1.NodeAffinity{
 			},
 		},
 	},
+}
+
+// BuildDeploymentForPolicyController returns a Deployment object
+func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging, namespace string) *appsv1.Deployment {
+	log.WithValues("func", "BuildDeploymentForPolicyController")
+	metaLabels := util.LabelsForMetadata(AuditPolicyControllerDeploy)
+	selectorLabels := util.LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
+	podLabels := util.LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
+	annotations := util.AnnotationsForMetering(false)
+	policyControllerMainContainer.Image = util.GetImageID(instance.Spec.PolicyController.ImageRegistry,
+		constant.DefaultPCImageName, constant.PolicyControllerEnvVar)
+	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
+
+	var args = make([]string, 0)
+	if instance.Spec.PolicyController.Verbosity != "" {
+		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
+	} else {
+		args = append(args, "--v=0")
+	}
+	if instance.Spec.PolicyController.Frequency != "" {
+		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
+	}
+	policyControllerMainContainer.Args = args
+
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      AuditPolicyControllerDeploy,
+			Namespace: namespace,
+			Labels:    metaLabels,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: selectorLabels,
+			},
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      podLabels,
+					Annotations: annotations,
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName:            AuditPolicyServiceAccount,
+					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: commonNodeAffinity,
+					},
+					Tolerations: commonTolerations,
+					Volumes: []corev1.Volume{
+						{
+							Name: "tmp",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						policyControllerMainContainer,
+					},
+				},
+			},
+		},
+	}
+	return deploy
 }
 
 // BuildDeploymentForFluentd returns a Deployment object
@@ -530,8 +597,7 @@ func buildResources(requestedResources, defaultResources corev1.ResourceRequirem
 }
 
 // EqualDeployments returns a Boolean
-func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
-	allowModify := false
+func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualDeployments")
 	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
