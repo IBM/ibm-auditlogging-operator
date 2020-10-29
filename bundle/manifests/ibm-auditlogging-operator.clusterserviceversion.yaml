@@ -281,6 +281,8 @@ spec:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: FLUENTD_TAG_OR_SHA
                   value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
+                - name: JOB_TAG_OR_SHA
+                  value: sha256:ba876b826155960f2523d14b191185b75956b6bf53b68c0fc76acd609f9e231f
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:

@@ -614,11 +614,10 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment, all
 
 // EqualDaemonSets returns a Boolean
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
-	allowModify := true
 	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, true) {
 		return false
 	}
 	return true

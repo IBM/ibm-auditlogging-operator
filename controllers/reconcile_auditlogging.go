@@ -77,7 +77,7 @@ func (r *AuditLoggingReconciler) reconcileService(instance *operatorv1alpha1.Aud
 
 func (r *AuditLoggingReconciler) reconcileJob(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	found := &batchv1.Job{}
-	expected := res.BuildJobForAuditLogging(instance.Name, namespace)
+	expected := res.BuildJobForAuditLogging(instance, namespace)
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: expected.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {

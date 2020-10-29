@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
 )
@@ -30,9 +31,9 @@ const jobServiceAccountName = "ibm-auditlogging-cleanup"
 const JobName = "audit-logging-cleanup"
 const jobNamespaceEnvVar = "CR_NAMESPACE"
 
-func BuildJobForAuditLogging(instanceName string, namespace string) *batchv1.Job {
+func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace string) *batchv1.Job {
 	metaLabels := utils.LabelsForMetadata(JobName)
-	podLabels := utils.LabelsForPodMetadata(JobName, instanceName)
+	podLabels := utils.LabelsForPodMetadata(JobName, instance.Name)
 	annotations := utils.AnnotationsForMetering(false)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,7 +54,7 @@ func BuildJobForAuditLogging(instanceName string, namespace string) *batchv1.Job
 					Affinity: &corev1.Affinity{
 						NodeAffinity: commonNodeAffinity,
 					},
-					Containers: buildJobContainer(namespace),
+					Containers: buildJobContainer(namespace, instance.Spec.Fluentd.ImageRegistry),
 				},
 			},
 		},
@@ -61,11 +62,11 @@ func BuildJobForAuditLogging(instanceName string, namespace string) *batchv1.Job
 	return job
 }
 
-func buildJobContainer(namespace string) []corev1.Container {
+func buildJobContainer(namespace string, imageRegistry string) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            JobName,
-			Image:           utils.GetImageID(constant.TestImageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
+			Image:           utils.GetImageID(imageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
 			ImagePullPolicy: corev1.PullAlways,
 			SecurityContext: &restrictedSecurityContext,
 			Resources: corev1.ResourceRequirements{
