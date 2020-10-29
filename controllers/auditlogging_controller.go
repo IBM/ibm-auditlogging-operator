@@ -22,8 +22,6 @@ import (
 	"sort"
 	"time"
 
-	res "github.com/IBM/ibm-auditlogging-operator/controllers/resources"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -44,6 +42,7 @@ import (
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
+	res "github.com/IBM/ibm-auditlogging-operator/controllers/resources"
 	opversion "github.com/IBM/ibm-auditlogging-operator/version"
 )
 
@@ -109,6 +108,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	var recResult reconcile.Result
 	var recErr error
+
 	reconcilers := []func(*operatorv1alpha1.AuditLogging, string) (reconcile.Result, error){
 		r.reconcileJob,
 		r.reconcilePolicyControllerDeployment,
@@ -127,6 +127,7 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			return recResult, recErr
 		}
 	}
+
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	r.Log.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.

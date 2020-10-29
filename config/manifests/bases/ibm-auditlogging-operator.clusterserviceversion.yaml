@@ -19,10 +19,14 @@ metadata:
     operatorframework.io/os.linux: supported
   name: ibm-auditlogging-operator.vX.Y.Z
 <<<<<<< HEAD
+<<<<<<< HEAD
   namespace: ibm-common-services
 =======
   namespace: placeholder
 >>>>>>> 4b6a9cb95388ef576220d7ed653598bb5d13744f
+=======
+  namespace: placeholder
+>>>>>>> 9c928ccee7323af10843a04d66ab1507bd30091b
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -38,13 +42,19 @@ spec:
       name: commonaudits.operator.ibm.com
       version: v1
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 9c928ccee7323af10843a04d66ab1507bd30091b
     - description: AuditPolcy is the Schema for the auditlpolicies API
       displayName: AuditPolicy
       kind: AuditPolicy
       name: auditpolicies.audit.policies.ibm.com
       version: v1alpha1
+<<<<<<< HEAD
 >>>>>>> 4b6a9cb95388ef576220d7ed653598bb5d13744f
+=======
+>>>>>>> 9c928ccee7323af10843a04d66ab1507bd30091b
   description: "**Important:** Do not install this operator directly. Only install this operator using the IBM Common Services Operator. For more information about installing this operator and other Common Services operators, see [Installer documentation](http://ibm.biz/cpcs_opinstall).\n\n If you are using this operator as part of an IBM Cloud Pak, see the documentation for that IBM Cloud Pak to learn more about how to install and use the operator service. For more information about IBM Cloud Paks, see [IBM Cloud Paks that use Common Services](http://ibm.biz/cpcs_cloudpaks).\n\n You can use the IBM Audit Logging Operator to forward service audit logs to a configured SIEM.  \n\nFor more information about the available IBM Cloud Platform Common Services, see the [IBM Knowledge Center](http://ibm.biz/cpcsdocs). \n## Supported platforms \n\n Red Hat OpenShift Container Platform 4.3 or newer installed on one of the following platforms: \n\n- Linux x86_64 \n- Linux on Power (ppc64le) \n- Linux on IBM Z and LinuxONE \n## Prerequisites\n\n The Audit Logging service has dependencies on other IBM Cloud Platform Common Services. Before you install this operator, you need to first install the operator dependencies and prerequisites: \n For the list of operator dependencies, see the IBM Knowledge Center [Common Services dependencies documentation](http://ibm.biz/cpcs_opdependencies). \n For the list of prerequisites for installing the operator, see the IBM Knowledge Center [Preparing to install services documentation](http://ibm.biz/cpcs_opinstprereq). \n## Documentation \n\n To install the operator with the IBM Common Services Operator follow the the installation and configuration instructions within the IBM Knowledge Center. \n- If you are using the operator as part of an IBM Cloud Pak, see the documentation for that IBM Cloud Pak, for a list of IBM Cloud Paks, see [IBM Cloud Paks that use Common Services](http://ibm.biz/cpcs_cloudpaks). \n- If you are using the operator with an IBM Containerized Software, see the IBM Cloud Platform Common Services Knowledge Center [Installer documentation](http://ibm.biz/cpcs_opinstall)."
   displayName: IBM Audit Logging Operator
   icon:
