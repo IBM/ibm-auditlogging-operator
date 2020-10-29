@@ -36,7 +36,6 @@ metadata:
             "name": "example-commonaudit"
           },
           "spec": {
-            "clusterIssuer": "cs-ca-clusterissuer",
             "enabled": true,
             "fluentd": {
               "imageRegistry": "quay.io/opencloudio/",
@@ -92,7 +91,6 @@ metadata:
           },
           "spec": {
             "fluentd": {
-              "clusterIssuer": "cs-ca-clusterissuer",
               "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
               "journalPath": "/run/log/journal",
@@ -127,7 +125,7 @@ spec:
       name: auditloggings.operator.ibm.com
       version: v1alpha1
     - description: AuditPolcy is the Schema for the auditlpolicies API
-      displayName: AuditPolicy
+      displayName: Audit Policy
       kind: AuditPolicy
       name: auditpolicies.audit.policies.ibm.com
       version: v1alpha1
@@ -146,137 +144,98 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - '*'
+            - operator.ibm.com
           resources:
-          - '*'
+            - auditloggings
+            - auditloggings/status
+            - auditloggings/finalizers
           verbs:
-          - get
-          - list
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
         - apiGroups:
-          - certmanager.k8s.io
+            - ""
           resources:
-          - clusterissuers
+            - events
           verbs:
-          - use
-        - apiGroups:
-          - certmanager.k8s.io
-          resources:
-          - certificates
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - services
-          - services/finalizers
-          - events
-          - configmaps
-          - secrets
-          - serviceaccounts
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          - daemonsets
-          - replicasets
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - operator.ibm.com
-          resources:
-          - '*'
-          - commonaudits
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - roles
-          - rolebindings
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - clusterroles
-          - clusterrolebindings
-          verbs:
-          - delete
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - namespaces
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - apps
-          resources:
-          - deployments/status
-          verbs:
-          - get
-          - update
-          - patch
-        - apiGroups:
-          - audit.policies.ibm.com
-          resources:
-          - auditpolicies
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - audit.policies.ibm.com
-          resources:
-          - auditpolicies/status
-          verbs:
-          - get
-          - update
-          - patch
-        - apiGroups:
-          - security.openshift.io
-          resourceNames:
-          - restricted
-          resources:
-          - securitycontextconstraints
-          verbs:
-          - use
+            - create
+            - patch
         serviceAccountName: ibm-auditlogging-operator
+      - rules:
+        - apiGroups:
+            - rbac.authorization.k8s.io
+          resources:
+            - clusterroles
+            - clusterrolebindings
+          verbs:
+            - delete
+        serviceAccountName: ibm-auditlogging-cleanup
+      - rules:
+        - apiGroups:
+            - audit.policies.ibm.com
+          resources:
+            - auditpolicies
+          verbs:
+            - get
+            - list
+            - watch
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - audit.policies.ibm.com
+          resources:
+            - auditpolicies/status
+          verbs:
+            - get
+            - update
+            - patch
+        - apiGroups:
+            - security.openshift.io
+          resourceNames:
+            - restricted
+          resources:
+            - securitycontextconstraints
+          verbs:
+            - use
+        - apiGroups:
+            - ""
+          resources:
+            - namespaces
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups:
+            - ""
+          resources:
+            - pods
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+          verbs:
+            - get
+            - list
+            - watch
+            - update
+        - apiGroups:
+            - ""
+          resources:
+            - events
+          verbs:
+            - create
+            - patch
+        serviceAccountName: ibm-audit-policy-controller
       deployments:
       - name: ibm-auditlogging-operator
         spec:
@@ -322,6 +281,14 @@ spec:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: FLUENTD_TAG_OR_SHA
                   value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
+                - name: JOB_TAG_OR_SHA
+                  value: sha256:ba876b826155960f2523d14b191185b75956b6bf53b68c0fc76acd609f9e231f
+                - name: POLICY_CTRL_TAG_OR_SHA
+                    value: sha256:22c7bea862dab3a6fcdeadf5ab58d81cce37c125aeed43cce952a4753f0d4a48
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 image: quay.io/opencloudio/ibm-auditlogging-operator:latest
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
@@ -340,97 +307,155 @@ spec:
                   privileged: false
                   readOnlyRootFilesystem: true
                   runAsNonRoot: true
-              - args:
-                - --v=0
-                image: quay.io/opencloudio/audit-policy-controller@sha256:e505e7e3183fe6c54ce3ebe0e33e16d64a69e0a0cd04e8f8beaa255028f0ddb3
-                imagePullPolicy: IfNotPresent
-                livenessProbe:
-                  exec:
-                    command:
-                    - sh
-                    - -c
-                    - pgrep audit-policy -l
-                  initialDelaySeconds: 30
-                  timeoutSeconds: 5
-                name: audit-policy-controller
-                readinessProbe:
-                  exec:
-                    command:
-                    - sh
-                    - -c
-                    - exec echo start audit-policy-controller
-                  initialDelaySeconds: 10
-                  timeoutSeconds: 2
-                resources:
-                  limits:
-                    cpu: 100m
-                    memory: 400Mi
-                  requests:
-                    cpu: 20m
-                    memory: 150Mi
-                securityContext:
-                  allowPrivilegeEscalation: false
-                  capabilities:
-                    drop:
-                    - ALL
-                  privileged: false
-                  readOnlyRootFilesystem: true
-                  runAsNonRoot: true
               serviceAccountName: ibm-auditlogging-operator
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
         - apiGroups:
-          - monitoring.coreos.com
+            - operator.ibm.com
           resources:
-          - servicemonitors
+            - commonaudits
+            - commonaudits/status
+            - commonaudits/finalizers
           verbs:
-          - get
-          - create
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
         - apiGroups:
-          - security.openshift.io
+            - monitoring.coreos.com
+          resources:
+            - servicemonitors
+          verbs:
+            - get
+            - create
+        - apiGroups:
+            - security.openshift.io
           resourceNames:
-          - privileged
+            - privileged
           resources:
-          - securitycontextconstraints
+            - securitycontextconstraints
           verbs:
-          - use
+            - use
         - apiGroups:
-          - apps
+            - apps
           resourceNames:
-          - ibm-auditlogging-operator
+            - ibm-auditlogging-operator
           resources:
-          - deployments/finalizers
+            - deployments/finalizers
           verbs:
-          - update
+            - update
         - apiGroups:
-          - ""
+            - certmanager.k8s.io
           resources:
-          - configmaps
+            - certificates
           verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
         - apiGroups:
-          - ""
+            - ""
           resources:
-          - configmaps/status
+            - pods
+            - services
+            - services/finalizers
+            - configmaps
+            - secrets
+            - serviceaccounts
           verbs:
-          - get
-          - update
-          - patch
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
         - apiGroups:
-          - ""
+            - apps
           resources:
-          - events
+            - deployments
+            - daemonsets
+            - replicasets
           verbs:
-          - create
-          - patch
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
+        - apiGroups:
+            - apps
+          resources:
+            - deployments/status
+          verbs:
+            - get
+            - update
+            - patch
+        - apiGroups:
+            - security.openshift.io
+          resourceNames:
+            - restricted
+          resources:
+            - securitycontextconstraints
+          verbs:
+            - use
+        - apiGroups:
+            - rbac.authorization.k8s.io
+          resources:
+            - roles
+            - rolebindings
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps/status
+          verbs:
+            - get
+            - update
+            - patch
+        - apiGroups:
+            - batch
+          resources:
+            - jobs
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
+        - apiGroups:
+            - certmanager.k8s.io
+          resources:
+            - issuers
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - update
+            - watch
+            - use
         serviceAccountName: ibm-auditlogging-operator
+      - rules:
+        - apiGroups:
+            - ""
+          resources:
+            - serviceaccounts
+          verbs:
+            - delete
+        serviceAccountName: ibm-auditlogging-cleanup
     strategy: deployment
   installModes:
   - supported: true

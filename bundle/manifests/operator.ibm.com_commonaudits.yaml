@@ -4,6 +4,10 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/instance: common-audit-logging
+    app.kubernetes.io/managed-by: ibm-auditlogging-operator
+    app.kubernetes.io/name: common-audit-logging
   name: commonaudits.operator.ibm.com
 spec:
   group: operator.ibm.com
@@ -65,6 +69,8 @@ spec:
                       type: object
                   type: object
               type: object
+            issuer:
+              type: string
             outputs:
               description: CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog
               properties:

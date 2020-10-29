@@ -81,9 +81,11 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		}
 	}
 
+	csNamespace := util.GetCSNamespace()
+
 	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
 	if err := r.Client.List(context.TODO(), auditLoggingList); err == nil &&
-		len(auditLoggingList.Items) > 0 && req.Namespace == constant.InstanceNamespace {
+		len(auditLoggingList.Items) > 0 && req.Namespace == csNamespace {
 		msg := "CommonAudit cannot run alongside AuditLogging in the same namespace. Delete one or the other to proceed."
 		r.Log.Info(msg)
 		r.updateEvent(instance, msg, corev1.EventTypeWarning, "Not Allowed")
@@ -108,6 +110,7 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 
 	reconcilers := []func(*operatorv1.CommonAudit) (reconcile.Result, error){
 		r.reconcileAuditConfigMaps,
+		r.reconcileCertPreReqs,
 		r.reconcileAuditCerts,
 		r.reconcileSecret,
 		r.reconcileServiceAccount,
@@ -136,6 +139,7 @@ func (r *CommonAuditReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&operatorv1.CommonAudit{}).
 		Owns(&appsv1.Deployment{}).Owns(&corev1.ConfigMap{}).Owns(&certmgr.Certificate{}).Owns(&corev1.Secret{}).
 		Owns(&corev1.ServiceAccount{}).Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).
+		Owns(&certmgr.Issuer{}).
 		Complete(r)
 }
 

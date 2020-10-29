@@ -95,8 +95,24 @@ var _ = Describe("CommonAudit controller", func() {
 				}, timeout, interval).Should(Succeed())
 			}
 
+			By("Check if God Issuer was created")
+			foundIssuer := &certmgr.Issuer{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.GodIssuer, Namespace: requestNamespace}, foundIssuer)
+			}, timeout, interval).Should(Succeed())
+
 			By("Check if Certificate was created")
 			foundCert := &certmgr.Certificate{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.RootCert, Namespace: requestNamespace}, foundCert)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if Root CA Issuer was created")
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: res.RootIssuer, Namespace: requestNamespace}, foundIssuer)
+			}, timeout, interval).Should(Succeed())
+
+			By("Check if Certificate was created")
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingHTTPSCertName, Namespace: requestNamespace}, foundCert)
 			}, timeout, interval).Should(Succeed())
@@ -148,7 +164,7 @@ var _ = Describe("CommonAudit controller", func() {
 			By("Updating fields in CommonAudit CR")
 			// Spec
 			ca.Spec.EnableAuditLoggingForwarding = testdata.Forwarding
-			ca.Spec.ClusterIssuer = testdata.ClusterIssuer
+			ca.Spec.Issuer = testdata.Issuer
 			ca.Spec.Replicas = testdata.Replicas
 
 			// Fluentd
@@ -249,7 +265,7 @@ var _ = Describe("CommonAudit controller", func() {
 			Eventually(func() string {
 				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: res.AuditLoggingHTTPSCertName, Namespace: requestNamespace}, cert)).Should(Succeed())
 				return cert.Spec.IssuerRef.Name
-			}, timeout, interval).Should(Equal(testdata.ClusterIssuer))
+			}, timeout, interval).Should(Equal(testdata.Issuer))
 		})
 	})
 

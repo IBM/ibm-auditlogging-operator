@@ -37,8 +37,14 @@ var architectureList = []string{"amd64", "ppc64le", "s390x"}
 var seconds30 int64 = 30
 var defaultReplicas = int32(1)
 
+// FluentdDaemonSetName is the name of the fluentd daemonset name
 const FluentdDaemonSetName = "audit-logging-fluentd-ds"
+
+// FluentdDeploymentName is the name of the fluentd deployment
 const FluentdDeploymentName = "audit-logging-fluentd"
+
+// AuditPolicyControllerDeploy is the name of the audit-policy-controller deployment
+const AuditPolicyControllerDeploy = "audit-policy-controller"
 
 const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
@@ -46,7 +52,84 @@ const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 
 const defaultJournalPath = "/run/log/journal"
 
-const AuditPolicyControllerDeploy = "audit-policy-controller"
+var commonNodeAffinity = &corev1.NodeAffinity{
+	RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+		NodeSelectorTerms: []corev1.NodeSelectorTerm{
+			{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "beta.kubernetes.io/arch",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   architectureList,
+					},
+				},
+			},
+		},
+	},
+}
+
+// BuildDeploymentForPolicyController returns a Deployment object
+func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging, namespace string) *appsv1.Deployment {
+	log.WithValues("func", "BuildDeploymentForPolicyController")
+	metaLabels := util.LabelsForMetadata(AuditPolicyControllerDeploy)
+	selectorLabels := util.LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
+	podLabels := util.LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
+	annotations := util.AnnotationsForMetering(false)
+	policyControllerMainContainer.Image = util.GetImageID(instance.Spec.PolicyController.ImageRegistry,
+		constant.DefaultPCImageName, constant.PolicyControllerEnvVar)
+	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
+
+	var args = make([]string, 0)
+	if instance.Spec.PolicyController.Verbosity != "" {
+		args = append(args, "--v="+instance.Spec.PolicyController.Verbosity)
+	} else {
+		args = append(args, "--v=0")
+	}
+	if instance.Spec.PolicyController.Frequency != "" {
+		args = append(args, "--update-frequency="+instance.Spec.PolicyController.Frequency)
+	}
+	policyControllerMainContainer.Args = args
+
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      AuditPolicyControllerDeploy,
+			Namespace: namespace,
+			Labels:    metaLabels,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: selectorLabels,
+			},
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      podLabels,
+					Annotations: annotations,
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName:            AuditPolicyServiceAccount,
+					TerminationGracePeriodSeconds: &seconds30,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: commonNodeAffinity,
+					},
+					Tolerations: commonTolerations,
+					Volumes: []corev1.Volume{
+						{
+							Name: "tmp",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						policyControllerMainContainer,
+					},
+				},
+			},
+		},
+	}
+	return deploy
+}
 
 // BuildDeploymentForFluentd returns a Deployment object
 func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deployment {
@@ -61,7 +144,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	fluentdMainContainer.Image = util.GetImageID(instance.Spec.Fluentd.ImageRegistry, constant.DefaultFluentdImageName, constant.FluentdEnvVar)
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
-	fluentdMainContainer.SecurityContext = &fluentdRestrictedSecurityContext
+	fluentdMainContainer.SecurityContext = &restrictedSecurityContext
 	var replicas = defaultReplicas
 	if instance.Spec.Replicas > 0 {
 		replicas = instance.Spec.Replicas
@@ -88,21 +171,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 					ServiceAccountName:            OperandServiceAccount,
 					TerminationGracePeriodSeconds: &seconds30,
 					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "beta.kubernetes.io/arch",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   architectureList,
-											},
-										},
-									},
-								},
-							},
-						},
+						NodeAffinity: commonNodeAffinity,
 						PodAntiAffinity: &corev1.PodAntiAffinity{
 							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 								{
@@ -280,7 +349,7 @@ func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 }
 
 // BuildDaemonForFluentd returns a Daemonset object
-func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.DaemonSet {
+func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace string) *appsv1.DaemonSet {
 	metaLabels := util.LabelsForMetadata(constant.FluentdName)
 	selectorLabels := util.LabelsForSelector(constant.FluentdName, instance.Name)
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
@@ -297,7 +366,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 	daemon := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      FluentdDaemonSetName,
-			Namespace: constant.InstanceNamespace,
+			Namespace: namespace,
 			Labels:    metaLabels,
 		},
 		Spec: appsv1.DaemonSetSpec{
@@ -323,23 +392,8 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging) *appsv1.Daem
 					ServiceAccountName:            OperandServiceAccount,
 					TerminationGracePeriodSeconds: &seconds30,
 					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "beta.kubernetes.io/arch",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   architectureList,
-											},
-										},
-									},
-								},
-							},
-						},
+						NodeAffinity: commonNodeAffinity,
 					},
-					// NodeSelector:                  {},
 					Tolerations: commonTolerations,
 					Volumes:     commonVolumes,
 					Containers: []corev1.Container{
@@ -543,8 +597,7 @@ func buildResources(requestedResources, defaultResources corev1.ResourceRequirem
 }
 
 // EqualDeployments returns a Boolean
-func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
-	allowModify := false
+func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualDeployments")
 	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
@@ -561,11 +614,10 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment) boo
 
 // EqualDaemonSets returns a Boolean
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
-	allowModify := true
 	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
 		return false
 	}
-	if !EqualPods(expected.Spec.Template, found.Spec.Template, allowModify) {
+	if !EqualPods(expected.Spec.Template, found.Spec.Template, true) {
 		return false
 	}
 	return true

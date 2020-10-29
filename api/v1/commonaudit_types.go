@@ -27,11 +27,13 @@ import (
 // CommonAuditSpec defines the desired state of CommonAudit
 type CommonAuditSpec struct {
 	// EnableAuditLoggingForwarding defines if audit logs should be forwarded to an SIEM or not
-	EnableAuditLoggingForwarding bool                   `json:"enabled,omitempty"`
-	ClusterIssuer                string                 `json:"clusterIssuer,omitempty"`
-	Replicas                     int32                  `json:"replicas,omitempty"`
-	Fluentd                      CommonAuditSpecFluentd `json:"fluentd,omitempty"`
-	Outputs                      CommonAuditSpecOutputs `json:"outputs,omitempty"`
+	EnableAuditLoggingForwarding bool `json:"enabled,omitempty"`
+	// ClusterIssuer deprecated, use Issuer
+	ClusterIssuer string                 `json:"clusterIssuer,omitempty"`
+	Issuer        string                 `json:"issuer,omitempty"`
+	Replicas      int32                  `json:"replicas,omitempty"`
+	Fluentd       CommonAuditSpecFluentd `json:"fluentd,omitempty"`
+	Outputs       CommonAuditSpecOutputs `json:"outputs,omitempty"`
 }
 
 // CommonAuditSpecFluentd defines the desired state of Fluentd

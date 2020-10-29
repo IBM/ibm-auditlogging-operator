@@ -29,6 +29,9 @@ import (
 
 // OperandServiceAccount defines the name of the operands' ServiceAccount
 const OperandServiceAccount = "ibm-auditlogging-operand"
+
+// AuditPolicyServiceAccount defines the name of the policy controller ServiceAccount
+const AuditPolicyServiceAccount = "ibm-audit-policy-controller"
 const RolePostfix = "-role"
 const RoleBindingPostfix = "-rolebinding"
 

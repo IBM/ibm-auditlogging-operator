@@ -34,7 +34,8 @@ import (
 
 const (
 	Forwarding     = true
-	ClusterIssuer  = "test-ca-issuer"
+	ClusterIssuer  = "test-ca-clusterissuer"
+	Issuer         = "test-ca-issuer"
 	ImageRegistry  = "test-registry.com/test-repo"
 	PullPolicy     = "Always"
 	SplunkHost     = "test-splunk.fyre.ibm.com"

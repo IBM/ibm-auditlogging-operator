@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"reflect"
-
 	"sort"
 	"time"
 
@@ -36,12 +35,14 @@ import (
 
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
+	res "github.com/IBM/ibm-auditlogging-operator/controllers/resources"
 	opversion "github.com/IBM/ibm-auditlogging-operator/version"
 )
 
@@ -53,6 +54,7 @@ type AuditLoggingReconciler struct {
 	Recorder record.EventRecorder
 }
 
+// Reconcile reconciles
 func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_auditlogging").WithValues("request", req.NamespacedName)
@@ -90,8 +92,10 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return reconcile.Result{}, nil
 	}
 
+	csNamespace := util.GetCSNamespace()
+
 	commonAuditList := &operatorv1.CommonAuditList{}
-	if err := r.Client.List(context.TODO(), commonAuditList, client.InNamespace(constant.InstanceNamespace)); err == nil &&
+	if err := r.Client.List(context.TODO(), commonAuditList, client.InNamespace(csNamespace)); err == nil &&
 		len(commonAuditList.Items) > 0 {
 		msg := "CommonAudit cannot run alongside AuditLogging in the same namespace. Delete one or the other to proceed."
 		r.Log.Info(msg)
@@ -104,8 +108,10 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	var recResult reconcile.Result
 	var recErr error
-	reconcilers := []func(*operatorv1alpha1.AuditLogging) (reconcile.Result, error){
-		r.removeOldPolicyControllerDeploy,
+
+	reconcilers := []func(*operatorv1alpha1.AuditLogging, string) (reconcile.Result, error){
+		r.reconcileJob,
+		r.reconcilePolicyControllerDeployment,
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
 		r.reconcileServiceAccount,
@@ -116,16 +122,12 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		r.updateStatus,
 	}
 	for _, rec := range reconcilers {
-		recResult, recErr = rec(instance)
+		recResult, recErr = rec(instance, csNamespace)
 		if recErr != nil || recResult.Requeue {
 			return recResult, recErr
 		}
 	}
 
-	// Prior to version 3.6, audit-logging used two separate service accounts.
-	// Delete service accounts if they were leftover from a previous version.
-	// Policy controller deployment has been moved to operator pod in 3.7, remove redundant rbac
-	r.removeOldRBAC()
 	r.updateEvent(instance, "Deployed "+constant.AuditLoggingComponentName+" successfully", corev1.EventTypeNormal, "Deployed")
 	r.Log.Info("Reconciliation successful!", "Name", instance.Name)
 	// since we updated the status in the Audit Logging CR, sleep 5 seconds to allow the CR to be refreshed.
@@ -134,18 +136,19 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager setups up the manager
 func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.AuditLogging{}).
 		Owns(&appsv1.DaemonSet{}).Owns(&corev1.ConfigMap{}).Owns(&certmgr.Certificate{}).Owns(&corev1.ServiceAccount{}).
-		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).Owns(&batchv1.Job{}).Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
 
-func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(constant.InstanceNamespace),
+		client.InNamespace(namespace),
 		client.MatchingLabels(util.LabelsForSelector(constant.FluentdName, instance.Name)),
 	}
 	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
@@ -156,6 +159,20 @@ func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLo
 	for _, pod := range podList.Items {
 		podNames = append(podNames, pod.Name)
 	}
+
+	// Get audit-policy-controller pod too
+	listOpts = []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabels(util.LabelsForSelector(res.AuditPolicyControllerDeploy, instance.Name)),
+	}
+	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
+		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", namespace, "AuditLogging.Name", instance.Name)
+		return reconcile.Result{}, err
+	}
+	for _, pod := range podList.Items {
+		podNames = append(podNames, pod.Name)
+	}
+
 	// if no pods were found set the default status
 	if len(podNames) == 0 {
 		podNames = util.DefaultStatusForCR
