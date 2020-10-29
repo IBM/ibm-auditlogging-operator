@@ -74,13 +74,6 @@ var restrictedSecurityContext = corev1.SecurityContext{
 	Capabilities:             &commonCapabilities,
 }
 
-var policyControllerSecurityContext = corev1.SecurityContext{
-	AllowPrivilegeEscalation: &falseVar,
-	Privileged:               &falseVar,
-	ReadOnlyRootFilesystem:   &trueVar,
-	RunAsNonRoot:             &trueVar,
-	Capabilities:             &commonCapabilities,
-}
 var commonTolerations = []corev1.Toleration{
 	{
 		Key:      "dedicated",
@@ -194,7 +187,7 @@ var policyControllerMainContainer = corev1.Container{
 			corev1.ResourceCPU:    *cpu100,
 			corev1.ResourceMemory: *memory150},
 	},
-	SecurityContext: &policyControllerSecurityContext,
+	SecurityContext: &restrictedSecurityContext,
 }
 
 // EqualContainers returns a Boolean

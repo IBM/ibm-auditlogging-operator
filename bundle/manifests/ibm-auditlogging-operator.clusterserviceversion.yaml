@@ -125,7 +125,7 @@ spec:
       name: auditloggings.operator.ibm.com
       version: v1alpha1
     - description: AuditPolcy is the Schema for the auditlpolicies API
-      displayName: AuditPolicy
+      displayName: Audit Policy
       kind: AuditPolicy
       name: auditpolicies.audit.policies.ibm.com
       version: v1alpha1
