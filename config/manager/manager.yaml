@@ -23,6 +23,7 @@ spec:
         app.kubernetes.io/instance: "common-audit-logging"
         app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
         app.kubernetes.io/name: "common-audit-logging"
+        intent: projected
       annotations:
         productName: IBM Cloud Platform Common Services
         productID: "068a62892a1e4db39641342e592daa25"
@@ -52,7 +53,10 @@ spec:
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: namespace-scope
+                key: namespaces
           # DO NOT DELETE. Add image SHAs here. See get_image_sha.sh
           - name: FLUENTD_TAG_OR_SHA
             value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7

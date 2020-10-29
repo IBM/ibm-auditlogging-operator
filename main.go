@@ -20,6 +20,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
+
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -67,14 +70,24 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	options := ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "d9301293.ibm.com",
 		Namespace:          watchNamespace, // namespaced-scope when the value is not an empty string
-	})
+	}
+
+	// Add support for MultiNamespace set in WATCH_NAMESPACE (e.g ns1,ns2)
+	if strings.Contains(watchNamespace, ",") {
+		setupLog.Info("manager will be watching namespace %q", watchNamespace)
+		// configure cluster-scoped with MultiNamespacedCacheBuilder
+		options.Namespace = ""
+		options.NewCache = cache.MultiNamespacedCacheBuilder(strings.Split(watchNamespace, ","))
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
