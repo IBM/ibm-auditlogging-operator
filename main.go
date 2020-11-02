@@ -81,7 +81,6 @@ func main() {
 
 	// Add support for MultiNamespace set in WATCH_NAMESPACE (e.g ns1,ns2)
 	if strings.Contains(watchNamespace, ",") {
-		setupLog.Info("manager will be watching namespace %q", watchNamespace)
 		// configure cluster-scoped with MultiNamespacedCacheBuilder
 		options.Namespace = ""
 		options.NewCache = cache.MultiNamespacedCacheBuilder(strings.Split(watchNamespace, ","))
