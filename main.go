@@ -80,9 +80,6 @@ func main() {
 		corev1.SchemeGroupVersion.WithKind("ConfigMap"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		corev1.SchemeGroupVersion.WithKind("ConfigMap"): {
-			LabelSelector: constant.AuditTypeLabel,
-		},
 		corev1.SchemeGroupVersion.WithKind("Service"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
