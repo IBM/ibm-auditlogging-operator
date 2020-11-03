@@ -122,12 +122,14 @@ func RemoveString(slice []string, s string) (result []string) {
 //IBMDEV
 func LabelsForMetadata(name string) map[string]string {
 	return map[string]string{"app": name, "app.kubernetes.io/name": name, "app.kubernetes.io/component": constant.AuditLoggingComponentName,
-		"app.kubernetes.io/managed-by": "operator", "app.kubernetes.io/instance": constant.AuditLoggingReleaseName, "release": constant.AuditLoggingReleaseName}
+		"app.kubernetes.io/managed-by": "operator", "app.kubernetes.io/instance": constant.AuditLoggingReleaseName, "release": constant.AuditLoggingReleaseName,
+		constant.AuditTypeLabel: name,
+	}
 }
 
 //IBMDEV
 func LabelsForSelector(name string, crName string) map[string]string {
-	return map[string]string{"app": name, "component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName}
+	return map[string]string{"app": name, "component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName, constant.AuditTypeLabel: name}
 }
 
 //IBMDEV
