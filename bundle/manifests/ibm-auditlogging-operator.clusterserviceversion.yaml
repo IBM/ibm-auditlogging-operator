@@ -255,6 +255,7 @@ spec:
                 app.kubernetes.io/instance: common-audit-logging
                 app.kubernetes.io/managed-by: ibm-auditlogging-operator
                 app.kubernetes.io/name: common-audit-logging
+                intent: projected
                 name: ibm-auditlogging-operator
             spec:
               affinity:
@@ -277,8 +278,9 @@ spec:
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                    configMapKeyRef:
+                      name: namespace-scope
+                      key: namespaces
                 - name: FLUENTD_TAG_OR_SHA
                   value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
                 - name: JOB_TAG_OR_SHA

@@ -18,6 +18,7 @@ package resources
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
@@ -32,6 +33,7 @@ const AuditLoggingServerCertSecName = "audit-server-certs"
 const AuditLoggingCertName = "fluentd"
 const DefaultIssuer = "cs-ca-issuer"
 const RootCert = "audit-root-ca-cert"
+const defaultDuration = 17520
 
 // BuildCertsForAuditLogging returns a Certificate object
 func BuildCertsForAuditLogging(namespace string, issuer string, name string) *certmgr.Certificate {
@@ -88,6 +90,9 @@ func BuildRootCACert(namespace string) *certmgr.Certificate {
 			IssuerRef: certmgr.ObjectReference{
 				Name: GodIssuer,
 				Kind: certmgr.IssuerKind,
+			},
+			Duration: &metav1.Duration{
+				Duration: time.Hour * defaultDuration,
 			},
 		},
 	}
