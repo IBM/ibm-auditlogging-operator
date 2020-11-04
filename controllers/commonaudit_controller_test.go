@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -254,11 +255,16 @@ var _ = Describe("CommonAudit controller", func() {
 			Eventually(func() error {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: requestNamespace}, deploy)
 			}, timeout, interval).Should(Succeed())
-			Expect(deploy.Spec.Template.Spec.HostAliases).Should(Equal(testdata.HostAliases))
-			Expect(deploy.Spec.Replicas).Should(Equal(&testdata.Replicas))
-			Expect(deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullPolicy(testdata.PullPolicy)))
-			Expect(deploy.Spec.Template.Spec.Containers[0].Image).Should(ContainSubstring(testdata.ImageRegistry))
-			Expect(deploy.Spec.Template.Spec.Containers[0].Resources).Should(Equal(testdata.Resources))
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: res.FluentdDeploymentName, Namespace: requestNamespace}, deploy)
+				Expect(err).Should(BeNil())
+				return reflect.DeepEqual(deploy.Spec.Template.Spec.HostAliases, testdata.HostAliases) &&
+					reflect.DeepEqual(deploy.Spec.Replicas, &testdata.Replicas) &&
+					reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy, corev1.PullPolicy(testdata.PullPolicy)) &&
+					strings.Contains(deploy.Spec.Template.Spec.Containers[0].Image, testdata.ImageRegistry) &&
+					reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].Resources, testdata.Resources)
+			}, timeout, interval).Should(BeTrue())
 
 			By("Checking Certificate is updated")
 			cert := &certmgr.Certificate{}
