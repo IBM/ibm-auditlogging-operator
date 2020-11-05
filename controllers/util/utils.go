@@ -129,7 +129,7 @@ func LabelsForMetadata(name string) map[string]string {
 
 //IBMDEV
 func LabelsForSelector(name string, crName string) map[string]string {
-	return map[string]string{"app": name, "component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName, constant.AuditTypeLabel: name}
+	return map[string]string{"app": name, "component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName}
 }
 
 //IBMDEV

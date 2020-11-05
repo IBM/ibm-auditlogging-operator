@@ -130,7 +130,7 @@ var _ = Describe("Utils", func() {
 		It("Should return labels with the operand name", func() {
 			crName := "test-cr"
 			expectedResult := map[string]string{"app": testString, "component": constant.AuditLoggingComponentName,
-				constant.AuditLoggingCrType: crName, constant.AuditTypeLabel: testString}
+				constant.AuditLoggingCrType: crName}
 			result := LabelsForSelector(testString, crName)
 			Expect(result).Should(Equal(expectedResult))
 		})
@@ -141,7 +141,7 @@ var _ = Describe("Utils", func() {
 			expectedResult := map[string]string{"app": testString, "app.kubernetes.io/name": testString,
 				"app.kubernetes.io/component": constant.AuditLoggingComponentName, "app.kubernetes.io/managed-by": "operator",
 				"app.kubernetes.io/instance": constant.AuditLoggingReleaseName, "release": constant.AuditLoggingReleaseName,
-				"component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName, constant.AuditTypeLabel: testString}
+				constant.AuditTypeLabel: testString, "component": constant.AuditLoggingComponentName, constant.AuditLoggingCrType: crName}
 			result := LabelsForPodMetadata(testString, crName)
 			Expect(result).Should(Equal(expectedResult))
 		})
