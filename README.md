@@ -14,12 +14,13 @@ Red Hat OpenShift Container Platform 4.3 or newer installed on one of the follow
 
 ## Operator versions
 
-- 3.5.0
-- 3.6.0
-- 3.6.1
-- 3.6.2
-- 3.7.0
+- 3.8.0
 - 3.7.1
+- 3.7.0
+- 3.6.2
+- 3.6.1
+- 3.6.0
+- 3.5.0
 
   Technology Preview - Included in version 3.6.0, 3.6.1, and 3.6.2 support for sending audit log records over HTTP.
 
@@ -121,6 +122,7 @@ As a developer, if you want to build and test this operator to try out and learn
 ## Configuration
 
 - In order for audit logs to be forwarded to an SIEM, the `fluentd.enabled` spec field must be set to `true`.
+- In order to deploy the policy controller, the `policyController.enabled` spec field must be set to `true`.
 - If a field in a spec is omitted, the default value will be used.
 - The list of all `ibm-auditlogging-operator` settings can be found in the IBM Cloud Platform Common Services Knowledge Center [Configuration Documentation](http://ibm.biz/cpcs_opinstall).
 
