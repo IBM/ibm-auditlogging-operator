@@ -332,7 +332,7 @@ func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *o
 		found.Spec = expected.Spec
 		err = r.Client.Update(context.TODO(), found)
 		if err != nil {
-			r.Log.Error(err, "Failed to update Deployment", "Namespace", constant.InstanceNamespace, "Name", found.Name)
+			r.Log.Error(err, "Failed to update Deployment", "Namespace", found.Namespace, "Name", found.Name)
 			return reconcile.Result{}, err
 		}
 		r.Log.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)

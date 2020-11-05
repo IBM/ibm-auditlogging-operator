@@ -152,7 +152,7 @@ func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLo
 		client.MatchingLabels(util.LabelsForSelector(constant.FluentdName, instance.Name)),
 	}
 	if err := r.Client.List(context.TODO(), podList, listOpts...); err != nil {
-		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", constant.InstanceNamespace, "AuditLogging.Name", instance.Name)
+		r.Log.Error(err, "Failed to list pods", "AuditLogging.Namespace", namespace, "AuditLogging.Name", instance.Name)
 		return reconcile.Result{}, err
 	}
 	var podNames []string
