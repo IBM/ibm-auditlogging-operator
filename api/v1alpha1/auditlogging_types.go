@@ -28,7 +28,7 @@ import (
 type AuditLoggingSpec struct {
 	// Fluentd defines the desired state of Fluentd
 	Fluentd AuditLoggingSpecFluentd `json:"fluentd,omitempty"`
-	// PolicyController has been deprecated. Define values in operator.yaml
+	// PolicyController has been deprecated.
 	PolicyController AuditLoggingSpecPolicyController `json:"policyController,omitempty"`
 }
 
@@ -48,7 +48,8 @@ type AuditLoggingSpecFluentd struct {
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec.
 type AuditLoggingSpecPolicyController struct {
-	EnableAuditPolicy bool   `json:"enabled,omitempty"`
+	// +kubebuilder:validation:Pattern=^(true|false)?$
+	EnableAuditPolicy string `json:"enabled,omitempty"`
 	ImageRegistry     string `json:"imageRegistry,omitempty"`
 	ImageTag          string `json:"imageTag,omitempty"`
 	PullPolicy        string `json:"pullPolicy,omitempty"`

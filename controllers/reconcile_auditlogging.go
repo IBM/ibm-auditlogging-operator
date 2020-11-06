@@ -298,46 +298,46 @@ func (r *AuditLoggingReconciler) removeDisabledPolicyControllerDeploy(namespace 
 }
 
 func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
-
 	// If policy is disabled , remove..
-	if !instance.Spec.PolicyController.EnableAuditPolicy {
+	if instance.Spec.PolicyController.EnableAuditPolicy == "false" {
 		return r.removeDisabledPolicyControllerDeploy(namespace)
-	}
-	expected := res.BuildDeploymentForPolicyController(instance, namespace)
-	found := &appsv1.Deployment{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Deployment
-		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Creating a new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace, "Deployment.Name", expected.Name)
-		err = r.Client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
+	} else if instance.Spec.PolicyController.EnableAuditPolicy == "true" {
+		expected := res.BuildDeploymentForPolicyController(instance, namespace)
+		found := &appsv1.Deployment{}
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: res.AuditPolicyControllerDeploy, Namespace: namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			// Define a new Deployment
+			if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			r.Log.Info("Creating a new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace, "Deployment.Name", expected.Name)
+			err = r.Client.Create(context.TODO(), expected)
+			if err != nil && errors.IsAlreadyExists(err) {
+				// Already exists from previous reconcile, requeue.
+				return reconcile.Result{Requeue: true}, nil
+			} else if err != nil {
+				r.Log.Error(err, "Failed to create new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace,
+					"Deployment.Name", expected.Name)
+				return reconcile.Result{}, err
+			}
+			// Deployment created successfully - return and requeue
 			return reconcile.Result{Requeue: true}, nil
 		} else if err != nil {
-			r.Log.Error(err, "Failed to create new Audit Policy Controller Deployment", "Deployment.Namespace", expected.Namespace,
-				"Deployment.Name", expected.Name)
+			r.Log.Error(err, "Failed to get Deployment")
 			return reconcile.Result{}, err
+		} else if !res.EqualDeployments(expected, found, true) {
+			// If spec is incorrect, update it and requeue
+			found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+			found.Spec = expected.Spec
+			err = r.Client.Update(context.TODO(), found)
+			if err != nil {
+				r.Log.Error(err, "Failed to update Deployment", "Namespace", found.Namespace, "Name", found.Name)
+				return reconcile.Result{}, err
+			}
+			r.Log.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)
+			// Spec updated - return and requeue
+			return reconcile.Result{Requeue: true}, nil
 		}
-		// Deployment created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		r.Log.Error(err, "Failed to get Deployment")
-		return reconcile.Result{}, err
-	} else if !res.EqualDeployments(expected, found, true) {
-		// If spec is incorrect, update it and requeue
-		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
-		found.Spec = expected.Spec
-		err = r.Client.Update(context.TODO(), found)
-		if err != nil {
-			r.Log.Error(err, "Failed to update Deployment", "Namespace", found.Namespace, "Name", found.Name)
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Updating Audit Policy Controller Deployment", "Deployment.Name", found.Name)
-		// Spec updated - return and requeue
-		return reconcile.Result{Requeue: true}, nil
 	}
 	return reconcile.Result{}, nil
 }
