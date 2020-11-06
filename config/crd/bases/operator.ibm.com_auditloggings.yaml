@@ -85,11 +85,11 @@ spec:
                   type: object
               type: object
             policyController:
-              description: PolicyController has been deprecated. Define values in
-                operator.yaml
+              description: PolicyController has been deprecated.
               properties:
                 enabled:
-                  type: boolean
+                  pattern: true|false
+                  type: string
                 frequency:
                   type: string
                 imageRegistry:

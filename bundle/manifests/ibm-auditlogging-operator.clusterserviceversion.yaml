@@ -95,6 +95,9 @@ metadata:
               "imageRegistry": "quay.io/opencloudio/",
               "journalPath": "/run/log/journal",
               "pullPolicy": "IfNotPresent"
+            },
+            "policyController": {
+              "enabled": "true"
             }
           }
         }

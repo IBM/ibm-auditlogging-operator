@@ -61,7 +61,6 @@ var _ = Describe("AuditLogging controller", func() {
 		Expect(k8sClient.Create(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
 
 		auditLogging = testdata.AuditLoggingObj(requestName)
-		auditLogging.Spec.PolicyController.EnableAuditPolicy = true
 		// AuditLogging is cluster scoped and does not have a namespace
 		namespacedName = types.NamespacedName{Name: requestName, Namespace: ""}
 		By("Creating a new AuditLogging")

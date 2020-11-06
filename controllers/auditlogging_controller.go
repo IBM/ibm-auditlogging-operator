@@ -106,6 +106,10 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	r.updateEvent(instance, "Instance found", corev1.EventTypeNormal, "Initializing")
 
+	if instance.Spec.PolicyController.EnableAuditPolicy == "" {
+		return r.enablePolicyControllerByDefault(instance)
+	}
+
 	var recResult reconcile.Result
 	var recErr error
 
@@ -143,6 +147,16 @@ func (r *AuditLoggingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.DaemonSet{}).Owns(&corev1.ConfigMap{}).Owns(&certmgr.Certificate{}).Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).Owns(&rbacv1.RoleBinding{}).Owns(&corev1.Service{}).Owns(&batchv1.Job{}).Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+// To support backwards compatibility for MCM, set policyEnabled to true to deploy policy controller by default
+func (r *AuditLoggingReconciler) enablePolicyControllerByDefault(instance *operatorv1alpha1.AuditLogging) (reconcile.Result, error) {
+	instance.Spec.PolicyController.EnableAuditPolicy = constant.DefaultEnablePolicyController
+	r.Log.Info("Setting policyController.enabled to "+constant.DefaultEnablePolicyController, "Name", instance.Name)
+	if err := r.Client.Update(context.TODO(), instance); err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
 }
 
 func (r *AuditLoggingReconciler) updateStatus(instance *operatorv1alpha1.AuditLogging, namespace string) (reconcile.Result, error) {
