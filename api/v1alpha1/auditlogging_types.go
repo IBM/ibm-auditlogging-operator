@@ -48,7 +48,7 @@ type AuditLoggingSpecFluentd struct {
 
 // AuditLoggingSpecPolicyController defines the policy controller configuration in the the audit logging spec.
 type AuditLoggingSpecPolicyController struct {
-	// +kubebuilder:validation:Pattern=true|false
+	// +kubebuilder:validation:Pattern=^(true|false)?$
 	EnableAuditPolicy string `json:"enabled,omitempty"`
 	ImageRegistry     string `json:"imageRegistry,omitempty"`
 	ImageTag          string `json:"imageTag,omitempty"`

@@ -88,7 +88,7 @@ spec:
               description: PolicyController has been deprecated.
               properties:
                 enabled:
-                  pattern: true|false
+                  pattern: ^(true|false)?$
                   type: string
                 frequency:
                   type: string
