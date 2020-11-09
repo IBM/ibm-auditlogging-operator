@@ -100,6 +100,24 @@ metadata:
               "enabled": "true"
             }
           }
+        },
+        {
+          "apiVersion": "operator.ibm.com/v1alpha1",
+          "kind": "OperandBindInfo",
+          "metadata": {
+            "name": "ibm-auditlogging-bindinfo"
+          },
+          "spec": {
+            "operand": "ibm-auditlogging-operator",
+            "registry": "common-service",
+            "description": "Binding information for auditlogging adopters",
+            "bindings": {
+              "public": {
+                "secret": "audit-server-certs",
+                "configmap": "audit-logging-fluentd-ds-http-ingesturl"
+              }
+            }
+          }
         }
       ]
     capabilities: Basic Install
