@@ -307,7 +307,7 @@ spec:
                 - name: JOB_TAG_OR_SHA
                   value: sha256:ba876b826155960f2523d14b191185b75956b6bf53b68c0fc76acd609f9e231f
                 - name: POLICY_CTRL_TAG_OR_SHA
-                  value: sha256:22c7bea862dab3a6fcdeadf5ab58d81cce37c125aeed43cce952a4753f0d4a48
+                  value: sha256:db3356628dad4a5dccd48c5ac4a0acbb29e672572e1ae6ff10a94475ff73db30
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
