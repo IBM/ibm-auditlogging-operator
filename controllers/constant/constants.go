@@ -33,10 +33,10 @@ const (
 	FluentdEnvVar                 = "FLUENTD_TAG_OR_SHA"
 	OperatorNamespaceKey          = "POD_NAMESPACE"
 	DefaultJobImageName           = "audit-garbage-collector"
-	DefaultJobImageTag            = "0.0.1"
+	DefaultJobImageTag            = "1.0.0"
 	JobEnvVar                     = "JOB_TAG_OR_SHA"
 	PolicyControllerEnvVar        = "POLICY_CTRL_TAG_OR_SHA"
-	DefaultPCImageTag             = "3.5.2"
+	DefaultPCImageTag             = "3.5.3"
 	AuditTypeLabel                = "operator.ibm.com/managedBy-audit"
 	DefaultEnablePolicyController = "true"
 )
