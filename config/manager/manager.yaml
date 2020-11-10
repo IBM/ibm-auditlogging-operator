@@ -7,6 +7,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ibm-auditlogging-operator
+  namespace: ibm-common-services
   labels:
     app.kubernetes.io/instance: "common-audit-logging"
     app.kubernetes.io/managed-by: "ibm-auditlogging-operator"
@@ -53,10 +54,7 @@ spec:
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
-            valueFrom:
-              configMapKeyRef:
-                name: namespace-scope
-                key: namespaces
+            value: ibm-common-services
           - name: FLUENTD_TAG_OR_SHA
             value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
           - name: JOB_TAG_OR_SHA
