@@ -50,7 +50,7 @@ spec:
         args:
         - --enable-leader-election
         - --metrics-addr=:8383
-        image: quay.io/opencloudio/ibm-auditlogging-operator:latest
+        image: quay.io/opencloudio/ibm-auditlogging-operator:3.8.0
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
@@ -72,39 +72,6 @@ spec:
           requests:
             cpu: 50m
             memory: 150Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-      - name: audit-policy-controller
-        image: quay.io/opencloudio/audit-policy-controller@sha256:e505e7e3183fe6c54ce3ebe0e33e16d64a69e0a0cd04e8f8beaa255028f0ddb3
-        imagePullPolicy: IfNotPresent
-        args:
-        - --v=0
-        livenessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - pgrep audit-policy -l
-          initialDelaySeconds: 30
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command: [ "sh", "-c", "exec echo start audit-policy-controller" ]
-          initialDelaySeconds: 10
-          timeoutSeconds: 2
-        resources:
-          limits:
-            memory: 400Mi
-            cpu: 100m
-          requests:
-            memory: 150Mi
-            cpu: 20m
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
