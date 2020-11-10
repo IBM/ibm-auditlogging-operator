@@ -54,7 +54,9 @@ spec:
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
-            value: ibm-common-services
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
           - name: FLUENTD_TAG_OR_SHA
             value: sha256:bebccda15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7
           - name: JOB_TAG_OR_SHA
