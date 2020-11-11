@@ -29,7 +29,7 @@ const (
 	DefaultImageRegistry          = "quay.io/opencloudio/"
 	TestImageRegistry             = "quay.io/hbradfield/"
 	DefaultFluentdImageName       = "fluentd"
-	DefaultFluentdImageTag        = "v1.6.2-bedrock-1"
+	DefaultFluentdImageTag        = "v1.6.2-bedrock-2"
 	FluentdEnvVar                 = "FLUENTD_TAG_OR_SHA"
 	OperatorNamespaceKey          = "POD_NAMESPACE"
 	DefaultJobImageName           = "audit-garbage-collector"
