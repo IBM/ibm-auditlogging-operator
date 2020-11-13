@@ -252,7 +252,7 @@ build-image-amd64: ## Build amd64 operator image
 	--build-arg GOARCH=amd64 -f Dockerfile .
 
 build-image-ppc64le: ## Build ppcle64 operator image
-	@docker run --rm --privileged multiarch/qemu-user-static:register --reset \
+	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) \
 	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
 	--build-arg GOARCH=ppc64le -f Dockerfile.ppc64le .
