@@ -14,6 +14,8 @@ Red Hat OpenShift Container Platform 4.3 or newer installed on one of the follow
 
 ## Operator versions
 
+- 3.8.2
+- 3.8.1
 - 3.8.0
 - 3.7.1
 - 3.7.0
@@ -159,10 +161,10 @@ As a developer, if you want to build and test this operator to try out and learn
 
 #### Run the operator
 
-- `make install`
+- `make install-all`
 - `make run`
 - Run tests on the cluster.
-- `make uninstall`
+- `make uninstall-all`
 
 #### Test Framework
 
