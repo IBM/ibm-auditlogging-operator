@@ -248,20 +248,17 @@ build-bundle-image: ## Build operator bundle image
 
 build-image-amd64: ## Build amd64 operator image
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION) \
-	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
-	--build-arg GOARCH=amd64 -f Dockerfile .
+	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) -f Dockerfile .
 
 build-image-ppc64le: ## Build ppcle64 operator image
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-ppc64le:$(VERSION) \
-	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
-	--build-arg GOARCH=ppc64le -f Dockerfile.ppc64le .
+	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) -f Dockerfile.ppc64le .
 
 build-image-s390x: ## Build s390x operator image
 	@docker run --rm --privileged multiarch/qemu-user-static:register --reset
 	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-s390x:$(VERSION) \
-	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) \
-	--build-arg GOARCH=s390x -f Dockerfile.s390x .
+	--build-arg VCS_REF=$(VCS_REF) --build-arg VCS_URL=$(VCS_URL) -f Dockerfile.s390x .
 
 push-image-amd64: $(CONFIG_DOCKER_TARGET) build-image-amd64 ## Push amd64 operator image
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME)-amd64:$(VERSION)
