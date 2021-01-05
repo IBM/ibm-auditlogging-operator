@@ -22,7 +22,7 @@ RUN chmod +x /qemu-ppc64le-static
 
 # Build the manager binary
 FROM golang:1.14.7 as builder
-ARG GOARCH
+ARG GOARCH=ppc64le
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -44,7 +44,7 @@ RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o manager main.go
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 # FROM gcr.io/distroless/static:nonroot
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3-230
+FROM registry.access.redhat.com/ubi8/ubi-minimal@sha256:f5b185532ece6cc482c8424280e2cdccb1b95b735e464ea7aef29dd13c768937
 
 ARG VCS_REF
 ARG VCS_URL
