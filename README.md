@@ -160,12 +160,18 @@ As a developer, if you want to build and test this operator to try out and learn
 
 - [Install linters](https://github.com/IBM/go-repo-template/blob/master/docs/development.md)
 
-#### Run the operator
+#### Run the operator on a cluster
 
 - `make install-all`
-- `make run`
-- Run tests on the cluster.
+- Run bats tests on the cluster
 - `make uninstall-all`
+
+#### Run the operator on your local machine
+
+- `make install`
+- `make run`
+- Manually test (no operator deployment in this mode)
+- `make uninstall`
 
 #### Test Framework
 
@@ -193,6 +199,49 @@ Run these commands to collect logs:
 1. `kubectl logs <ibm-auditlogging-operator-pod> -c ibm-auditlogging-operator -n ibm-common-services`
 1. `kubectl logs <ibm-auditlogging-operator-pod> -c audit-policy-controller -n ibm-common-services`
 1. `kubectl logs -n ibm-common-services <audit-logging-fluentd-pods>`
+
+#### Debugging through an IDE
+
+- The following debugging configuration is for [Vscode](https://code.visualstudio.com/download).
+- Delve is a debug tool for golang. Delve `version 1.3` or higher is required for the operator. It can be downloaded [here](https://github.com/go-delve/delve/tree/master/Documentation/installation) or using: `go get -u github.com/go-delve/delve/cmd/dlv`.
+- You will need a launch json for Vscode to interact with this headless mode of delve:
+
+  ```json
+    {
+      "version": "0.2.0",
+      "configurations": [
+        {
+          "name": "IBM AuditLogging Operator",
+          "type": "go",
+          "request": "launch",
+          "mode": "auto",
+          "program": "${workspaceFolder}/main.go",
+          "env": {
+            "WATCH_NAMESPACE": "ibm-common-services"
+          },
+          "args": []
+        },
+        {
+            "name": "CommonAudit Ctrl Unit Tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}/controllers/commonaudit_controller_test.go",
+            "env": {},
+            "args": [
+                "-test.v",
+                "-test.run",
+                "TestCommonAuditController"
+            ],
+            "showLog": true
+        }
+      ]
+    }
+  ```
+
+- To start debugging:
+  1. Deploy CRDs and CR.
+  1. Start the Vscode debugger. Open the Debug console and you will see the standard output similar to the `make run` command. Your debugger will stop on your set breakpoints.
 
 #### End-to-End testing
 
