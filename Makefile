@@ -64,9 +64,9 @@ OPERATOR_VERSION ?= $(VERSION)
 CSV_VERSION ?= $(OPERATOR_VERSION)
 
 # The namespce that operator and auditlogging will be deployed in
-NAMESPACE= ibm-common-services
+NAMESPACE ?= ibm-common-services
 # The namespce that commonaudit will be deployed in
-CA_NAMESPACE = test
+CA_NAMESPACE ?= test
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_NAME):latest
