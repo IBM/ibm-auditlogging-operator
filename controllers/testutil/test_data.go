@@ -257,11 +257,10 @@ func CommonAuditObj(name, namespace string) *operatorv1.CommonAudit {
 	}
 }
 
-func AuditLoggingObj(name, namespace string) *operatorv1alpha1.AuditLogging {
+func AuditLoggingObj(name string) *operatorv1alpha1.AuditLogging {
 	return &operatorv1alpha1.AuditLogging{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name: name,
 		},
 		Spec: operatorv1alpha1.AuditLoggingSpec{},
 	}
