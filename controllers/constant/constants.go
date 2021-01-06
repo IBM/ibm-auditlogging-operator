@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,19 +24,17 @@ const (
 	ProductName                   = "IBM Cloud Platform Common Services"
 	ProductID                     = "068a62892a1e4db39641342e592daa25"
 	ProductMetric                 = "FREE"
-	InstanceNamespace             = "ibm-common-services"
 	FluentdName                   = "fluentd"
 	DefaultImageRegistry          = "quay.io/opencloudio/"
-	TestImageRegistry             = "quay.io/hbradfield/"
 	DefaultFluentdImageName       = "fluentd"
-	DefaultFluentdImageTag        = "v1.6.2-bedrock-2"
+	DefaultFluentdImageTag        = "v1.6.2-bedrock-3"
 	FluentdEnvVar                 = "FLUENTD_TAG_OR_SHA"
 	OperatorNamespaceKey          = "POD_NAMESPACE"
 	DefaultJobImageName           = "audit-garbage-collector"
-	DefaultJobImageTag            = "1.0.0"
+	DefaultJobImageTag            = "1.0.1"
 	JobEnvVar                     = "JOB_TAG_OR_SHA"
 	PolicyControllerEnvVar        = "POLICY_CTRL_TAG_OR_SHA"
-	DefaultPCImageTag             = "3.5.3"
+	DefaultPCImageTag             = "3.5.4"
 	AuditTypeLabel                = "operator.ibm.com/managedBy-audit"
 	DefaultEnablePolicyController = "true"
 )

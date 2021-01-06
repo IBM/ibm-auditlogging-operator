@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,10 @@ import (
 )
 
 var _ = Describe("Utils", func() {
-	const testString = "test"
+	const (
+		testNamespace = "test-ns"
+		testString    = "test"
+	)
 	Context("Equal Labels", func() {
 		It("Should report whether found labels are equal to expected labels", func() {
 			foundLabels := map[string]string{
@@ -83,14 +86,14 @@ var _ = Describe("Utils", func() {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      pod1Name,
-						Namespace: constant.InstanceNamespace,
+						Namespace: testNamespace,
 					},
 					Spec: corev1.PodSpec{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      pod2Name,
-						Namespace: constant.InstanceNamespace,
+						Namespace: testNamespace,
 					},
 					Spec: corev1.PodSpec{},
 				},
@@ -158,6 +161,14 @@ var _ = Describe("Utils", func() {
 			}
 			result := AnnotationsForMetering(journalAccess)
 			Expect(result).Should(Equal(expectedResult))
+		})
+	})
+	Context("Get CS Namespace", func() {
+		It("Should return the namespace the operator is running in", func() {
+			Expect(os.Setenv(constant.OperatorNamespaceKey, testNamespace)).Should(Succeed())
+			result, err := GetCSNamespace()
+			Expect(result).Should(Equal(testNamespace))
+			Expect(err).Should(BeNil())
 		})
 	})
 })

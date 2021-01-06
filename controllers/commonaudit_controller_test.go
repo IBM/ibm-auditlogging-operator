@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -48,7 +49,6 @@ import (
 
 var _ = Describe("CommonAudit controller", func() {
 	const requestName = "example-commonaudit"
-	const namespace = "test"
 	var (
 		ctx              context.Context
 		requestNamespace string
@@ -61,6 +61,7 @@ var _ = Describe("CommonAudit controller", func() {
 		requestNamespace = createNSName(namespace)
 		By("Creating the Namespace")
 		Expect(k8sClient.Create(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
+		Expect(os.Setenv(constant.OperatorNamespaceKey, requestNamespace)).Should(Succeed())
 
 		commonAudit = testdata.CommonAuditObj(requestName, requestNamespace)
 		namespacedName = types.NamespacedName{Name: requestName, Namespace: requestNamespace}

@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ const (
 	useExistingCluster = "USE_EXISTING_CLUSTER"
 	timeout            = time.Second * 300
 	interval           = time.Second * 5
+	namespace          = "test"
 )
 
 var (

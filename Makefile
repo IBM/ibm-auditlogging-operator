@@ -1,4 +1,4 @@
-# Copyright 2020 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ OPERATOR_VERSION ?= $(VERSION)
 CSV_VERSION ?= $(OPERATOR_VERSION)
 
 # The namespce that operator and auditlogging will be deployed in
-NAMESPACE=ibm-common-services
+NAMESPACE= ibm-common-services
 # The namespce that commonaudit will be deployed in
 CA_NAMESPACE = test
 
@@ -142,7 +142,7 @@ manager: generate code-fmt code-vet ## Generate code e.g. API etc and build mana
 	go build -o bin/manager main.go
 
 run: generate code-fmt code-vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	WATCH_NAMESPACE="ibm-common-services" go run ./main.go
+	WATCH_NAMESPACE=${NAMESPACE} POD_NAMESPACE=${NAMESPACE} go run ./main.go
 
 install: manifests  ## Install CRDs into a cluster
 	kustomize build config/crd | kubectl apply -f -
@@ -152,7 +152,17 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 
 install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Creating namespace .......
+	- kubectl create namespace ${NAMESPACE}
 	- kubectl create namespace ${CA_NAMESPACE}
+	@echo ....... Creating OperatorGroup .......
+	- cp common/util/operator_group.yaml og.yaml
+	- yq w -i og.yaml spec.targetNamespaces[+] ${NAMESPACE}
+	- oc create -f og.yaml -n ${NAMESPACE}
+	# Create namespace-scope if namespace-scope-operator is not installed
+# 	@echo ....... Creating NamespaceScope ConfigMap .......
+# 	- cp common/util/namespace_scope.yaml ns.yaml
+# 	- yq w -i ns.yaml data.namespaces ${NAMESPACE}
+# 	- oc create -f ns.yaml -n ${NAMESPACE}
 	@echo ....... Applying manifests .......
 	- kubectl create sa ibm-auditlogging-operator -n ${NAMESPACE}
 	- kubectl create sa ibm-audit-policy-controller -n ${NAMESPACE}
@@ -168,7 +178,8 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 
 uninstall-all: ## Uninstall all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Deleting namespace .......
-	- kubectl delete namespace ${CA_NAMESPACE}
+# 	- kubectl delete namespace ${NAMESPACE}
+# 	- kubectl delete namespace ${CA_NAMESPACE}
 	@echo ....... Deleting the Instances .......
 	- kubectl delete --all commonaudit --all-namespaces
 	- kubectl delete --all auditpolicy --all-namespaces
@@ -181,6 +192,9 @@ uninstall-all: ## Uninstall all resources (CR/CRD's, RBCA and Operator)
 	- kubectl delete -f config/rbac/leader_election_role.yaml
 	- kubectl delete -f config/rbac/leader_election_role_binding.yaml
 	- for manifest in $(shell ls bundle/manifests/*.yaml); do kubectl delete -f $${manifest} -n ${NAMESPACE}; done
+	@echo ....... Deleting OperatorGroup .......
+	- oc delete -f og.yaml -n ${NAMESPACE}
+	- rm og.yaml
 
 deploy: manifests ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	cd config/manager && kustomize edit set image controller=$(IMAGE_REPO)/$(IMAGE_NAME):$(VERSION)
