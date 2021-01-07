@@ -58,7 +58,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: FLUENTD_IMAGE
-            value: quay.io/opencloudio/fluentd@sha256:v1.6.2-bedrock-3
+            value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-3
           - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
             value: quay.io/opencloudio/audit-garbage-collector:1.0.1
           - name: AUDIT_POLICY_CONTROLLER_IMAGE
