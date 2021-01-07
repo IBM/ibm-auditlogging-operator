@@ -305,7 +305,7 @@ spec:
                 - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
                   value: quay.io/opencloudio/audit-garbage-collector:1.0.1
                 - name: AUDIT_POLICY_CONTROLLER_IMAGE
-                  value: quay.io/opencloudio/audit-policy-controller:3.4.5
+                  value: quay.io/opencloudio/audit-policy-controller:3.5.4
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
