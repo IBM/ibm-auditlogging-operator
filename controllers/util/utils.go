@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package util
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -28,7 +29,7 @@ import (
 )
 
 var DefaultStatusForCR = []string{"none"}
-var log = logf.Log.WithName("controller_auditlogging")
+var log = logf.Log.WithName("controller_utils")
 
 func EqualLabels(found map[string]string, expected map[string]string) bool {
 	logger := log.WithValues("func", "EqualLabels")
@@ -158,12 +159,12 @@ func AnnotationsForMetering(journalAccess bool) map[string]string {
 	return annotations
 }
 
-// GetCSNamespace returns the Namespace common services are in
-func GetCSNamespace() string {
-	csNamespace := os.Getenv(constant.OperatorNamespaceKey)
-	// If running locally or installMode is All-Namespaces use "ibm-common-services"
-	if csNamespace == "" || csNamespace == "openshift-operators" {
-		csNamespace = constant.InstanceNamespace
+// GetCSNamespace returns the Namespace the operator is running in
+func GetCSNamespace() (string, error) {
+	var err error
+	csNamespace, set := os.LookupEnv(constant.OperatorNamespaceKey)
+	if !set {
+		err = errors.New("missing ENV variable: " + constant.OperatorNamespaceKey)
 	}
-	return csNamespace
+	return csNamespace, err
 }

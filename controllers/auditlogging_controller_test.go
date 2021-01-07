@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 
 	batchv1 "k8s.io/api/batch/v1"
 
@@ -56,9 +57,10 @@ var _ = Describe("AuditLogging controller", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		requestNamespace = constant.InstanceNamespace
+		requestNamespace = createNSName(namespace)
 		By("Creating the Namespace")
 		Expect(k8sClient.Create(ctx, testdata.NamespaceObj(requestNamespace))).Should(Succeed())
+		Expect(os.Setenv(constant.OperatorNamespaceKey, requestNamespace)).Should(Succeed())
 
 		auditLogging = testdata.AuditLoggingObj(requestName)
 		// AuditLogging is cluster scoped and does not have a namespace

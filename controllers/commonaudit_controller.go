@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,7 +81,10 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		}
 	}
 
-	csNamespace := util.GetCSNamespace()
+	csNamespace, err := util.GetCSNamespace()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	auditLoggingList := &operatorv1alpha1.AuditLoggingList{}
 	if err := r.Client.List(context.TODO(), auditLoggingList); err == nil &&

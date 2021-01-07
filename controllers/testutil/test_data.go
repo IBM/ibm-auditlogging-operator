@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -260,8 +260,7 @@ func CommonAuditObj(name, namespace string) *operatorv1.CommonAudit {
 func AuditLoggingObj(name string) *operatorv1alpha1.AuditLogging {
 	return &operatorv1alpha1.AuditLogging{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: constant.InstanceNamespace,
+			Name: name,
 		},
 		Spec: operatorv1alpha1.AuditLoggingSpec{},
 	}

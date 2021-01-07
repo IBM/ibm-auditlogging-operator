@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -199,7 +199,10 @@ func (c filteredCache) getFromClient(ctx context.Context, key client.ObjectKey, 
 	}
 	ns := key.Namespace
 	if ns == "" {
-		ns = utils.GetCSNamespace()
+		ns, err = utils.GetCSNamespace()
+		if err != nil {
+			return err
+		}
 	}
 	result, err := cli.
 		Get().

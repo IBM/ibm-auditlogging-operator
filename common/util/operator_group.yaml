@@ -1,0 +1,6 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: ibm-auditlogging-operator-group
+spec:
+  targetNamespaces:
