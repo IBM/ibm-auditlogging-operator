@@ -47,6 +47,7 @@ spec:
               description: CommonAuditSpecFluentd defines the desired state of Fluentd
               properties:
                 imageRegistry:
+                  description: ImageRegistry deprecated, define image in operator.yaml
                   type: string
                 pullPolicy:
                   type: string

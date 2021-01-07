@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 					Affinity: &corev1.Affinity{
 						NodeAffinity: commonNodeAffinity,
 					},
-					Containers: buildJobContainer(namespace, instance.Spec.Fluentd.ImageRegistry),
+					Containers: buildJobContainer(namespace),
 				},
 			},
 		},
@@ -62,11 +62,16 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 	return job
 }
 
-func buildJobContainer(namespace string, imageRegistry string) []corev1.Container {
+func buildJobContainer(namespace string) []corev1.Container {
+	img, set := utils.GetImage(constant.JobEnvVar)
+	if img == "" || !set {
+		img = constant.DefaultImageRegistry + constant.DefaultJobImageName + ":" + constant.DefaultJobImageTag
+		log.Info("Missing ENV variable: " + constant.JobEnvVar + ". Using default image: " + img)
+	}
 	return []corev1.Container{
 		{
 			Name:            JobName,
-			Image:           utils.GetImageID(imageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
+			Image:           img,
 			ImagePullPolicy: corev1.PullAlways,
 			SecurityContext: &restrictedSecurityContext,
 			Resources: corev1.ResourceRequirements{

@@ -38,6 +38,7 @@ type CommonAuditSpec struct {
 
 // CommonAuditSpecFluentd defines the desired state of Fluentd
 type CommonAuditSpecFluentd struct {
+	// ImageRegistry deprecated, define image in operator.yaml
 	ImageRegistry string                      `json:"imageRegistry,omitempty"`
 	PullPolicy    string                      `json:"pullPolicy,omitempty"`
 	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`

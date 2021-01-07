@@ -20,7 +20,6 @@ import (
 	"errors"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 
@@ -49,45 +48,9 @@ func EqualAnnotations(found map[string]string, expected map[string]string) bool 
 	return true
 }
 
-func GetImageID(imageRegistry, imageName, envVarName string) string {
-	// determine if the image registry has been overridden by the CR
-	var imageReg = constant.DefaultImageRegistry
-	var imageID string
-	if imageRegistry != "" {
-		if string(imageRegistry[len(imageRegistry)-1]) != "/" {
-			imageRegistry += "/"
-		}
-		imageReg = imageRegistry
-	}
-	// determine if an image SHA or tag has been set in an env var.
-	// if not, use the default tag (mainly used during development).
-	imageTagOrSHA := os.Getenv(envVarName)
-	if len(imageTagOrSHA) > 0 {
-		// use the value from the env var to build the image ID.
-		// a SHA value looks like "sha256:nnnn".
-		// a tag value looks like "3.5.0".
-		if strings.HasPrefix(imageTagOrSHA, "sha256:") {
-			// use the SHA value
-			imageID = imageReg + imageName + "@" + imageTagOrSHA
-		} else {
-			// use the tag value
-			imageID = imageReg + imageName + ":" + imageTagOrSHA
-		}
-	} else {
-		var tag string
-		if imageName == constant.DefaultFluentdImageName {
-			tag = constant.DefaultFluentdImageTag
-		} else if imageName == constant.DefaultJobImageName {
-			tag = constant.DefaultJobImageTag
-		} else if imageName == constant.DefaultPCImageName {
-			tag = constant.DefaultPCImageTag
-		} else {
-			tag = "latest"
-		}
-		// use the default tag to build the image ID
-		imageID = imageReg + imageName + ":" + tag
-	}
-	return imageID
+func GetImage(envVarName string) (string, bool) {
+	img, set := os.LookupEnv(envVarName)
+	return img, set
 }
 
 // GetPodNames returns the pod names of the array of pods passed in

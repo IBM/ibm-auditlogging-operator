@@ -170,7 +170,6 @@ var _ = Describe("CommonAudit controller", func() {
 			ca.Spec.Replicas = testdata.Replicas
 
 			// Fluentd
-			ca.Spec.Fluentd.ImageRegistry = testdata.ImageRegistry
 			ca.Spec.Fluentd.PullPolicy = testdata.PullPolicy
 			ca.Spec.Fluentd.Resources = testdata.Resources
 
@@ -263,7 +262,6 @@ var _ = Describe("CommonAudit controller", func() {
 				return reflect.DeepEqual(deploy.Spec.Template.Spec.HostAliases, testdata.HostAliases) &&
 					reflect.DeepEqual(deploy.Spec.Replicas, &testdata.Replicas) &&
 					reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy, corev1.PullPolicy(testdata.PullPolicy)) &&
-					strings.Contains(deploy.Spec.Template.Spec.Containers[0].Image, testdata.ImageRegistry) &&
 					reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].Resources, testdata.Resources)
 			}, timeout, interval).Should(BeTrue())
 
