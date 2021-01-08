@@ -58,7 +58,7 @@ var commonNodeAffinity = &corev1.NodeAffinity{
 			{
 				MatchExpressions: []corev1.NodeSelectorRequirement{
 					{
-						Key:      "beta.kubernetes.io/arch",
+						Key:      "kubernetes.io/arch",
 						Operator: corev1.NodeSelectorOpIn,
 						Values:   architectureList,
 					},
