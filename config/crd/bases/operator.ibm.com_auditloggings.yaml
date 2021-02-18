@@ -45,10 +45,10 @@ spec:
                 enabled:
                   type: boolean
                 imageRegistry:
+                  description: ImageRegistry deprecated, define image in operator.yaml
                   type: string
                 imageTag:
-                  description: ImageTag no longer supported. Define image sha or tag
-                    in operator.yaml
+                  description: ImageTag deprecated, define image in operator.yaml
                   type: string
                 issuer:
                   type: string
@@ -93,8 +93,10 @@ spec:
                 frequency:
                   type: string
                 imageRegistry:
+                  description: ImageRegistry deprecated, define image in operator.yaml
                   type: string
                 imageTag:
+                  description: ImageTag deprecated, define image in operator.yaml
                   type: string
                 pullPolicy:
                   type: string

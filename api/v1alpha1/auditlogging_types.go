@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,9 +34,10 @@ type AuditLoggingSpec struct {
 
 // AuditLoggingSpecFluentd defines the desired state of Fluentd
 type AuditLoggingSpecFluentd struct {
-	EnableAuditLoggingForwarding bool   `json:"enabled,omitempty"`
-	ImageRegistry                string `json:"imageRegistry,omitempty"`
-	// ImageTag no longer supported. Define image sha or tag in operator.yaml
+	EnableAuditLoggingForwarding bool `json:"enabled,omitempty"`
+	// ImageRegistry deprecated, define image in operator.yaml
+	ImageRegistry string `json:"imageRegistry,omitempty"`
+	// ImageTag deprecated, define image in operator.yaml
 	ImageTag    string `json:"imageTag,omitempty"`
 	PullPolicy  string `json:"pullPolicy,omitempty"`
 	JournalPath string `json:"journalPath,omitempty"`
@@ -50,11 +51,13 @@ type AuditLoggingSpecFluentd struct {
 type AuditLoggingSpecPolicyController struct {
 	// +kubebuilder:validation:Pattern=^(true|false)?$
 	EnableAuditPolicy string `json:"enabled,omitempty"`
-	ImageRegistry     string `json:"imageRegistry,omitempty"`
-	ImageTag          string `json:"imageTag,omitempty"`
-	PullPolicy        string `json:"pullPolicy,omitempty"`
-	Verbosity         string `json:"verbosity,omitempty"`
-	Frequency         string `json:"frequency,omitempty"`
+	// ImageRegistry deprecated, define image in operator.yaml
+	ImageRegistry string `json:"imageRegistry,omitempty"`
+	// ImageTag deprecated, define image in operator.yaml
+	ImageTag   string `json:"imageTag,omitempty"`
+	PullPolicy string `json:"pullPolicy,omitempty"`
+	Verbosity  string `json:"verbosity,omitempty"`
+	Frequency  string `json:"frequency,omitempty"`
 }
 
 // StatusVersion defines the Operator versions

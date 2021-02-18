@@ -1,5 +1,5 @@
 //
-// Copyright 2020 IBM Corporation
+// Copyright 2021 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,8 +75,12 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging,
 	selectorLabels := util.LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
 	podLabels := util.LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := util.AnnotationsForMetering(false)
-	policyControllerMainContainer.Image = util.GetImageID(instance.Spec.PolicyController.ImageRegistry,
-		constant.DefaultPCImageName, constant.PolicyControllerEnvVar)
+	img, set := util.GetImage(constant.PolicyControllerEnvVar)
+	if img == "" || !set {
+		img = constant.DefaultImageRegistry + constant.DefaultPCImageName + ":" + constant.DefaultPCImageTag
+		log.Info("Missing ENV variable: " + constant.PolicyControllerEnvVar + ". Using default image: " + img)
+	}
+	policyControllerMainContainer.Image = img
 	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
 
 	var args = make([]string, 0)
@@ -141,7 +145,12 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
-	fluentdMainContainer.Image = util.GetImageID(instance.Spec.Fluentd.ImageRegistry, constant.DefaultFluentdImageName, constant.FluentdEnvVar)
+	img, set := util.GetImage(constant.FluentdEnvVar)
+	if img == "" || !set {
+		img = constant.DefaultImageRegistry + constant.DefaultFluentdImageName + ":" + constant.DefaultFluentdImageTag
+		log.Info("Missing ENV variable: " + constant.FluentdEnvVar + ". Using default image: " + img)
+	}
+	fluentdMainContainer.Image = img
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
 	fluentdMainContainer.SecurityContext = &restrictedSecurityContext
@@ -355,8 +364,14 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace st
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
 	annotations := util.AnnotationsForMetering(true)
 	commonVolumes = buildDaemonsetVolumes(instance)
+
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
-	fluentdMainContainer.Image = util.GetImageID(instance.Spec.Fluentd.ImageRegistry, constant.DefaultFluentdImageName, constant.FluentdEnvVar)
+	img, set := util.GetImage(constant.FluentdEnvVar)
+	if img == "" || !set {
+		img = constant.DefaultImageRegistry + constant.DefaultFluentdImageName + ":" + constant.DefaultFluentdImageTag
+		log.Info("Missing ENV variable: " + constant.FluentdEnvVar + ". Using default image: " + img)
+	}
+	fluentdMainContainer.Image = img
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as privileged
 	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext

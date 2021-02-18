@@ -146,9 +146,17 @@ run: generate code-fmt code-vet manifests ## Run against the configured Kubernet
 
 install: manifests  ## Install CRDs into a cluster
 	kustomize build config/crd | kubectl apply -f -
+	- oc create sa ibm-auditlogging-cleanup
+	- oc create sa ibm-audit-policy-controller
+	- oc create -f config/rbac/role.yaml
+	- oc create -f config/rbac/role_binding.yaml
 
 uninstall: manifests ## Uninstall CRDs from a cluster
 	kustomize build config/crd | kubectl delete -f -
+	- oc delete sa ibm-auditlogging-cleanup
+	- oc delete sa ibm-audit-policy-controller
+	- oc delete -f config/rbac/role.yaml
+	- oc delete -f config/rbac/role_binding.yaml
 
 install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Creating namespace .......

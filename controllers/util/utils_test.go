@@ -19,6 +19,8 @@ package util
 import (
 	"os"
 
+	testdata "github.com/IBM/ibm-auditlogging-operator/controllers/testutil"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -58,24 +60,23 @@ var _ = Describe("Utils", func() {
 			Expect(result).Should(BeTrue())
 		})
 	})
-	Context("Get Image ID", func() {
-		It("Should return concatenated image with proper tag or SHA", func() {
-			imageRegistry := "quay.io/test"
+	Context("Get Image", func() {
+		It("Should get image from operator ENV variable", func() {
 			imageName := "test-image"
 			envVarName := "TEST_IMG_SHA"
 			testSHA := "sha256:a1a1a1a15d44814ccabb21545673e9424b1c34449e8936182d8c1f416297b9a7"
-			expectedResult := imageRegistry + "/" + imageName + "@" + testSHA
-			err := os.Setenv(envVarName, testSHA)
+			expectedResult := testdata.ImageRegistry + "/" + imageName + "@" + testSHA
+			err := os.Setenv(envVarName, expectedResult)
 			Expect(err).ToNot(HaveOccurred())
 
-			result := GetImageID(imageRegistry, imageName, envVarName)
+			result, set := GetImage(envVarName)
 			Expect(result).Should(Equal(expectedResult))
+			Expect(set).Should(BeTrue())
 
-			imageName = "fluentd"
 			envVarName = "NONE"
-			expectedResult = imageRegistry + "/" + imageName + ":" + constant.DefaultFluentdImageTag
-			result = GetImageID(imageRegistry, imageName, envVarName)
-			Expect(result).Should(Equal(expectedResult))
+			result, set = GetImage(envVarName)
+			Expect(result).Should(BeEmpty())
+			Expect(set).Should(BeFalse())
 		})
 	})
 	Context("Get Pod Names", func() {
