@@ -58,11 +58,11 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: FLUENTD_TAG_OR_SHA
-            value: sha256:c064c361b818ebad1bcb8d72238888de1d1f38dc8982f2b758b491e4ae579f01
+            value: sha256:bf2940b2e7ab7c68c880185c7bc66775ac1e44d93bf24a83cb38b6413a1337de
           - name: JOB_TAG_OR_SHA
-            value: sha256:b55ab25e6bc1b0c52d5217202cf878d59203f8b5d457b232030377115b508219
+            value: sha256:f8d6b9fa47aaf904e034402e12fa9f06fdfc391974fdb3c1e28d2cc1a6a876b3
           - name: POLICY_CTRL_TAG_OR_SHA
-            value: sha256:588ab891b15622731dcf552b2df71f6a6ff620117cd077b2ab816c2b38db1887
+            value: sha256:c00a648d229eadfaffaa4361652af63d749c8d80e62249f9520d75716ab0c452
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
