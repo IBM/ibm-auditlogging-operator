@@ -253,11 +253,15 @@ func (r *AuditLoggingReconciler) reconcileFluentdDaemonSet(instance *operatorv1a
 		return reconcile.Result{}, err
 	} else if !res.EqualDaemonSets(expected, found) {
 		// If spec is incorrect, update it and requeue
-		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
 		// Keep hostAliases
 		temp := found.Spec.Template.Spec.HostAliases
+		// Keep Pod Labels
+		tempPodLabels := found.Spec.Template.ObjectMeta.Labels
+
+		// Set expected except for Host Aliases and Pod Labels
 		found.Spec = expected.Spec
 		found.Spec.Template.Spec.HostAliases = temp
+		found.Spec.Template.ObjectMeta.Labels = tempPodLabels
 		err = r.Client.Update(context.TODO(), found)
 		if err != nil {
 			r.Log.Error(err, "Failed to update Daemonset", "Namespace", namespace, "Name", found.Name)
@@ -327,8 +331,10 @@ func (r *AuditLoggingReconciler) reconcilePolicyControllerDeployment(instance *o
 			return reconcile.Result{}, err
 		} else if !res.EqualDeployments(expected, found, true) {
 			// If spec is incorrect, update it and requeue
-			found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+			// Keep label updates
+			tempPodLabels := found.Spec.Template.ObjectMeta.Labels
 			found.Spec = expected.Spec
+			found.Spec.Template.ObjectMeta.Labels = tempPodLabels
 			err = r.Client.Update(context.TODO(), found)
 			if err != nil {
 				r.Log.Error(err, "Failed to update Deployment", "Namespace", found.Namespace, "Name", found.Name)
