@@ -261,8 +261,10 @@ func (r *CommonAuditReconciler) reconcileFluentdDeployment(instance *operatorv1.
 		return reconcile.Result{}, err
 	} else if !res.EqualDeployments(expected, found, false) {
 		// If spec is incorrect, update it and requeue
-		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
+		// Keep label changes
+		tempPodLabels := found.Spec.Template.ObjectMeta.Labels
 		found.Spec = expected.Spec
+		found.Spec.Template.ObjectMeta.Labels = tempPodLabels
 		err = r.Client.Update(context.TODO(), found)
 		if err != nil {
 			r.Log.Error(err, "Failed to update Deployment", "Namespace", instance.Namespace, "Name", found.Name)
