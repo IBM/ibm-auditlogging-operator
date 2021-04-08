@@ -303,11 +303,11 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_TAG_OR_SHA
-                  value: sha256:c064c361b818ebad1bcb8d72238888de1d1f38dc8982f2b758b491e4ae579f01
+                  value: sha256:6295dcf81f28db8615be8599f95dbabd431939c4813b69a2998814b209b7e988
                 - name: JOB_TAG_OR_SHA
-                  value: sha256:b55ab25e6bc1b0c52d5217202cf878d59203f8b5d457b232030377115b508219
+                  value: sha256:030c97accc7525f5064632e7f824661ec7be782a42f683e2d025c0a0d91bbb1a
                 - name: POLICY_CTRL_TAG_OR_SHA
-                  value: sha256:588ab891b15622731dcf552b2df71f6a6ff620117cd077b2ab816c2b38db1887
+                  value: sha256:3d920dbf95f9e14b95eecc72ce983165e19faf9b887d82386b94b11111df0b00
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
