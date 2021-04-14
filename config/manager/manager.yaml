@@ -60,9 +60,9 @@ spec:
           - name: FLUENTD_TAG_OR_SHA
             value: sha256:0ee14a11bafa4ae62d85b468195e7c9780c53cb645d49900a692cbf8332f667f
           - name: JOB_TAG_OR_SHA
-            value: sha256:9bed51714d2e33ebb2fb42fda7513f262bf66d7ee2596b4270909f0a2d1accd5
-          - name: POLICY_CTRL_TAG_OR_SHA
             value: sha256:14824b628680d73b24afcdd1950018a6367cdf6d5ee838ce85a54dd7803eafb0
+          - name: POLICY_CTRL_TAG_OR_SHA
+            value: sha256:9bed51714d2e33ebb2fb42fda7513f262bf66d7ee2596b4270909f0a2d1accd5
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
