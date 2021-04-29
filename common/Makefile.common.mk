@@ -82,7 +82,7 @@ else
 	@${FINDFILES} -name '*.md' -print0 | ${XARGS} awesome_bot --skip-save-results --allow_ssl --allow-timeout --allow-dupe --allow-redirect
 endif
 
-lint-all: lint-dockerfiles lint-helm lint-copyright-banner lint-go lint-python lint-markdown
+lint-all: lint-dockerfiles lint-helm lint-copyright-banner lint-go lint-python
 
 format-go:
 	@${FINDFILES} -name '*.go' \( ! \( -name '*.gen.go' -o -name '*.pb.go' \) \) -print0 | ${XARGS} goimports -w -local "github.com/IBM"

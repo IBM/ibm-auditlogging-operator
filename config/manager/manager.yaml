@@ -57,12 +57,12 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: FLUENTD_TAG_OR_SHA
-            value: sha256:bf2940b2e7ab7c68c880185c7bc66775ac1e44d93bf24a83cb38b6413a1337de
-          - name: JOB_TAG_OR_SHA
-            value: sha256:f8d6b9fa47aaf904e034402e12fa9f06fdfc391974fdb3c1e28d2cc1a6a876b3
-          - name: POLICY_CTRL_TAG_OR_SHA
-            value: sha256:c00a648d229eadfaffaa4361652af63d749c8d80e62249f9520d75716ab0c452
+          - name: FLUENTD_IMAGE
+            value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-4
+          - name: AUDIT-GARBAGE-COLLECTOR_IMAGE
+            value: quay.io/opencloudio/audit-garbage-collector:1.0.2
+          - name: AUDIT-POLICY-CONTROLLER_IMAGE
+            value: quay.io/opencloudio/audit-policy-controller:3.5.5
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
