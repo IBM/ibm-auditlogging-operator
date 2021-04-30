@@ -66,7 +66,7 @@ func buildJobContainer(namespace string, imageRegistry string) []corev1.Containe
 	return []corev1.Container{
 		{
 			Name:            JobName,
-			Image:           utils.GetImageID(imageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
+			Image:           os.Getenv(AUDIT-GARBAGE-COLLECTOR_IMAGE),
 			ImagePullPolicy: corev1.PullAlways,
 			SecurityContext: &restrictedSecurityContext,
 			Resources: corev1.ResourceRequirements{
