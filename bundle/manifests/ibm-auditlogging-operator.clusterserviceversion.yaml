@@ -303,11 +303,11 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_IMAGE
-                value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-4
-                - name: AUDIT-GARBAGE-COLLECTOR_IMAGE
-                value: quay.io/opencloudio/audit-garbage-collector:1.0.2
-                - name: AUDIT-POLICY-CONTROLLER_IMAGE
-                value: quay.io/opencloudio/audit-policy-controller:3.5.5
+                  value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-4
+                - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
+                  value: quay.io/opencloudio/audit-garbage-collector:1.0.2
+                - name: AUDIT_POLICY_CONTROLLER_IMAGE
+                  value: quay.io/opencloudio/audit-policy-controller:3.5.5
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:

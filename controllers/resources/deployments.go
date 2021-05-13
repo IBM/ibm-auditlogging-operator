@@ -17,8 +17,8 @@
 package resources
 
 import (
-	"os"
 	"net"
+	"os"
 	"reflect"
 
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
@@ -76,7 +76,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging,
 	selectorLabels := util.LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
 	podLabels := util.LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
 	annotations := util.AnnotationsForMetering(false)
-	policyControllerMainContainer.Image = os.Getenv(AUDIT-POLICY-CONTROLLER_IMAGE)
+	policyControllerMainContainer.Image = os.Getenv("AUDIT_POLICY_CONTROLLER_IMAGE")
 	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
 
 	var args = make([]string, 0)
@@ -141,7 +141,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
-	fluentdMainContainer.Image = os.Getenv(FLUENTD_IMAGE)
+	fluentdMainContainer.Image = os.Getenv("FLUENTD_IMAGE")
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
 	fluentdMainContainer.SecurityContext = &restrictedSecurityContext
@@ -356,7 +356,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace st
 	annotations := util.AnnotationsForMetering(true)
 	commonVolumes = buildDaemonsetVolumes(instance)
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
-	fluentdMainContainer.Image = os.Getenv(FLUENTD_IMAGE)
+	fluentdMainContainer.Image = os.Getenv("FLUENTD_IMAGE")
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as privileged
 	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
