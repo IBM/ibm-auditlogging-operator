@@ -21,9 +21,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
-	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
 )
 
@@ -54,7 +54,7 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 					Affinity: &corev1.Affinity{
 						NodeAffinity: commonNodeAffinity,
 					},
-					Containers: buildJobContainer(namespace, instance.Spec.Fluentd.ImageRegistry),
+					Containers: buildJobContainer(namespace),
 				},
 			},
 		},
@@ -62,11 +62,11 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 	return job
 }
 
-func buildJobContainer(namespace string, imageRegistry string) []corev1.Container {
+func buildJobContainer(namespace string) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            JobName,
-			Image:           utils.GetImageID(imageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
+			Image:           os.Getenv("AUDIT_GARBAGE_COLLECTOR_IMAGE"),
 			ImagePullPolicy: corev1.PullAlways,
 			SecurityContext: &restrictedSecurityContext,
 			Resources: corev1.ResourceRequirements{
