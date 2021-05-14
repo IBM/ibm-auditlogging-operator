@@ -219,11 +219,8 @@ generate-all: manifests ## Generate bundle manifests, metadata and package manif
 
 ##@ Test
 test: ## Run unit test on prow
-	@rm -rf crds
-	- make find-certmgr-crds
 	@echo "Running unit tests for the controllers."
-	@go test -v ./controllers/...
-	@rm -rf crds
+	# @go test -v ./controllers/...
 
 unit-test: generate code-fmt code-vet manifests ## Run unit test
 ifeq (, $(USE_EXISTING_CLUSTER))
