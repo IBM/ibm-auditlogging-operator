@@ -50,7 +50,7 @@ spec:
         args:
         - --enable-leader-election
         - --metrics-addr=:8383
-        image: quay.io/opencloudio/ibm-auditlogging-operator:3.9.1
+        image: quay.io/opencloudio/ibm-auditlogging-operator:3.10.1
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
