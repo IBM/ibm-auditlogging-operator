@@ -154,12 +154,13 @@ install-all: ## Install all resources (CR/CRD's, RBCA and Operator)
 	@echo ....... Creating namespace .......
 	- kubectl create namespace ${NAMESPACE}
 	- kubectl create namespace ${CA_NAMESPACE}
+	# Only create OG if installing without other common services
 	@echo ....... Creating OperatorGroup .......
-	- cp common/util/operator_group.yaml og.yaml
-	- yq w -i og.yaml spec.targetNamespaces[+] ${NAMESPACE}
-	- oc create -f og.yaml -n ${NAMESPACE}
+# 	- cp common/util/operator_group.yaml og.yaml
+# 	- yq w -i og.yaml spec.targetNamespaces[+] ${NAMESPACE}
+# 	- oc create -f og.yaml -n ${NAMESPACE}
 	# Create namespace-scope if namespace-scope-operator is not installed
-# 	@echo ....... Creating NamespaceScope ConfigMap .......
+	@echo ....... Creating NamespaceScope ConfigMap .......
 # 	- cp common/util/namespace_scope.yaml ns.yaml
 # 	- yq w -i ns.yaml data.namespaces ${NAMESPACE}
 # 	- oc create -f ns.yaml -n ${NAMESPACE}
