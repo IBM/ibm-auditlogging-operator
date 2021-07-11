@@ -3,7 +3,7 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: '[]'
-    capabilities: Basic Install
+    capabilities: Seamless Upgrade
     categories: Security
     certified: "false"
     containerImage: quay.io/opencloudio/ibm-auditlogging-operator:X.Y.Z
