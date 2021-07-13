@@ -141,17 +141,23 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: AuditLogging is the Schema for the auditloggings API
+    - description: 'Documentation For additional details regarding install parameters
+        check: https://ibm.biz/icpfs39install. License By installing this product
+        you accept the license terms https://ibm.biz/icpfs39license.'
       displayName: Audit Logging
       kind: AuditLogging
       name: auditloggings.operator.ibm.com
       version: v1alpha1
-    - description: AuditPolcy is the Schema for the auditlpolicies API
+    - description: 'Documentation For additional details regarding install parameters
+        check: https://ibm.biz/icpfs39install. License By installing this product
+        you accept the license terms https://ibm.biz/icpfs39license.'
       displayName: Audit Policy
       kind: AuditPolicy
       name: auditpolicies.audit.policies.ibm.com
       version: v1alpha1
-    - description: CommonAudit is the Schema for the commonaudits API
+    - description: 'Documentation For additional details regarding install parameters
+        check: https://ibm.biz/icpfs39install. License By installing this product
+        you accept the license terms https://ibm.biz/icpfs39license.'
       displayName: Common Audit
       kind: CommonAudit
       name: commonaudits.operator.ibm.com
