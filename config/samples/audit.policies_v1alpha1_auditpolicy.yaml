@@ -1,6 +1,10 @@
 apiVersion: audit.policies.ibm.com/v1alpha1
 kind: AuditPolicy
 metadata:
+  labels:
+    app.kubernetes.io/instance: common-audit-logging
+    app.kubernetes.io/managed-by: ibm-auditlogging-operator
+    app.kubernetes.io/name: common-audit-logging
   name: audit-log-policy
 spec:
   clusterAuditPolicy:
