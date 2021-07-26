@@ -16,6 +16,9 @@ spec:
     - ap
   scope: Namespaced
   versions:
+  - name: v1alpha1
+    served: true
+    storage: true
     schema:
       openAPIV3Schema:
         properties:
@@ -59,7 +62,6 @@ spec:
               compliant:
                 type: string
             type: object
-  versions: v1alpha1
 status:
   acceptedNames:
     kind: ""
