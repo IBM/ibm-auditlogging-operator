@@ -17,8 +17,6 @@ spec:
     plural: auditloggings
     singular: auditlogging
   scope: Cluster
-  subresources:
-    status: {}
   versions:
   - name: v1alpha1
     served: true
