@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: common-audit-logging
 spec:
   fluentd:
-    enabled: false
+    enabled: true
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
     journalPath: /run/log/journal
