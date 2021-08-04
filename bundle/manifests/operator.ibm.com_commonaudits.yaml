@@ -17,8 +17,6 @@ spec:
     plural: commonaudits
     singular: commonaudit
   scope: Namespaced
-  subresources:
-    status: {}
   versions:
   - name: v1
     served: true
