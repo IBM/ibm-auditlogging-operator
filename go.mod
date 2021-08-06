@@ -6,6 +6,7 @@ require (
 	github.com/IBM/controller-filtered-cache v0.2.1
 	github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr v0.2.0 // indirect
+	github.com/gobuffalo/flect v0.2.0 // indirect
 	github.com/jetstack/cert-manager v0.10.1
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
@@ -15,7 +16,6 @@ require (
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/klog v1.0.0
 	sigs.k8s.io/controller-runtime v0.6.2
-	sigs.k8s.io/controller-tools v0.4.0 // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.18.6
