@@ -6,6 +6,7 @@ require (
 	github.com/IBM/controller-filtered-cache v0.2.1
 	github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr v0.2.0 // indirect
+	github.com/gobuffalo/flect v0.2.0 // indirect
 	github.com/jetstack/cert-manager v0.10.1
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
