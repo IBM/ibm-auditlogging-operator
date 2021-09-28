@@ -102,6 +102,25 @@ metadata:
           }
         },
         {
+          "apiVersion":"operator.ibm.com/v1alpha1",
+          "kind":"OperandRequest",
+          "metadata":{
+            "name":"ibm-auditlogging-operator-request"
+          },
+          "spec":{
+            "requests":[
+              {
+                "operands":[
+                  {
+                    "name":"ibm-cert-manager-operator"
+                  }
+                ],
+                "registry":"common-service"
+              }
+            ]
+          }
+        },
+        {
           "apiVersion": "operator.ibm.com/v1alpha1",
           "kind": "OperandBindInfo",
           "metadata": {
