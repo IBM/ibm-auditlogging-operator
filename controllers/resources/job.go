@@ -55,7 +55,7 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 					Affinity: &corev1.Affinity{
 						NodeAffinity: commonNodeAffinity,
 					},
-					Containers: buildJobContainer(namespace, instance.Spec.Fluentd.ImageRegistry),
+					Containers: buildJobContainer(namespace),
 				},
 			},
 		},
@@ -63,7 +63,7 @@ func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace 
 	return job
 }
 
-func buildJobContainer(namespace string, imageRegistry string) []corev1.Container {
+func buildJobContainer(namespace string) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            JobName,
