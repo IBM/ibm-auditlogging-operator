@@ -17,13 +17,14 @@
 package resources
 
 import (
+	"os"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
-	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
 )
 
@@ -66,7 +67,7 @@ func buildJobContainer(namespace string, imageRegistry string) []corev1.Containe
 	return []corev1.Container{
 		{
 			Name:            JobName,
-			Image:           utils.GetImageID(imageRegistry, constant.DefaultJobImageName, constant.JobEnvVar),
+			Image:           os.Getenv("AUDIT_GARBAGE_COLLECTOR_IMAGE"),
 			ImagePullPolicy: corev1.PullAlways,
 			SecurityContext: &restrictedSecurityContext,
 			Resources: corev1.ResourceRequirements{
