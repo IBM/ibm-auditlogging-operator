@@ -29,6 +29,8 @@ import (
 
 const defaultHTTPPort = 9880
 const defaultSyslogPort = 5140
+const mutualCertAuthHTTP2Port = 9881
+const basicAuthHTTP2Port = 9890
 
 // BuildAuditService returns a Service object
 func BuildAuditService(instanceName string, namespace string) *corev1.Service {
@@ -60,6 +62,61 @@ func BuildAuditService(instanceName string, namespace string) *corev1.Service {
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
 						IntVal: defaultSyslogPort,
+					},
+				},
+				{
+					Name:     constant.AuditLoggingComponentName + "-muatual-auth-http2",
+					Protocol: "TCP",
+					Port:     mutualCertAuthHTTP2Port,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: mutualCertAuthHTTP2Port,
+					},
+				},
+				{
+					Name:     constant.AuditLoggingComponentName + "-basic-auth-http2",
+					Protocol: "TCP",
+					Port:     basicAuthHTTP2Port,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: basicAuthHTTP2Port,
+					},
+				},
+			},
+			Selector: selectorLabels,
+		},
+	}
+	return service
+}
+func BuildZenAuditService(instanceName string, namespace string) *corev1.Service {
+	metaLabels := util.LabelsForMetadata(constant.FluentdName)
+	selectorLabels := util.LabelsForSelector(constant.FluentdName, instanceName)
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constant.ZenAuditService,
+			Namespace: namespace,
+			Labels:    metaLabels,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: "ClusterIP",
+			Ports: []corev1.ServicePort{
+				{
+					Name:     constant.ZenAuditService + "-muatual-auth-http2",
+					Protocol: "TCP",
+					Port:     mutualCertAuthHTTP2Port,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: mutualCertAuthHTTP2Port,
+					},
+				},
+				{
+					Name:     constant.ZenAuditService + "-basic-auth-http2",
+					Protocol: "TCP",
+					Port:     basicAuthHTTP2Port,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: basicAuthHTTP2Port,
 					},
 				},
 			},

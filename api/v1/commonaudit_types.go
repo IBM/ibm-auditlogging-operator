@@ -41,6 +41,7 @@ type CommonAuditSpecFluentd struct {
 	ImageRegistry string                      `json:"imageRegistry,omitempty"`
 	PullPolicy    string                      `json:"pullPolicy,omitempty"`
 	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
+	ZenEnabled    bool                        `json:"enabled,omitempty"`
 }
 
 // CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog

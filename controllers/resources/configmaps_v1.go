@@ -94,6 +94,55 @@ var filterSyslog = `
     </filter>
 `
 
+var sourceConfigDataZenHTTP1 = `
+    <source>
+        @type http2
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+        port `
+var sourceConfigDataZenHTTP2 = `
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        <transport tls>
+          ca_path /etc/internal-tls/certificate.pem
+          cert_path /etc/internal-tls/tls.crt
+          private_key_path /etc/internal-tls/tls.key
+          client_cert_auth true
+        </transport>
+        <parse>
+          @type json
+        </parse>
+    </source>
+`
+var sourceConfigDataZenHTTP21 = `
+    <source>
+        @type http2
+        # Tag is not supported in yaml, must be set by request path (/icp-audit.http is required for validation and export)
+        port `
+var sourceConfigDataZenHTTP22 = `
+        bind 0.0.0.0
+        body_size_limit 32m
+        keepalive_timeout 10s
+        basic_auth true
+        basic_auth_type file
+        basic_auth_file /etc/zen-service-broker-secret/token
+        basic_auth_file_type full
+        <transport tls>
+          ca_path /etc/internal-tls/certificate.pem
+          cert_path /etc/internal-tls/tls.crt
+          private_key_path /etc/internal-tls/tls.key
+        </transport>
+        <parse>
+          @type json
+        </parse>
+    </source>
+`
+var filterCADFields = `
+    <filter records records.**>
+        @type cadfFields
+    </filter>
+`
+
 const hecHost = `hec_host `
 const hecPort = `hec_port `
 const hecToken = `hec_token `
@@ -146,7 +195,13 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		ds := DataS{}
 		var result string
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterHTTP + filterSyslog
+		mutualAuthPort := strconv.Itoa(mutualCertAuthHTTP2Port)
+		basicAuthPort := strconv.Itoa(basicAuthHTTP2Port)
+		if instance.Spec.Fluentd.ZenEnabled {
+			result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigDataZenHTTP1 + mutualAuthPort + sourceConfigDataZenHTTP2 + sourceConfigDataZenHTTP21 + basicAuthPort + sourceConfigDataZenHTTP22 + sourceConfigSyslog + filterHTTP + filterSyslog + filterCADFields
+		} else {
+			result += sourceConfigDataKey + sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterHTTP + filterSyslog
+		}
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break

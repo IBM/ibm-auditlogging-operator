@@ -47,6 +47,8 @@ spec:
                     type: string
                   pullPolicy:
                     type: string
+                  zenEnabled:
+                    type: boolean
                   resources:
                     description: ResourceRequirements describes the compute resource requirements.
                     properties:

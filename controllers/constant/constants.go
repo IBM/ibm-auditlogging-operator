@@ -18,6 +18,7 @@ package constant
 
 const (
 	AuditLoggingComponentName     = "common-audit-logging"
+	ZenAuditService               = "zen-audit-svc"
 	AuditLoggingReleaseName       = "common-audit-logging"
 	AuditLoggingCrType            = "auditlogging_cr"
 	DefaultPCImageName            = "audit-policy-controller"

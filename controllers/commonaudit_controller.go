@@ -120,6 +120,7 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		r.reconcileRole,
 		r.reconcileRoleBinding,
 		r.reconcileService,
+		r.reconcileZenService,
 		r.reconcileFluentdDeployment,
 		r.updateStatus,
 	}

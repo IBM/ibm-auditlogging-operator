@@ -138,9 +138,15 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	selectorLabels := util.LabelsForSelector(constant.FluentdName, instance.Name)
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
 	annotations := util.AnnotationsForMetering(false)
-
-	volumes := buildFluentdDeploymentVolumes()
-	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
+	zenEnabled := instance.Spec.Fluentd.ZenEnabled
+	var volumes = []corev1.Volume{}
+	if zenEnabled {
+		volumes = buildZenFluentdDeploymentVolumes()
+		fluentdMainContainer.VolumeMounts = buildZenFluentdDeploymentVolumeMounts()
+	} else {
+		volumes = buildFluentdDeploymentVolumes()
+		fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
+	}
 	fluentdMainContainer.Image = os.Getenv("FLUENTD_IMAGE")
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
 	// Run fluentd as restricted
@@ -308,6 +314,114 @@ func buildFluentdDeploymentVolumes() []corev1.Volume {
 	return commonVolumes
 }
 
+func buildZenFluentdDeploymentVolumes() []corev1.Volume {
+	commonVolumes := []corev1.Volume{
+		{
+			Name: FluentdConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + ConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  FluentdConfigKey,
+							Path: FluentdConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SourceConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SourceConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SourceConfigKey,
+							Path: SourceConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: QRadarConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + QRadarConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  QRadarConfigKey,
+							Path: QRadarConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: SplunkConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + SplunkConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  SplunkConfigKey,
+							Path: SplunkConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "shared",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: AuditLoggingClientCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingClientCertSecName,
+				},
+			},
+		},
+		{
+			Name: AuditLoggingServerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: AuditLoggingServerCertSecName,
+				},
+			},
+		},
+		{
+			Name: ZenInternalCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: ZenInternalCertSecName,
+				},
+			},
+		},
+		{
+			Name: ZenSvcBrokerCertSecName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: ZenSvcBrokerCertSecName,
+				},
+			},
+		},
+	}
+	return commonVolumes
+}
+
 func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 	commonVolumeMounts := []corev1.VolumeMount{
 		{
@@ -342,6 +456,56 @@ func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 		{
 			Name:      AuditLoggingServerCertSecName,
 			MountPath: "/fluentd/etc/https",
+			ReadOnly:  true,
+		},
+	}
+	return commonVolumeMounts
+}
+
+func buildZenFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
+	commonVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      FluentdConfigName,
+			MountPath: "/fluentd/etc/" + FluentdConfigKey,
+			SubPath:   FluentdConfigKey,
+		},
+		{
+			Name:      SourceConfigName,
+			MountPath: fluentdInput,
+			SubPath:   SourceConfigKey,
+		},
+		{
+			Name:      QRadarConfigName,
+			MountPath: qRadarOutput,
+			SubPath:   QRadarConfigKey,
+		},
+		{
+			Name:      SplunkConfigName,
+			MountPath: splunkOutput,
+			SubPath:   SplunkConfigKey,
+		},
+		{
+			Name:      "shared",
+			MountPath: "/tmp",
+		},
+		{
+			Name:      AuditLoggingClientCertSecName,
+			MountPath: "/fluentd/etc/tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      AuditLoggingServerCertSecName,
+			MountPath: "/fluentd/etc/https",
+			ReadOnly:  true,
+		},
+		{
+			Name:      ZenInternalCertSecName,
+			MountPath: "/etc/internal-tls",
+			ReadOnly:  true,
+		},
+		{
+			Name:      ZenSvcBrokerCertSecName,
+			MountPath: "/etc/zen-service-broker-secret",
 			ReadOnly:  true,
 		},
 	}

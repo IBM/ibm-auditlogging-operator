@@ -73,6 +73,43 @@ func (r *CommonAuditReconciler) reconcileService(instance *operatorv1.CommonAudi
 	return reconcile.Result{}, nil
 }
 
+func (r *CommonAuditReconciler) reconcileZenService(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
+	expected := res.BuildZenAuditService(instance.Name, instance.Namespace)
+	found := &corev1.Service{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		r.Log.Info("Creating a new Zen Service", "Service.Namespace", expected.Namespace, "Service.Name", expected.Name)
+		err = r.Client.Create(context.TODO(), expected)
+		if err != nil && errors.IsAlreadyExists(err) {
+			// Already exists from previous reconcile, requeue.
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			r.Log.Error(err, "Failed to create new Zen Service", "Service.Namespace", expected.Namespace,
+				"Service.Name", expected.Name)
+			return reconcile.Result{}, err
+		}
+		// Service created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		r.Log.Error(err, "Failed to get Service")
+		return reconcile.Result{}, err
+	} else if result := res.EqualServices(expected, found); result {
+		// If ports are incorrect, delete it and requeue
+		r.Log.Info("Found ports are incorrect", "Found", found.Spec.Ports, "Expected", expected.Spec.Ports)
+		err = r.Client.Delete(context.TODO(), found)
+		if err != nil {
+			r.Log.Error(err, "Failed to delete Zen Service", "Name", found.Name)
+			return reconcile.Result{}, err
+		}
+		// Updated - return and requeue
+		return reconcile.Result{Requeue: true}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *CommonAuditReconciler) reconcileAuditConfigMaps(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
 	var recResult reconcile.Result
 	var recErr error
