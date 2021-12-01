@@ -66,6 +66,21 @@ var qRadarConfigV1Data2 = `
         </format>
     </store>`
 
+var logDNAConfigV1Data1 = `
+logDNA.conf: |-
+    <store>
+        @type logdna2
+`
+var logDNAConfigV1Data2 = `
+        buffer_chunk_limit 1m
+        flush_at_shutdown true
+        <buffer>
+            flush_mode interval
+            retry_type exponential_backoff
+            chunk_limit_size 1m
+            flush_at_shutdown true
+        </buffer>
+    </store>`
 var sourceConfigSyslog = `
     <source>
         @type syslog
@@ -151,6 +166,9 @@ const port = `port `
 const hostname = `hostname `
 const protocol = `protocol `
 const tls = `tls `
+const apiKey = `api_key `
+const ingesterDomain = `ingester_domain `
+const app = `app `
 
 var RegexHecHost = regexp.MustCompile(hecHost + `.*`)
 var RegexHecPort = regexp.MustCompile(hecPort + `.*`)
@@ -160,9 +178,13 @@ var RegexPort = regexp.MustCompile(port + `.*`)
 var RegexHostname = regexp.MustCompile(hostname + `.*`)
 var RegexProtocol = regexp.MustCompile(protocol + `.*`)
 var RegexTLS = regexp.MustCompile(tls + `.*`)
+var RegexApiKey = regexp.MustCompile(apiKey + `.*`)
+var RegexIngesterDomain = regexp.MustCompile(ingesterDomain + `.*`)
+var RegexApp = regexp.MustCompile(app + `.*`)
 
 var QradarPlugin = `@include /fluentd/etc/remoteSyslog.conf`
 var SplunkPlugin = `@include /fluentd/etc/splunkHEC.conf`
+var LogDNAPlugin = `@include /fluentd/etc/logDNA.conf`
 
 const matchTags = `<match icp-audit icp-audit.**>`
 
@@ -223,6 +245,14 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 			break
 		}
 		dataMap[QRadarConfigKey] = dq.Value
+	case FluentdDaemonSetName + "-" + LogDNAConfigName:
+		dq := DataLogDNA{}
+		data = buildFluentdLogDNAConfig(instance)
+		err = yaml.Unmarshal([]byte(data), &dq)
+		if err != nil {
+			break
+		}
+		dataMap[LogDNAConfigKey] = dq.Value
 	case FluentdDaemonSetName + "-" + HTTPIngestName:
 		var p = strconv.Itoa(defaultHTTPPort)
 		dataMap[HTTPIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p + httpPath
@@ -248,13 +278,16 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 
 func buildFluentdConfig(instance *operatorv1.CommonAudit) string {
 	var result = fluentdMainConfigV1Data
-	if instance.Spec.Outputs.Splunk.EnableSIEM || instance.Spec.Outputs.Syslog.EnableSIEM {
+	if instance.Spec.Outputs.Splunk.EnableSIEM || instance.Spec.Outputs.Syslog.EnableSIEM || instance.Spec.Outputs.LogDNA.EnableSIEM {
 		result += fluentdOutputConfigV1Data
 		if instance.Spec.Outputs.Splunk.EnableSIEM {
 			result += yamlLine(2, SplunkPlugin, true)
 		}
 		if instance.Spec.Outputs.Syslog.EnableSIEM {
 			result += yamlLine(2, QradarPlugin, true)
+		}
+		if instance.Spec.Outputs.LogDNA.EnableSIEM {
+			result += yamlLine(2, LogDNAPlugin, true)
 		}
 		result += yamlLine(1, `</match>`, false)
 	}
@@ -293,6 +326,22 @@ func buildFluentdQRadarConfig(instance *operatorv1.CommonAudit) string {
 	return result + qRadarConfigV1Data2
 }
 
+func buildFluentdLogDNAConfig(instance *operatorv1.CommonAudit) string {
+	var result = logDNAConfigV1Data1
+	if instance.Spec.Outputs.LogDNA.HostName != "" && instance.Spec.Outputs.LogDNA.ApiKey != "" &&
+		instance.Spec.Outputs.LogDNA.IngesterDomain != "" {
+		result += yamlLine(2, hostname+instance.Spec.Outputs.LogDNA.HostName, true)
+		result += yamlLine(2, ingesterDomain+instance.Spec.Outputs.LogDNA.IngesterDomain, true)
+		result += yamlLine(2, apiKey+instance.Spec.Outputs.LogDNA.ApiKey, true)
+	} else {
+		result += yamlLine(2, hostname+`LOGDNA_SERVER_HOSTNAME`, true)
+		result += yamlLine(2, ingesterDomain+`LOGDNA_INGESTER_DOMAIN`, true)
+		result += yamlLine(2, apiKey+`LOGDNA_APIKEY`, true)
+	}
+	result += yamlLine(2, app+instance.Spec.Outputs.LogDNA.App, false)
+	return result + logDNAConfigV1Data2
+}
+
 // UpdateSIEMConfig returns a String
 func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) string {
 	var newData, d1, d2, d3, d4 string
@@ -304,7 +353,7 @@ func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap)
 			d3 = RegexHecToken.ReplaceAllString(d2, hecToken+instance.Spec.Outputs.Splunk.Token)
 			d4 = RegexProtocol.ReplaceAllString(d3, protocol+Protocols[instance.Spec.Outputs.Splunk.TLS])
 		}
-	} else {
+	} else if found.Name == FluentdDaemonSetName+"-"+QRadarConfigName {
 		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 			newData = found.Data[QRadarConfigKey]
 			d1 = RegexHost.ReplaceAllString(newData, host+instance.Spec.Outputs.Syslog.Host)
@@ -312,6 +361,15 @@ func UpdateSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap)
 			d3 = RegexHostname.ReplaceAllString(d2, hostname+instance.Spec.Outputs.Syslog.Hostname)
 			d4 = RegexTLS.ReplaceAllString(d3, tls+strconv.FormatBool(instance.Spec.Outputs.Syslog.TLS))
 		}
+	} else {
+		if instance.Spec.Outputs.LogDNA != (operatorv1.CommonAuditSpecLogDNA{}) {
+			newData = found.Data[LogDNAConfigKey]
+			d1 = RegexHostname.ReplaceAllString(newData, hostname+instance.Spec.Outputs.LogDNA.HostName)
+			d2 = RegexApiKey.ReplaceAllString(d1, apiKey+instance.Spec.Outputs.LogDNA.ApiKey)
+			d3 = RegexIngesterDomain.ReplaceAllString(d2, ingesterDomain+instance.Spec.Outputs.LogDNA.IngesterDomain)
+			d4 = RegexApp.ReplaceAllString(d3, app+instance.Spec.Outputs.LogDNA.App)
+		}
+
 	}
 	return d4
 }
@@ -352,7 +410,7 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 				},
 			}
 		}
-	} else {
+	} else if found.Name == FluentdDaemonSetName+"-"+QRadarConfigName {
 		if instance.Spec.Outputs.Syslog != (operatorv1.CommonAuditSpecSyslog{}) {
 			key = QRadarConfigKey
 			configs = []config{
@@ -378,6 +436,33 @@ func EqualSIEMConfig(instance *operatorv1.CommonAudit, found *corev1.ConfigMap) 
 				},
 			}
 		}
+	} else {
+		if instance.Spec.Outputs.LogDNA != (operatorv1.CommonAuditSpecLogDNA{}) {
+			key = LogDNAConfigKey
+			configs = []config{
+				{
+					name:  "Hostname",
+					value: instance.Spec.Outputs.LogDNA.HostName,
+					regex: RegexHostname,
+				},
+				{
+					name:  "Apikey",
+					value: instance.Spec.Outputs.LogDNA.ApiKey,
+					regex: RegexApiKey,
+				},
+				{
+					name:  "IngesterDomain",
+					value: instance.Spec.Outputs.LogDNA.IngesterDomain,
+					regex: RegexIngesterDomain,
+				},
+				{
+					name:  "App",
+					value: instance.Spec.Outputs.LogDNA.App,
+					regex: RegexApp,
+				},
+			}
+		}
+
 	}
 	var equal = true
 	var missing = false

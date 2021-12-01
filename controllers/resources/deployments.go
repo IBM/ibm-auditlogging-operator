@@ -50,6 +50,7 @@ const AuditPolicyControllerDeploy = "audit-policy-controller"
 const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
+const logDNAOutput = "/fluentd/etc/logDNA.conf"
 
 const defaultJournalPath = "/run/log/journal"
 
@@ -289,6 +290,22 @@ func buildFluentdDeploymentVolumes() []corev1.Volume {
 			},
 		},
 		{
+			Name: LogDNAConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + LogDNAConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  LogDNAConfigKey,
+							Path: LogDNAConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "shared",
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -381,6 +398,22 @@ func buildZenFluentdDeploymentVolumes() []corev1.Volume {
 			},
 		},
 		{
+			Name: LogDNAConfigName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: FluentdDaemonSetName + "-" + LogDNAConfigName,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  LogDNAConfigKey,
+							Path: LogDNAConfigKey,
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "shared",
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -445,6 +478,11 @@ func buildFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 			SubPath:   SplunkConfigKey,
 		},
 		{
+			Name:      LogDNAConfigName,
+			MountPath: logDNAOutput,
+			SubPath:   LogDNAConfigKey,
+		},
+		{
 			Name:      "shared",
 			MountPath: "/tmp",
 		},
@@ -483,6 +521,11 @@ func buildZenFluentdDeploymentVolumeMounts() []corev1.VolumeMount {
 			Name:      SplunkConfigName,
 			MountPath: splunkOutput,
 			SubPath:   SplunkConfigKey,
+		},
+		{
+			Name:      LogDNAConfigName,
+			MountPath: logDNAOutput,
+			SubPath:   LogDNAConfigKey,
 		},
 		{
 			Name:      "shared",

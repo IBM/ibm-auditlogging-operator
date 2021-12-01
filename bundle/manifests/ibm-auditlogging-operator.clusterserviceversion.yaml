@@ -74,6 +74,13 @@ metadata:
                 "host": "test.fyre.ibm.com",
                 "hostname": "qradar_source_id",
                 "port": 514
+              },
+              "logdna": {
+                "enableSIEM": false,
+                "hostname": "audit-test",
+                "ingesterDomain": "test.fyre.ibm.com",
+                "apikey": "apikey"
+                "app": "audit-test"
               }
             },
             "replicas": 1

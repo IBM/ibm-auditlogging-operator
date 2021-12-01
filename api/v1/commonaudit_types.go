@@ -41,13 +41,14 @@ type CommonAuditSpecFluentd struct {
 	ImageRegistry string                      `json:"imageRegistry,omitempty"`
 	PullPolicy    string                      `json:"pullPolicy,omitempty"`
 	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
-	ZenEnabled    bool                        `json:"enabled,omitempty"`
+	ZenEnabled    bool                        `json:"zenEnabled,omitempty"`
 }
 
 // CommonAuditSpecOutputs defines the configurations for forwarding audit logs to Splunk or Syslog
 type CommonAuditSpecOutputs struct {
 	Splunk      CommonAuditSpecSplunk        `json:"splunk,omitempty"`
 	Syslog      CommonAuditSpecSyslog        `json:"syslog,omitempty"`
+	LogDNA      CommonAuditSpecLogDNA        `json:"logdna,omitempty"`
 	HostAliases []CommonAuditSpecHostAliases `json:"hostAliases,omitempty"`
 }
 
@@ -67,6 +68,15 @@ type CommonAuditSpecSyslog struct {
 	Port       int32  `json:"port"`
 	Hostname   string `json:"hostname"`
 	TLS        bool   `json:"enableTLS"`
+}
+
+// CommonAuditSpecLogDNA defines the configurations for forwarding audit logs to LogDNA
+type CommonAuditSpecLogDNA struct {
+	EnableSIEM     bool   `json:"enableSIEM"`
+	HostName       string `json:"hostname"`
+	IngesterDomain string `json:"ingesterDomain"`
+	ApiKey         string `json:"apiKey"`
+	App            string `json:"app"`
 }
 
 // CommonAuditSpecHostAliases defines the host alias for an SIEM

@@ -182,6 +182,8 @@ func (r *CommonAuditReconciler) reconcileConfig(instance *operatorv1.CommonAudit
 	case res.FluentdDaemonSetName + "-" + res.SplunkConfigName:
 		r.Log.Info("Checking output configs")
 		fallthrough
+	case res.FluentdDaemonSetName + "-" + res.LogDNAConfigName:
+		fallthrough
 	case res.FluentdDaemonSetName + "-" + res.QRadarConfigName:
 		if equal, missing := res.EqualSIEMConfig(instance, found); !equal {
 			if missing {
@@ -197,8 +199,10 @@ func (r *CommonAuditReconciler) reconcileConfig(instance *operatorv1.CommonAudit
 			data := res.UpdateSIEMConfig(instance, found)
 			if configName == res.FluentdDaemonSetName+"-"+res.SplunkConfigName {
 				found.Data[res.SplunkConfigKey] = data
-			} else {
+			} else if configName == res.FluentdDaemonSetName+"-"+res.QRadarConfigName {
 				found.Data[res.QRadarConfigKey] = data
+			} else {
+				found.Data[res.LogDNAConfigKey] = data
 			}
 			update = true
 		}
