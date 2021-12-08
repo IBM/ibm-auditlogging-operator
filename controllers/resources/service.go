@@ -31,6 +31,7 @@ const defaultHTTPPort = 9880
 const defaultSyslogPort = 5140
 const mutualCertAuthHTTP2Port = 9881
 const basicAuthHTTP2Port = 9890
+const zenSyslogPort = 5141
 
 // BuildAuditService returns a Service object
 func BuildAuditService(instanceName string, namespace string) *corev1.Service {
@@ -65,7 +66,7 @@ func BuildAuditService(instanceName string, namespace string) *corev1.Service {
 					},
 				},
 				{
-					Name:     constant.AuditLoggingComponentName + "-muatual-auth-http2",
+					Name:     constant.AuditLoggingComponentName + "-muatual-cert-auth",
 					Protocol: "TCP",
 					Port:     mutualCertAuthHTTP2Port,
 					TargetPort: intstr.IntOrString{
@@ -74,12 +75,21 @@ func BuildAuditService(instanceName string, namespace string) *corev1.Service {
 					},
 				},
 				{
-					Name:     constant.AuditLoggingComponentName + "-basic-auth-http2",
+					Name:     constant.AuditLoggingComponentName + "-basic-auth",
 					Protocol: "TCP",
 					Port:     basicAuthHTTP2Port,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
 						IntVal: basicAuthHTTP2Port,
+					},
+				},
+				{
+					Name:     constant.AuditLoggingComponentName + "-syslog-mutual-cert-auth",
+					Protocol: "TCP",
+					Port:     zenSyslogPort,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: zenSyslogPort,
 					},
 				},
 			},
@@ -102,21 +112,30 @@ func BuildZenAuditService(instanceName string, namespace string) *corev1.Service
 			Type: "ClusterIP",
 			Ports: []corev1.ServicePort{
 				{
-					Name:     constant.ZenAuditService + "-muatual-auth-http2",
+					Name:     constant.ZenAudit + "-muatual-auth",
 					Protocol: "TCP",
-					Port:     mutualCertAuthHTTP2Port,
+					Port:     defaultHTTPPort,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
 						IntVal: mutualCertAuthHTTP2Port,
 					},
 				},
 				{
-					Name:     constant.ZenAuditService + "-basic-auth-http2",
+					Name:     constant.ZenAudit + "-basic-auth",
 					Protocol: "TCP",
 					Port:     basicAuthHTTP2Port,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
 						IntVal: basicAuthHTTP2Port,
+					},
+				},
+				{
+					Name:     constant.ZenAudit + "-syslog",
+					Protocol: "TCP",
+					Port:     defaultSyslogPort,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: zenSyslogPort,
 					},
 				},
 			},

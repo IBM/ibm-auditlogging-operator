@@ -179,6 +179,22 @@ func (r *CommonAuditReconciler) reconcileConfig(instance *operatorv1.CommonAudit
 			found.Data[res.HTTPIngestURLKey] = expected.Data[res.HTTPIngestURLKey]
 			update = true
 		}
+		if !res.EqualConfig(found, expected, res.ZenHTTPMutualAuthIngestURLKey) {
+			found.Data[res.ZenHTTPMutualAuthIngestURLKey] = expected.Data[res.ZenHTTPMutualAuthIngestURLKey]
+			update = true
+		}
+		if !res.EqualConfig(found, expected, res.ZenHTTPBasicAuthIngestURLKey) {
+			found.Data[res.ZenHTTPBasicAuthIngestURLKey] = expected.Data[res.ZenHTTPBasicAuthIngestURLKey]
+			update = true
+		}
+		if !res.EqualConfig(found, expected, res.ZenSvcHTTPMutualAuthIngestURLKey) {
+			found.Data[res.ZenSvcHTTPMutualAuthIngestURLKey] = expected.Data[res.ZenSvcHTTPMutualAuthIngestURLKey]
+			update = true
+		}
+		if !res.EqualConfig(found, expected, res.ZenSvcHTTPBasicAuthIngestURLKey) {
+			found.Data[res.ZenSvcHTTPBasicAuthIngestURLKey] = expected.Data[res.ZenSvcHTTPBasicAuthIngestURLKey]
+			update = true
+		}
 	case res.FluentdDaemonSetName + "-" + res.SplunkConfigName:
 		r.Log.Info("Checking output configs")
 		fallthrough

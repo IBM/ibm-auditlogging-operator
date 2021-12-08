@@ -196,6 +196,18 @@ var Protocols = map[bool]string{
 // SyslogIngestURLKey defines the Http endpoint
 const SyslogIngestURLKey = "AuditLoggingSyslogIngestURL"
 
+// New Endpoints configured with certificates issued by Issuer:  zen-tls-issuer
+const ZenSyslogIngestURLKey = "AuditZenSyslogIngestURL"
+const ZenHTTPBasicAuthIngestURLKey = "AuditZenHttpBasicAuthIngestURL"
+const ZenHTTPMutualAuthIngestURLKey = "AuditZenHttpMutualAuthIngestURL"
+
+// Zen Endpoints configured with certificates issued by Issuer:  zen-tls-issuer
+const ZenSvcSyslogIngestURLKey = "AuditZenSvcSyslogIngestURL"
+const ZenSvcHTTPBasicAuthIngestURLKey = "AuditZenSvcHttpBasicAuthIngestURL"
+const ZenSvcHTTPMutualAuthIngestURLKey = "AuditZenSvcHttpMutualAuthIngestURL"
+
+const zenHttpPath = "/records"
+
 // BuildFluentdConfigMap returns a ConfigMap object
 func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*corev1.ConfigMap, error) {
 	log.WithValues("ConfigMap.Namespace", instance.Namespace, "ConfigMap.Name", name)
@@ -258,6 +270,22 @@ func BuildFluentdConfigMap(instance *operatorv1.CommonAudit, name string) (*core
 		dataMap[HTTPIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p + httpPath
 		p = strconv.Itoa(defaultSyslogPort)
 		dataMap[SyslogIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p
+
+		// New Endpoints configured with certificates issued by Issuer:  zen-tls-issuer
+		p = strconv.Itoa(mutualCertAuthHTTP2Port)
+		dataMap[ZenHTTPMutualAuthIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p + httpPath
+		p = strconv.Itoa(basicAuthHTTP2Port)
+		dataMap[ZenHTTPBasicAuthIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p + httpPath
+		p = strconv.Itoa(zenSyslogPort)
+		dataMap[ZenSyslogIngestURLKey] = "https://" + constant.AuditLoggingComponentName + "." + instance.Namespace + ":" + p
+
+		// Zen Endpoints configured with certificates issued by Issuer:  zen-tls-issuer
+		p = strconv.Itoa(defaultHTTPPort)
+		dataMap[ZenSvcHTTPMutualAuthIngestURLKey] = "https://" + constant.ZenAuditService + "." + instance.Namespace + ":" + p + zenHttpPath
+		p = strconv.Itoa(basicAuthHTTP2Port)
+		dataMap[ZenSvcHTTPBasicAuthIngestURLKey] = "https://" + constant.ZenAuditService + "." + instance.Namespace + ":" + p + zenHttpPath
+		p = strconv.Itoa(defaultSyslogPort)
+		dataMap[ZenSvcSyslogIngestURLKey] = "https://" + constant.ZenAuditService + "." + instance.Namespace + ":" + p
 	default:
 		log.Info("Unknown ConfigMap name")
 	}
