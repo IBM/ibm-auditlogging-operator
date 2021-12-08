@@ -50,7 +50,7 @@ spec:
         args:
         - --enable-leader-election
         - --metrics-addr=:8383
-        image: quay.io/opencloudio/ibm-auditlogging-operator:3.16.0
+        image: quay.io/opencloudio/ibm-auditlogging-operator:3.17.0
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
@@ -58,11 +58,11 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: FLUENTD_IMAGE
-            value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-11
+            value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-12
           - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-            value: quay.io/opencloudio/audit-garbage-collector:1.5.0
+            value: quay.io/opencloudio/audit-garbage-collector:1.6.0
           - name: AUDIT_POLICY_CONTROLLER_IMAGE
-            value: quay.io/opencloudio/audit-policy-controller:3.10.0
+            value: quay.io/opencloudio/audit-policy-controller:3.11.0
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
