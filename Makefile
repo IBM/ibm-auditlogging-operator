@@ -236,13 +236,6 @@ scorecard: operator-sdk ## Run scorecard test
 	@echo ... Running the scorecard test
 	- operator-sdk scorecard --verbose
 
-##@ Coverage
-coverage: ## Run code coverage test
-	@rm -rf crds
-	- make find-certmgr-crds
-	@common/scripts/codecov.sh ${BUILD_LOCALLY} "controllers/"
-	@rm -rf crds
-
 ##@ Build
 
 ifeq ($(BUILD_LOCALLY),0)
