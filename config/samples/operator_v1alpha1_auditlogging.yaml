@@ -11,5 +11,4 @@ spec:
     enabled: true
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
-    journalPath: /run/log/journal
     clusterIssuer: cs-ca-clusterissuer

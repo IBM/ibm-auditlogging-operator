@@ -151,7 +151,6 @@ var _ = Describe("Utils", func() {
 	})
 	Context("Annotations For Metering", func() {
 		It("Should return product annotations", func() {
-			journalAccess := false
 			expectedResult := map[string]string{
 				"productName":                        constant.ProductName,
 				"productID":                          constant.ProductID,
@@ -159,7 +158,7 @@ var _ = Describe("Utils", func() {
 				"clusterhealth.ibm.com/dependencies": "cert-manager",
 				"openshift.io/scc":                   "restricted",
 			}
-			result := AnnotationsForMetering(journalAccess)
+			result := AnnotationsForMetering()
 			Expect(result).Should(Equal(expectedResult))
 		})
 	})

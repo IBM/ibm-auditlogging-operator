@@ -144,11 +144,8 @@ func LabelsForPodMetadata(deploymentName string, crName string) map[string]strin
 }
 
 //IBMDEV
-func AnnotationsForMetering(journalAccess bool) map[string]string {
+func AnnotationsForMetering() map[string]string {
 	var scc = "restricted"
-	if journalAccess {
-		scc = "privileged"
-	}
 	annotations := map[string]string{
 		"productName":                        constant.ProductName,
 		"productID":                          constant.ProductID,

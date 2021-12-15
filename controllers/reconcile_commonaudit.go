@@ -22,7 +22,6 @@ import (
 	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
@@ -460,87 +459,5 @@ func (r *CommonAuditReconciler) reconcileServiceAccount(cr *operatorv1.CommonAud
 	// No extra validation of the service account required
 
 	// No reconcile was necessary
-	return reconcile.Result{}, nil
-}
-
-func (r *CommonAuditReconciler) reconcileRole(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
-	expected := res.BuildRole(instance.Namespace, false)
-	found := &rbacv1.Role{}
-	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Role
-		// newClusterRole := res.BuildRole(instance)
-		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Creating a new Role", "Role.Namespace", expected.Namespace, "Role.Name", expected.Name)
-		err = r.Client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			r.Log.Info("Already exists", "Role.Namespace", expected.Namespace, "Role.Name", expected.Name)
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			r.Log.Error(err, "Failed to create new Role", "Role.Namespace", expected.Namespace,
-				"Role.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// Role created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		r.Log.Error(err, "Failed to get Role")
-		return reconcile.Result{}, err
-	} else if result := res.EqualRoles(expected, found); result {
-		// If role permissions are incorrect, update it and requeue
-		r.Log.Info("Found role is incorrect", "Found", found.Rules, "Expected", expected.Rules)
-		found.Rules = expected.Rules
-		err = r.Client.Update(context.TODO(), found)
-		if err != nil {
-			r.Log.Error(err, "Failed to update role", "Name", found.Name)
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Updating Role", "Role.Name", found.Name)
-		// Updated - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	}
-	return reconcile.Result{}, nil
-}
-
-func (r *CommonAuditReconciler) reconcileRoleBinding(instance *operatorv1.CommonAudit) (reconcile.Result, error) {
-	expected := res.BuildRoleBinding(instance.Namespace)
-	found := &rbacv1.RoleBinding{}
-	// Note: clusterroles are cluster-scoped, so this does not search using namespace (unlike other resources above)
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: expected.Name, Namespace: instance.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new Role
-		if err := controllerutil.SetControllerReference(instance, expected, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		r.Log.Info("Creating a new RoleBinding", "Role.Namespace", expected.Namespace, "RoleBinding.Name", expected.Name)
-		err = r.Client.Create(context.TODO(), expected)
-		if err != nil && errors.IsAlreadyExists(err) {
-			// Already exists from previous reconcile, requeue.
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			r.Log.Error(err, "Failed to create new RoleBinding", "RoleBinding.Namespace", expected.Namespace,
-				"RoleBinding.Name", expected.Name)
-			return reconcile.Result{}, err
-		}
-		// RoleBinding created successfully - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	} else if err != nil {
-		r.Log.Error(err, "Failed to get RoleBinding")
-		return reconcile.Result{}, err
-	} else if result := res.EqualRoleBindings(expected, found); result {
-		// If rolebinding is incorrect, delete it and requeue
-		r.Log.Info("Found rolebinding is incorrect", "Found", found.Subjects, "Expected", expected.Subjects)
-		err = r.Client.Delete(context.TODO(), found)
-		if err != nil {
-			r.Log.Error(err, "Failed to delete rolebinding", "Name", found.Name)
-			return reconcile.Result{}, err
-		}
-		// Deleted - return and requeue
-		return reconcile.Result{Requeue: true}, nil
-	}
 	return reconcile.Result{}, nil
 }

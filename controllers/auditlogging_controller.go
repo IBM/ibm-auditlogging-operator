@@ -122,8 +122,6 @@ func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		r.reconcileAuditConfigMaps,
 		r.reconcileAuditCerts,
 		r.reconcileServiceAccount,
-		r.reconcileRole,
-		r.reconcileRoleBinding,
 		r.reconcileService,
 		r.reconcileFluentdDaemonSet,
 		r.updateStatus,

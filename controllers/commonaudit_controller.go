@@ -117,8 +117,6 @@ func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		r.reconcileAuditCerts,
 		r.reconcileSecret,
 		r.reconcileServiceAccount,
-		r.reconcileRole,
-		r.reconcileRoleBinding,
 		r.reconcileService,
 		r.reconcileFluentdDeployment,
 		r.updateStatus,

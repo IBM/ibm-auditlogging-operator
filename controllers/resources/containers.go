@@ -57,14 +57,6 @@ var commonCapabilities = corev1.Capabilities{
 		"ALL",
 	},
 }
-var fluentdPrivilegedSecurityContext = corev1.SecurityContext{
-	AllowPrivilegeEscalation: &trueVar,
-	Privileged:               &trueVar,
-	ReadOnlyRootFilesystem:   &trueVar,
-	RunAsNonRoot:             &falseVar,
-	RunAsUser:                &rootUser,
-	Capabilities:             &commonCapabilities,
-}
 
 var restrictedSecurityContext = corev1.SecurityContext{
 	AllowPrivilegeEscalation: &falseVar,

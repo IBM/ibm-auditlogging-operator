@@ -51,8 +51,6 @@ const fluentdInput = "/fluentd/etc/source.conf"
 const qRadarOutput = "/fluentd/etc/remoteSyslog.conf"
 const splunkOutput = "/fluentd/etc/splunkHEC.conf"
 
-const defaultJournalPath = "/run/log/journal"
-
 var commonNodeAffinity = &corev1.NodeAffinity{
 	RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
 		NodeSelectorTerms: []corev1.NodeSelectorTerm{
@@ -75,7 +73,7 @@ func BuildDeploymentForPolicyController(instance *operatorv1alpha1.AuditLogging,
 	metaLabels := util.LabelsForMetadata(AuditPolicyControllerDeploy)
 	selectorLabels := util.LabelsForSelector(AuditPolicyControllerDeploy, instance.Name)
 	podLabels := util.LabelsForPodMetadata(AuditPolicyControllerDeploy, instance.Name)
-	annotations := util.AnnotationsForMetering(false)
+	annotations := util.AnnotationsForMetering()
 	policyControllerMainContainer.Image = os.Getenv("AUDIT_POLICY_CONTROLLER_IMAGE")
 	policyControllerMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.PolicyController.PullPolicy)
 
@@ -137,7 +135,7 @@ func BuildDeploymentForFluentd(instance *operatorv1.CommonAudit) *appsv1.Deploym
 	metaLabels := util.LabelsForMetadata(constant.FluentdName)
 	selectorLabels := util.LabelsForSelector(constant.FluentdName, instance.Name)
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
-	annotations := util.AnnotationsForMetering(false)
+	annotations := util.AnnotationsForMetering()
 
 	volumes := buildFluentdDeploymentVolumes()
 	fluentdMainContainer.VolumeMounts = buildFluentdDeploymentVolumeMounts()
@@ -353,13 +351,13 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace st
 	metaLabels := util.LabelsForMetadata(constant.FluentdName)
 	selectorLabels := util.LabelsForSelector(constant.FluentdName, instance.Name)
 	podLabels := util.LabelsForPodMetadata(constant.FluentdName, instance.Name)
-	annotations := util.AnnotationsForMetering(true)
+	annotations := util.AnnotationsForMetering()
 	commonVolumes = buildDaemonsetVolumes(instance)
 	fluentdMainContainer.VolumeMounts = buildDaemonsetVolumeMounts(instance)
 	fluentdMainContainer.Image = os.Getenv("FLUENTD_IMAGE")
 	fluentdMainContainer.ImagePullPolicy = getPullPolicy(instance.Spec.Fluentd.PullPolicy)
-	// Run fluentd as privileged
-	fluentdMainContainer.SecurityContext = &fluentdPrivilegedSecurityContext
+	// Run fluentd as privileged changed to restricted
+	fluentdMainContainer.SecurityContext = &restrictedSecurityContext
 	// setup the resource requirements
 	fluentdMainContainer.Resources = buildResources(instance.Spec.Fluentd.Resources, defaultFluentdResources)
 
@@ -407,20 +405,7 @@ func BuildDaemonForFluentd(instance *operatorv1alpha1.AuditLogging, namespace st
 }
 
 func buildDaemonsetVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Volume {
-	var journal = defaultJournalPath
-	if instance.Spec.Fluentd.JournalPath != "" {
-		journal = instance.Spec.Fluentd.JournalPath
-	}
 	commonVolumes := []corev1.Volume{
-		{
-			Name: "journal",
-			VolumeSource: corev1.VolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: journal,
-					Type: nil,
-				},
-			},
-		},
 		{
 			Name: FluentdConfigName,
 			VolumeSource: corev1.VolumeSource{
@@ -512,10 +497,6 @@ func buildDaemonsetVolumes(instance *operatorv1alpha1.AuditLogging) []corev1.Vol
 }
 
 func buildDaemonsetVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev1.VolumeMount {
-	var journal = defaultJournalPath
-	if instance.Spec.Fluentd.JournalPath != "" {
-		journal = instance.Spec.Fluentd.JournalPath
-	}
 	commonVolumeMounts := []corev1.VolumeMount{
 		{
 			Name:      FluentdConfigName,
@@ -536,11 +517,6 @@ func buildDaemonsetVolumeMounts(instance *operatorv1alpha1.AuditLogging) []corev
 			Name:      SplunkConfigName,
 			MountPath: splunkOutput,
 			SubPath:   SplunkConfigKey,
-		},
-		{
-			Name:      "journal",
-			MountPath: journal,
-			ReadOnly:  true,
 		},
 		{
 			Name:      "shared",

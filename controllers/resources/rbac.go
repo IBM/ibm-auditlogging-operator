@@ -19,7 +19,6 @@ package resources
 import (
 	"reflect"
 
-	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	"github.com/IBM/ibm-auditlogging-operator/controllers/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,55 +45,6 @@ func BuildServiceAccount(namespace string) *corev1.ServiceAccount {
 		},
 	}
 	return sa
-}
-
-// BuildRoleBinding returns a RoleBinding object for fluentd
-func BuildRoleBinding(namespace string) *rbacv1.RoleBinding {
-	metaLabels := util.LabelsForMetadata(constant.FluentdName)
-	rb := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + RoleBindingPostfix,
-			Namespace: namespace,
-			Labels:    metaLabels,
-		},
-		Subjects: []rbacv1.Subject{{
-			APIGroup:  "",
-			Kind:      "ServiceAccount",
-			Name:      OperandServiceAccount,
-			Namespace: namespace,
-		}},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     FluentdDaemonSetName + RolePostfix,
-		},
-	}
-	return rb
-}
-
-// BuildRole returns a Role object for fluentd
-func BuildRole(namespace string, journalAccess bool) *rbacv1.Role {
-	var scc = "restricted"
-	if journalAccess {
-		scc = "privileged"
-	}
-	metaLabels := util.LabelsForMetadata(constant.FluentdName)
-	role := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      FluentdDaemonSetName + RolePostfix,
-			Namespace: namespace,
-			Labels:    metaLabels,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{scc},
-			},
-		},
-	}
-	return role
 }
 
 // EqualRoles returns a Boolean
