@@ -37,9 +37,8 @@ type AuditLoggingSpecFluentd struct {
 	EnableAuditLoggingForwarding bool   `json:"enabled,omitempty"`
 	ImageRegistry                string `json:"imageRegistry,omitempty"`
 	// ImageTag no longer supported. Define image sha or tag in operator.yaml
-	ImageTag    string `json:"imageTag,omitempty"`
-	PullPolicy  string `json:"pullPolicy,omitempty"`
-	JournalPath string `json:"journalPath,omitempty"`
+	ImageTag   string `json:"imageTag,omitempty"`
+	PullPolicy string `json:"pullPolicy,omitempty"`
 	// ClusterIssuer deprecated, use Issuer
 	ClusterIssuer string                      `json:"clusterIssuer,omitempty"`
 	Issuer        string                      `json:"issuer,omitempty"`

@@ -35,7 +35,7 @@ const jobNamespaceEnvVar = "CR_NAMESPACE"
 func BuildJobForAuditLogging(instance *operatorv1alpha1.AuditLogging, namespace string) *batchv1.Job {
 	metaLabels := utils.LabelsForMetadata(JobName)
 	podLabels := utils.LabelsForPodMetadata(JobName, instance.Name)
-	annotations := utils.AnnotationsForMetering(false)
+	annotations := utils.AnnotationsForMetering()
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      JobName,

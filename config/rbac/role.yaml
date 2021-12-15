@@ -63,14 +63,6 @@ rules:
       - get
       - create
   - apiGroups:
-      - security.openshift.io
-    resourceNames:
-      - privileged
-    resources:
-      - securitycontextconstraints
-    verbs:
-      - use
-  - apiGroups:
       - apps
     resourceNames:
       - ibm-auditlogging-operator
@@ -142,14 +134,6 @@ rules:
       - get
       - update
       - patch
-  - apiGroups:
-      - security.openshift.io
-    resourceNames:
-      - restricted
-    resources:
-      - securitycontextconstraints
-    verbs:
-      - use
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
@@ -247,14 +231,6 @@ rules:
       - get
       - update
       - patch
-  - apiGroups:
-      - security.openshift.io
-    resourceNames:
-      - restricted
-    resources:
-      - securitycontextconstraints
-    verbs:
-      - use
   - apiGroups:
       - ""
     resources:

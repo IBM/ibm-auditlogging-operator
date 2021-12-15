@@ -93,7 +93,6 @@ metadata:
             "fluentd": {
               "enabled": false,
               "imageRegistry": "quay.io/opencloudio/",
-              "journalPath": "/run/log/journal",
               "pullPolicy": "IfNotPresent"
             },
             "policyController": {
@@ -242,14 +241,6 @@ spec:
             - update
             - patch
         - apiGroups:
-            - security.openshift.io
-          resourceNames:
-            - restricted
-          resources:
-            - securitycontextconstraints
-          verbs:
-            - use
-        - apiGroups:
             - ""
           resources:
             - namespaces
@@ -381,14 +372,6 @@ spec:
             - get
             - create
         - apiGroups:
-            - security.openshift.io
-          resourceNames:
-            - privileged
-          resources:
-            - securitycontextconstraints
-          verbs:
-            - use
-        - apiGroups:
             - apps
           resourceNames:
             - ibm-auditlogging-operator
@@ -444,14 +427,6 @@ spec:
             - get
             - update
             - patch
-        - apiGroups:
-            - security.openshift.io
-          resourceNames:
-            - restricted
-          resources:
-            - securitycontextconstraints
-          verbs:
-            - use
         - apiGroups:
             - rbac.authorization.k8s.io
           resources:

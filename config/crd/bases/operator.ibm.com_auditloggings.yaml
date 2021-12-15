@@ -51,8 +51,6 @@ spec:
                     type: string
                   issuer:
                     type: string
-                  journalPath:
-                    type: string
                   pullPolicy:
                     type: string
                   resources:

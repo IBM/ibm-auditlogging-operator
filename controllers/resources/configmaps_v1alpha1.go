@@ -86,27 +86,6 @@ fluent.conf: |-
 var sourceConfigDataKey = `
 source.conf: |-`
 
-var sourceConfigDataSystemd1 = `
-    <source>
-        @type systemd
-        @id input_systemd_icp
-        @log_level info
-        tag icp-audit
-        path `
-var sourceConfigDataSystemd2 = `
-        matches '[{ "SYSLOG_IDENTIFIER": "icp-audit" }]'
-        read_from_head true
-        <storage>
-          @type local
-          persistent true
-          path /icp-audit
-        </storage>
-        <entry>
-          fields_strip_underscores true
-          fields_lowercase true
-        </entry>
-    </source>
-`
 var sourceConfigDataHTTP1 = `
     <source>
         @type http
@@ -125,14 +104,6 @@ var sourceConfigDataHTTP2 = `
           @type json
         </parse>
     </source>
-`
-var filterJournal = `
-    <filter icp-audit>
-        @type parser
-        format json
-        key_name message
-        reserve_data true
-    </filter>
 `
 var filterHTTP = `
     <filter icp-audit.*>
@@ -243,15 +214,9 @@ func BuildConfigMap(instance *operatorv1alpha1.AuditLogging, name string, namesp
 			Value string `yaml:"source.conf"`
 		}
 		ds := DataS{}
-		var result = sourceConfigDataKey + sourceConfigDataSystemd1
-		if instance.Spec.Fluentd.JournalPath != "" {
-			result += instance.Spec.Fluentd.JournalPath
-		} else {
-			result += defaultJournalPath
-		}
-		result += sourceConfigDataSystemd2
+		var result = sourceConfigDataKey
 		p := strconv.Itoa(defaultHTTPPort)
-		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterJournal + filterHTTP + filterSyslog
+		result += sourceConfigDataHTTP1 + p + sourceConfigDataHTTP2 + sourceConfigSyslog + filterHTTP + filterSyslog
 		err = yaml.Unmarshal([]byte(result), &ds)
 		if err != nil {
 			break
