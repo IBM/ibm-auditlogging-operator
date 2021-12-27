@@ -40,6 +40,7 @@ metadata:
             "fluentd": {
               "imageRegistry": "quay.io/opencloudio/",
               "pullPolicy": "IfNotPresent",
+              "zenEnabled": false
               "resources": {
                 "limits": {
                   "cpu": "500m",
@@ -73,6 +74,13 @@ metadata:
                 "host": "test.fyre.ibm.com",
                 "hostname": "qradar_source_id",
                 "port": 514
+              },
+              "logdna": {
+                "enableSIEM": false,
+                "hostname": "audit-test",
+                "ingesterDomain": "test.fyre.ibm.com",
+                "apikey": "apikey"
+                "app": "audit-test"
               }
             },
             "replicas": 1
@@ -134,6 +142,15 @@ metadata:
               "public": {
                 "secret": "audit-server-certs",
                 "configmap": "audit-logging-fluentd-ds-http-ingesturl"
+              },
+              "public-zen-tls": {
+                 "secret": "internal-tls",
+              },
+              "public-zen-pkcs8-tls": {
+                 "secret": "internal-pkcs8-tls",
+              },
+              "public-zen-service-broker": {
+                 "secret": "zen-service-broker-secret",
               }
             }
           }

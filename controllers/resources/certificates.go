@@ -30,6 +30,8 @@ import (
 const AuditLoggingClientCertSecName = "audit-certs"
 const AuditLoggingHTTPSCertName = "fluentd-https"
 const AuditLoggingServerCertSecName = "audit-server-certs"
+const ZenInternalCertSecName = "internal-tls"
+const ZenSvcBrokerCertSecName = "zen-service-broker-secret"
 const AuditLoggingCertName = "fluentd"
 const DefaultIssuer = "cs-ca-issuer"
 const RootCert = "audit-root-ca-cert"

@@ -54,6 +54,9 @@ const QRadarConfigName = "remote-syslog-config"
 // SplunkConfigName defines the name of the splunk-hec-config configmap
 const SplunkConfigName = "splunk-hec-config"
 
+// LogDNAConfigName defines the name of the logdna-config configmap
+const LogDNAConfigName = "logdna-config"
+
 // HTTPIngestName defines the name of the http-ingesturl configmap
 const HTTPIngestName = "http-ingesturl"
 
@@ -68,6 +71,9 @@ const SplunkConfigKey = "splunkHEC.conf"
 
 //QRadarConfigKey defines the key for the remote-syslog-config configmap
 const QRadarConfigKey = "remoteSyslog.conf"
+
+//LogDNAConfigKey defines the key for the logdna-config configmap
+const LogDNAConfigKey = "logDNA.conf"
 
 // OutputPluginMatches defines the match tags for Splunk and QRadar outputs
 const OutputPluginMatches = "icp-audit icp-audit.** syslog syslog.**"
@@ -188,6 +194,7 @@ var FluentdConfigMaps = []string{
 	FluentdDaemonSetName + "-" + SplunkConfigName,
 	FluentdDaemonSetName + "-" + QRadarConfigName,
 	FluentdDaemonSetName + "-" + HTTPIngestName,
+	FluentdDaemonSetName + "-" + LogDNAConfigName,
 }
 
 type Data struct {
@@ -206,6 +213,11 @@ type DataSplunk struct {
 // DataQRadar defines the struct for remote-syslog-config
 type DataQRadar struct {
 	Value string `yaml:"remoteSyslog.conf"`
+}
+
+// DataLogDNA defines the struct for logdna-config
+type DataLogDNA struct {
+	Value string `yaml:"logDNA.conf"`
 }
 
 // UpdateMatchTags returns a String

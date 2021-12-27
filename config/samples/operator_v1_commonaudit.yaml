@@ -13,6 +13,7 @@ spec:
   fluentd:
     imageRegistry: quay.io/opencloudio/
     pullPolicy: IfNotPresent
+    zenEnabled: false
     resources:
       requests:
         cpu: 100m
@@ -33,6 +34,12 @@ spec:
       port: 514
       hostname: qradar_source_id
       enableTLS: false
+    logdna:
+      enableSIEM: false
+      ingesterDomain: test.fyre.ibm.com
+      apikey: api-key
+      hostname: audit-test
+      app: audit-test
     hostAliases:
       - ip: 9.12.34.56
         hostnames:

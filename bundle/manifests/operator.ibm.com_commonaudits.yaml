@@ -47,6 +47,8 @@ spec:
                     type: string
                   pullPolicy:
                     type: string
+                  zenEnabled:
+                    type: boolean
                   resources:
                     description: ResourceRequirements describes the compute resource requirements.
                     properties:
@@ -131,6 +133,25 @@ spec:
                     - host
                     - hostname
                     - port
+                    type: object
+                  logdna:
+                    description: CommonAuditSpecLogDNA defines the configurations for forwarding audit logs to a LogDNA SIEM
+                    properties:
+                      enableSIEM:
+                        type: boolean
+                      hostname:
+                        type: string
+                      apikey:
+                        type: string
+                      app:
+                        type: string
+                      ingesterDomain:
+                        type: string
+                    required:
+                    - enableSIEM
+                    - hostname
+                    - ingesterDomain
+                    - apikey
                     type: object
                 type: object
               replicas:
