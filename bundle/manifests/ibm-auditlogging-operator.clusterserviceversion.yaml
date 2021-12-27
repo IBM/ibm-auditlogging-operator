@@ -142,6 +142,15 @@ metadata:
               "public": {
                 "secret": "audit-server-certs",
                 "configmap": "audit-logging-fluentd-ds-http-ingesturl"
+              },
+              "public-zen-tls": {
+                 "secret": "internal-tls",
+              },
+              "public-zen-pkcs8-tls": {
+                 "secret": "internal-pkcs8-tls",
+              },
+              "public-zen-service-broker": {
+                 "secret": "zen-service-broker-secret",
               }
             }
           }
