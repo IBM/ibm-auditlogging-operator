@@ -21,3 +21,5 @@ require (
 replace k8s.io/client-go => k8s.io/client-go v0.18.6
 
 replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
+
+replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
