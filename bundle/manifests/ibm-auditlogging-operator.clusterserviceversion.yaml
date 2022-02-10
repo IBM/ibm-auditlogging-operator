@@ -142,10 +142,10 @@ metadata:
     capabilities: Basic Install
     categories: Security
     certified: "false"
-    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.8.4
+    containerImage: quay.io/opencloudio/ibm-auditlogging-operator:3.8.5
     createdAt: "2020-10-21T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
-    olm.skipRange: '>=3.5.0 <3.8.4'
+    olm.skipRange: '>=3.5.0 <3.8.5'
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   labels:
@@ -153,7 +153,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-  name: ibm-auditlogging-operator.v3.8.4
+  name: ibm-auditlogging-operator.v3.8.5
   namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
@@ -322,11 +322,11 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_IMAGE
-                  value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-10
+                  value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-13
                 - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-                  value: quay.io/opencloudio/audit-garbage-collector:1.4.0
+                  value: quay.io/opencloudio/audit-garbage-collector:1.7.0
                 - name: AUDIT_POLICY_CONTROLLER_IMAGE
-                  value: quay.io/opencloudio/audit-policy-controller:3.9.0
+                  value: quay.io/opencloudio/audit-policy-controller:3.12.0
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -522,5 +522,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-auditlogging-operator.v3.8.3
-  version: 3.8.4
+  replaces: ibm-auditlogging-operator.v3.8.4
+  version: 3.8.5
