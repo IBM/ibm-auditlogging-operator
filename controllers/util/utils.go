@@ -165,3 +165,13 @@ func GetCSNamespace() (string, error) {
 	}
 	return csNamespace, err
 }
+
+func CopyLables(origMap map[string]string) map[string]string {
+	targetMap := make(map[string]string)
+	certManagerLabel := "certmanager.k8s.io/time-restarted"
+	for index, element := range origMap {
+		targetMap[index] = element
+	}
+	delete(targetMap, certManagerLabel)
+	return targetMap
+}
