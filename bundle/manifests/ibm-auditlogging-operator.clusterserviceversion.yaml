@@ -319,7 +319,7 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_IMAGE
-                  value: quay.io/opencloudio/fluentd:v1.6.2-bedrock-13
+                  value: quay.io/opencloudio/fluentd:v1.14.5-bedrock-0
                 - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
                   value: quay.io/opencloudio/audit-garbage-collector:1.7.0
                 - name: AUDIT_POLICY_CONTROLLER_IMAGE
@@ -506,7 +506,7 @@ spec:
     name: IBM
   relatedImages:
     - name: FLUENTD_IMAGE
-      image: quay.io/opencloudio/fluentd:v1.6.2-bedrock-13
+      image: quay.io/opencloudio/fluentd:v1.14.5-bedrock-0
     - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
       image: quay.io/opencloudio/audit-garbage-collector:1.7.0
     - name: AUDIT_POLICY_CONTROLLER_IMAGE
