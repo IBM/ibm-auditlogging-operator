@@ -33,19 +33,6 @@ var _ = Describe("Utils", func() {
 		testNamespace = "test-ns"
 		testString    = "test"
 	)
-	Context("Equal Labels", func() {
-		It("Should report whether found labels are equal to expected labels", func() {
-			foundLabels := map[string]string{
-				"hello": "world",
-			}
-			expectedLabels := map[string]string{
-				"hello":   "world",
-				"goodbye": "world",
-			}
-			result := EqualLabels(foundLabels, expectedLabels)
-			Expect(result).Should(BeFalse())
-		})
-	})
 	Context("Equal Annotations", func() {
 		It("Should report whether found annotations are equal to expected annotations", func() {
 			foundAnnotations := map[string]string{
