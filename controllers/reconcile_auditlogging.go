@@ -145,10 +145,6 @@ func (r *AuditLoggingReconciler) reconcileConfig(instance *operatorv1alpha1.Audi
 	}
 	// ConfigMap was found, check for expected values
 	var update = false
-	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
-		found.ObjectMeta.Labels = expected.ObjectMeta.Labels
-		update = true
-	}
 	switch configName {
 	case res.FluentdDaemonSetName + "-" + res.ConfigName:
 		if !res.EqualConfig(found, expected, res.EnableAuditLogForwardKey) {

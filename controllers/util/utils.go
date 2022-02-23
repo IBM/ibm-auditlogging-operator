@@ -31,15 +31,6 @@ import (
 var DefaultStatusForCR = []string{"none"}
 var log = logf.Log.WithName("controller_utils")
 
-func EqualLabels(found map[string]string, expected map[string]string) bool {
-	logger := log.WithValues("func", "EqualLabels")
-	if !reflect.DeepEqual(found, expected) {
-		logger.Info("Labels not equal", "Found", found, "Expected", expected)
-		return false
-	}
-	return true
-}
-
 func EqualAnnotations(found map[string]string, expected map[string]string) bool {
 	logger := log.WithValues("func", "EqualAnnotations")
 	if !reflect.DeepEqual(found, expected) {
