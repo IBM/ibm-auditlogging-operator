@@ -575,7 +575,9 @@ func buildResources(requestedResources, defaultResources corev1.ResourceRequirem
 // EqualDeployments returns a Boolean
 func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment, allowModify bool) bool {
 	logger := log.WithValues("func", "EqualDeployments")
-	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+	//remove the 'certmanager.k8s.io/time-restarted' before calling EqualLabels function
+	foundCopy := util.CopyLables(found.ObjectMeta.Labels)
+	if !util.EqualLabels(foundCopy, expected.ObjectMeta.Labels) {
 		return false
 	}
 	if !reflect.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
@@ -590,7 +592,9 @@ func EqualDeployments(expected *appsv1.Deployment, found *appsv1.Deployment, all
 
 // EqualDaemonSets returns a Boolean
 func EqualDaemonSets(expected *appsv1.DaemonSet, found *appsv1.DaemonSet) bool {
-	if !util.EqualLabels(found.ObjectMeta.Labels, expected.ObjectMeta.Labels) {
+	//remove the 'certmanager.k8s.io/time-restarted' before calling EqualLabels function
+	foundCopy := util.CopyLables(found.ObjectMeta.Labels)
+	if !util.EqualLabels(foundCopy, expected.ObjectMeta.Labels) {
 		return false
 	}
 	if !EqualPods(expected.Spec.Template, found.Spec.Template, true) {
