@@ -513,5 +513,4 @@ spec:
       image: quay.io/opencloudio/audit-policy-controller:3.14.0
     - name: IBM_AUDITLOGGING_OPERATOR_IMAGE
       image: quay.io/opencloudio/ibm-auditlogging-operator:3.20.0
-  replaces: ibm-auditlogging-operator.v3.19.0
   version: 3.20.0
