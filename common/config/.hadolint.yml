@@ -7,4 +7,5 @@ trustedRegistries:
   - gcr.io
   - docker.io
   - quay.io
+  - icr.io
   - registry.access.redhat.com
