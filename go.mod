@@ -18,8 +18,9 @@ require (
 	sigs.k8s.io/controller-runtime v0.6.2
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.18.6
-
-replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
-
-replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
+replace (
+	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
+	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
+	k8s.io/client-go => k8s.io/client-go v0.18.6
+)
