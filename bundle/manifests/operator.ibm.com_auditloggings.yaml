@@ -17,7 +17,6 @@ spec:
     plural: auditloggings
     singular: auditlogging
   scope: Cluster
-  x-kubernetes-preserve-unknown-fields: true
   versions:
   - name: v1alpha1
     schema:
@@ -33,6 +32,7 @@ spec:
           metadata:
             type: object
           spec:
+            x-kubernetes-preserve-unknown-fields: true
             description: AuditLoggingSpec defines the desired state of AuditLogging
             properties:
               fluentd:
