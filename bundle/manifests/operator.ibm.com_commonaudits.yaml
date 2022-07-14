@@ -17,7 +17,6 @@ spec:
     plural: commonaudits
     singular: commonaudit
   scope: Namespaced
-  x-kubernetes-preserve-unknown-fields: true
   versions:
   - name: v1
     schema:
@@ -33,6 +32,7 @@ spec:
           metadata:
             type: object
           spec:
+            x-kubernetes-preserve-unknown-fields: true
             description: CommonAuditSpec defines the desired state of CommonAudit
             properties:
               clusterIssuer:
