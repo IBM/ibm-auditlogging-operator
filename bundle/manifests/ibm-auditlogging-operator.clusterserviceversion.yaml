@@ -513,5 +513,4 @@ spec:
       image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.1
     - name: IBM_AUDITLOGGING_OPERATOR_IMAGE
       image: icr.io/cpopen/ibm-auditlogging-operator:3.22.0
-  replaces: ibm-auditlogging-operator.v3.21.0
   version: 3.22.0

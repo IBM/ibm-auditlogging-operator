@@ -32,6 +32,7 @@ spec:
           metadata:
             type: object
           spec:
+            x-kubernetes-preserve-unknown-fields: true
             description: AuditLoggingSpec defines the desired state of AuditLogging
             properties:
               fluentd:
