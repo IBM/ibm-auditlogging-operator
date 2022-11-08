@@ -319,11 +319,11 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_IMAGE
-                  value: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-9
+                  value: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-10
                 - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-                  value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.6
+                  value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.7
                 - name: AUDIT_POLICY_CONTROLLER_IMAGE
-                  value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.6
+                  value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.7
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -506,11 +506,11 @@ spec:
     name: IBM
   relatedImages:
     - name: FLUENTD_IMAGE
-      image: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-9
+      image: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-10
     - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-      image: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.6
+      image: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.7
     - name: AUDIT_POLICY_CONTROLLER_IMAGE
-      image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.6
+      image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.7
     - name: IBM_AUDITLOGGING_OPERATOR_IMAGE
       image: icr.io/cpopen/ibm-auditlogging-operator:3.24.0
   version: 3.24.0
