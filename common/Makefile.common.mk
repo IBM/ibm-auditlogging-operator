@@ -22,8 +22,8 @@ INSTALL_HOOKS := $(shell find .git/hooks -type l -exec rm {} \; && \
 # config docker
 ############################################################
 PROJECT ?= oceanic-guard-191815
-ZONE    ?= us-west1-a
-CLUSTER ?= prow
+ZONE    ?= us-east5-c
+CLUSTER ?= bedrock-prow
 
 activate-serviceaccount:
 ifdef GOOGLE_APPLICATION_CREDENTIALS
