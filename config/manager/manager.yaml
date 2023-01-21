@@ -50,7 +50,7 @@ spec:
         args:
         - --enable-leader-election
         - --metrics-addr=:8383
-        image: icr.io/cpopen/ibm-auditlogging-operator:3.25.0
+        image: icr.io/cpopen/ibm-auditlogging-operator:3.26.0
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
@@ -58,11 +58,11 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: FLUENTD_IMAGE
-            value: qicr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-12
+            value: qicr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-13
           - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-            value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.9
+            value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.10
           - name: AUDIT_POLICY_CONTROLLER_IMAGE
-            value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.9
+            value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.10
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
