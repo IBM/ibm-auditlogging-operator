@@ -15,7 +15,7 @@
 # limitations under the License.	
 
 KUBECTL=$(command -v kubectl)	
-DOCKER_REGISTRY="hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com"
+DOCKER_REGISTRY="docker-na-public.artifactory.swg-devops.com/hyc-cloud-private-integration-docker-local"
 DOCKER_USERNAME=$(${KUBECTL} -n default get secret artifactory-cred -o jsonpath='{.data.username}' | base64 --decode)
 DOCKER_PASSWORD=$(${KUBECTL} -n default get secret artifactory-cred -o jsonpath='{.data.password}' | base64 --decode)
 
@@ -26,5 +26,5 @@ CONTAINER_CLI=${CONTAINER_CLI:-docker}
 ${CONTAINER_CLI} login "${DOCKER_REGISTRY}" -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
 
 #logging into integration and edge repos
-DOCKER_EDGE_REGISTRY="hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com"
+DOCKER_EDGE_REGISTRY="docker-na-public.artifactory.swg-devops.com/hyc-cloud-private-edge-docker-local"
 ${CONTAINER_CLI} login "${DOCKER_EDGE_REGISTRY}" -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"

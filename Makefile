@@ -49,7 +49,7 @@ endif
 
 
 ifeq ($(BUILD_LOCALLY),0)
-IMAGE_REPO ?= "hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom"
+IMAGE_REPO ?= "docker-na-public.artifactory.swg-devops.com/hyc-cloud-private-integration-docker-local/ibmcom"
 else
 IMAGE_REPO ?= "quay.io/hbradfield"
 endif
