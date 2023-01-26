@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM golang:1.18.8 as builder
+FROM golang:1.18.10 as builder
 ARG GOARCH=amd64
 
 WORKDIR /workspace
