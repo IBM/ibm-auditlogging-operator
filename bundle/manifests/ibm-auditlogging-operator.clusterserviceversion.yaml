@@ -141,10 +141,10 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Security
     certified: "false"
-    containerImage: icr.io/cpopen/ibm-auditlogging-operator:3.26.0
+    containerImage: icr.io/cpopen/ibm-auditlogging-operator:3.25.1
     createdAt: "2020-10-21T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
-    olm.skipRange: '>=3.5.0 <3.26.0'
+    olm.skipRange: '>=3.5.0 <3.25.1'
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   labels:
@@ -152,7 +152,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-  name: ibm-auditlogging-operator.v3.26.0
+  name: ibm-auditlogging-operator.v3.25.1
   namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
@@ -328,7 +328,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: icr.io/cpopen/ibm-auditlogging-operator:3.26.0
+                image: icr.io/cpopen/ibm-auditlogging-operator:3.25.1
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources:
@@ -512,5 +512,5 @@ spec:
     - name: AUDIT_POLICY_CONTROLLER_IMAGE
       image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.10
     - name: IBM_AUDITLOGGING_OPERATOR_IMAGE
-      image: icr.io/cpopen/ibm-auditlogging-operator:3.26.0
-  version: 3.26.0
+      image: icr.io/cpopen/ibm-auditlogging-operator:3.25.1
+  version: 3.25.1
