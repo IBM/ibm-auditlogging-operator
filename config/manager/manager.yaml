@@ -50,7 +50,7 @@ spec:
         args:
         - --enable-leader-election
         - --metrics-addr=:8383
-        image: icr.io/cpopen/ibm-auditlogging-operator:3.26.0
+        image: icr.io/cpopen/ibm-auditlogging-operator:3.25.1
         imagePullPolicy: Always
         env:
           - name: WATCH_NAMESPACE
