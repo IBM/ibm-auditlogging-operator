@@ -21,6 +21,9 @@ require (
 replace (
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
-	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
+	golang.org/x/crypto => golang.org/x/crypto v0.7.0
+	golang.org/x/net => golang.org/x/net v0.8.0
+	golang.org/x/sys => golang.org/x/sys v0.6.0
+	golang.org/x/text => golang.org/x/text v0.8.0
 	k8s.io/client-go => k8s.io/client-go v0.18.6
 )
