@@ -141,10 +141,10 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Security
     certified: "false"
-    containerImage: icr.io/cpopen/ibm-auditlogging-operator:3.25.6
+    containerImage: icr.io/cpopen/ibm-auditlogging-operator:3.25.7
     createdAt: "2020-10-21T15:30:00Z"
     description: The IBM AuditLogging Operator forwards service audit logs to a configured SIEM.
-    olm.skipRange: '>=3.5.0 <3.25.6'
+    olm.skipRange: '>=3.5.0 <3.25.7'
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   labels:
@@ -152,7 +152,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-  name: ibm-auditlogging-operator.v3.25.6
+  name: ibm-auditlogging-operator.v3.25.7
   namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
@@ -319,16 +319,16 @@ spec:
                       name: namespace-scope
                       key: namespaces
                 - name: FLUENTD_IMAGE
-                  value: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-19
+                  value: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-20
                 - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-                  value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.16
+                  value: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.17
                 - name: AUDIT_POLICY_CONTROLLER_IMAGE
-                  value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.16
+                  value: icr.io/cpopen/cpfs/audit-policy-controller:3.15.17
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: icr.io/cpopen/ibm-auditlogging-operator:3.25.6
+                image: icr.io/cpopen/ibm-auditlogging-operator:3.25.7
                 imagePullPolicy: Always
                 name: ibm-auditlogging-operator
                 resources:
@@ -506,11 +506,11 @@ spec:
     name: IBM
   relatedImages:
     - name: FLUENTD_IMAGE
-      image: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-19
+      image: icr.io/cpopen/cpfs/fluentd:v1.14.5-bedrock-20
     - name: AUDIT_GARBAGE_COLLECTOR_IMAGE
-      image: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.16
+      image: icr.io/cpopen/cpfs/audit-garbage-collector:1.10.17
     - name: AUDIT_POLICY_CONTROLLER_IMAGE
-      image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.16
+      image: icr.io/cpopen/cpfs/audit-policy-controller:3.15.17
     - name: IBM_AUDITLOGGING_OPERATOR_IMAGE
-      image: icr.io/cpopen/ibm-auditlogging-operator:3.25.6
-  version: 3.25.6
+      image: icr.io/cpopen/ibm-auditlogging-operator:3.25.7
+  version: 3.25.7
