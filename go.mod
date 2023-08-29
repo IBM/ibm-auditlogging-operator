@@ -23,7 +23,7 @@ replace (
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega => github.com/onsi/gomega v1.27.7
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.15.1
 	golang.org/x/crypto => golang.org/x/crypto v0.7.0
 	golang.org/x/net => golang.org/x/net v0.10.0
 	golang.org/x/sys => golang.org/x/sys v0.6.0
