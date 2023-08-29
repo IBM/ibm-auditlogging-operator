@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM golang:1.19.11-bullseye as builder
+FROM golang:1.19.12-bullseye as builder
 ARG GOARCH=amd64
 
 WORKDIR /workspace
