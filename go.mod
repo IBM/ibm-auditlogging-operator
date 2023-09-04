@@ -11,7 +11,7 @@ require (
 	// github.com/onsi/ginkgo v1.12.1
 	// github.com/onsi/gomega v1.10.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/gomega v1.27.10
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.1
 	k8s.io/apimachinery v0.28.1
@@ -20,7 +20,7 @@ require (
 	//k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/klog v1.0.0
 	//sigs.k8s.io/controller-runtime v0.6.2
-	sigs.k8s.io/controller-runtime v0.12.3
+	sigs.k8s.io/controller-runtime v0.16.1
 )
 
 replace (
