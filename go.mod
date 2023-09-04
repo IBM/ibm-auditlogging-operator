@@ -3,9 +3,8 @@ module github.com/IBM/ibm-auditlogging-operator
 go 1.13
 
 require (
-	github.com/IBM/controller-filtered-cache v0.3.4
+	github.com/IBM/controller-filtered-cache v0.3.6
 	github.com/go-logr/logr v1.2.4
-	github.com/gobuffalo/flect v0.2.0 // indirect
 	//github.com/jetstack/cert-manager v0.10.1
 	github.com/ibm/ibm-cert-manager-operator v0.0.0-20220602233809-3a62073266c7
 	// github.com/onsi/ginkgo v1.12.1
