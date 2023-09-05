@@ -83,6 +83,7 @@ require (
 )
 
 replace (
+	github.com/IBM/controller-filtered-cache => github.com/IBM/controller-filtered-cache v0.3.6
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
 	golang.org/x/crypto => golang.org/x/crypto v0.7.0
