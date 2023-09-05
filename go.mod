@@ -59,7 +59,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
@@ -90,6 +89,6 @@ replace (
 	golang.org/x/net => golang.org/x/net v0.8.0
 	golang.org/x/sys => golang.org/x/sys v0.6.0
 	golang.org/x/text => golang.org/x/text v0.8.0
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.16.1
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.15.1
 //k8s.io/client-go => k8s.io/client-go v0.18.6
 )
