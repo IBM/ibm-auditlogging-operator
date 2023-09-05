@@ -48,8 +48,8 @@ func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 
 		// Get the frequency that informers are resynced
 		var resync time.Duration
-		if opts.Resync != nil {
-			resync = *opts.Resync
+		if opts.SyncPeriod != nil {
+			resync = *opts.SyncPeriod
 		}
 
 		// Generate informermap to contain the gvks and their informers
@@ -71,7 +71,7 @@ func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 	}
 }
 
-//buildInformerMap generates informerMap of the specified resource
+// buildInformerMap generates informerMap of the specified resource
 func buildInformerMap(config *rest.Config, opts cache.Options, resync time.Duration) (map[schema.GroupVersionKind]toolscache.SharedIndexInformer, error) {
 	// Initialize informerMap
 	informerMap := make(map[schema.GroupVersionKind]toolscache.SharedIndexInformer)
