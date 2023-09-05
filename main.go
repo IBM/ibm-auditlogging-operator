@@ -101,10 +101,10 @@ func main() {
 		batchv1.SchemeGroupVersion.WithKind("Job"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Certificate"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Certificate"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Issuer"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Issuer"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
 	}
