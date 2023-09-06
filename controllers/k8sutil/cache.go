@@ -48,8 +48,8 @@ func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 
 		// Get the frequency that informers are resynced
 		var resync time.Duration
-		if opts.SyncPeriod != nil {
-			resync = *opts.SyncPeriod
+		if opts.Resync != nil {
+			resync = *opts.Resync
 		}
 
 		// Generate informermap to contain the gvks and their informers
