@@ -52,7 +52,7 @@ type CommonAuditReconciler struct {
 	Recorder record.EventRecorder
 }
 
-func (r *CommonAuditReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *CommonAuditReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_commonaudit").WithValues("request", req.NamespacedName)
 

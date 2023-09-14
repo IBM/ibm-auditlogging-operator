@@ -55,7 +55,7 @@ type AuditLoggingReconciler struct {
 }
 
 // Reconcile reconciles
-func (r *AuditLoggingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *AuditLoggingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithName("controller_auditlogging").WithValues("request", req.NamespacedName)
 
