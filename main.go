@@ -22,7 +22,17 @@ import (
 	"os"
 	"strings"
 
+	batchv1 "k8s.io/api/batch/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
+
 	"github.com/IBM/ibm-auditlogging-operator/controllers/k8sutil"
+
+	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -33,6 +43,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	cache "github.com/IBM/controller-filtered-cache/filteredcache"
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers"
@@ -62,6 +73,42 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
+	gvkLabelMap := map[schema.GroupVersionKind]cache.Selector{
+		corev1.SchemeGroupVersion.WithKind("Secret"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		corev1.SchemeGroupVersion.WithKind("ConfigMap"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		corev1.SchemeGroupVersion.WithKind("Service"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		corev1.SchemeGroupVersion.WithKind("ServiceAccount"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		appsv1.SchemeGroupVersion.WithKind("Deployment"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		appsv1.SchemeGroupVersion.WithKind("DaemonSet"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		rbacv1.SchemeGroupVersion.WithKind("Role"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		rbacv1.SchemeGroupVersion.WithKind("RoleBinding"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		batchv1.SchemeGroupVersion.WithKind("Job"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Certificate"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Issuer"): {
+			LabelSelector: constant.AuditTypeLabel,
+		},
+	}
+
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	watchNamespace, err := getWatchNamespace()
@@ -80,7 +127,9 @@ func main() {
 
 	if watchNamespace != "" {
 		options.NewCache = k8sutil.NewAuditCache(strings.Split(watchNamespace, ","))
-	} 
+	} else {
+		options.NewCache = cache.NewFilteredCacheBuilder(gvkLabelMap)
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
