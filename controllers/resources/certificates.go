@@ -23,7 +23,7 @@ import (
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
 	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

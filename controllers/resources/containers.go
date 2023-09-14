@@ -103,7 +103,7 @@ var fluentdMainContainer = corev1.Container{
 		},
 	},
 	LivenessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					"ls",
@@ -118,7 +118,7 @@ var fluentdMainContainer = corev1.Container{
 		FailureThreshold:    3,
 	},
 	ReadinessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					"bash",
@@ -146,7 +146,7 @@ var policyControllerMainContainer = corev1.Container{
 		},
 	},
 	LivenessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					"sh",
@@ -159,7 +159,7 @@ var policyControllerMainContainer = corev1.Container{
 		TimeoutSeconds:      5,
 	},
 	ReadinessProbe: &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					"sh",
