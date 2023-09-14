@@ -36,7 +36,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -101,10 +101,10 @@ func main() {
 		batchv1.SchemeGroupVersion.WithKind("Job"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Certificate"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Certificate"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Issuer"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Issuer"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
 	}

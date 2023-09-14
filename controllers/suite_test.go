@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
