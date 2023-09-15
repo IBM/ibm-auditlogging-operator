@@ -46,10 +46,19 @@ import (
 func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 	return func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
 
+		// var metricsAddr string
+		// flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+		// flag.Parse()
+
+		// opts1 := manager.Options{
+		// 	Namespace:          namespaces, // Set namespaces here
+		// 	MetricsBindAddress: metricsAddr,   // Set your desired metrics address
+		// }
+
 		// Get the frequency that informers are resynced
 		var resync time.Duration
-		if opts.SyncPeriod != nil {
-			resync = *opts.SyncPeriod
+		if opts.Resync != nil {
+			resync = *opts.Resync
 		}
 
 		// Generate informermap to contain the gvks and their informers
@@ -57,14 +66,18 @@ func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 		if err != nil {
 			return nil, err
 		}
-
-		NewCache := cache.MultiNamespacedCacheBuilder(namespaces)
-		// Create a default cache for the other resources
-		fallback, err := NewCache(config, opts)
+		//cacheInstance, err := cache.New(cfg, opts)
+		fallback, err := cache.New(config, opts)
 		if err != nil {
-			klog.Error(err, "Failed to init fallback cache")
-			return nil, err
+			panic(fmt.Sprintf("unable to create cache: %v", err))
 		}
+		// NewCache := cache.MultiNamespacedCacheBuilder(namespaces)
+		// // Create a default cache for the other resources
+		// fallback, err := NewCache(config, opts)
+		// if err != nil {
+		// 	klog.Error(err, "Failed to init fallback cache")
+		// 	return nil, err
+		// }
 
 		// Return the customized cache
 		return filteredCache{config: config, informerMap: informerMap, fallback: fallback, namespace: "", Scheme: opts.Scheme}, nil
@@ -317,7 +330,7 @@ func (c filteredCache) List(ctx context.Context, list client.ObjectList, opts ..
 
 // GetInformer fetches or constructs an informer for the given object that corresponds to a single
 // API kind and resource.
-func (c filteredCache) GetInformer(ctx context.Context, obj client.Object) (cache.Informer, error) {
+func (c filteredCache) GetInformer(ctx context.Context, obj client.Object, opts ...cache.InformerGetOption) (cache.Informer, error) {
 	gvk, err := apiutil.GVKForObject(obj, c.Scheme)
 	if err != nil {
 		return nil, err
@@ -332,7 +345,7 @@ func (c filteredCache) GetInformer(ctx context.Context, obj client.Object) (cach
 
 // GetInformerForKind is similar to GetInformer, except that it takes a group-version-kind, instead
 // of the underlying object.
-func (c filteredCache) GetInformerForKind(ctx context.Context, gvk schema.GroupVersionKind) (cache.Informer, error) {
+func (c filteredCache) GetInformerForKind(ctx context.Context, gvk schema.GroupVersionKind, opts ...cache.InformerGetOption) (cache.Informer, error) {
 	if informer, ok := c.informerMap[gvk]; ok {
 		return informer, nil
 	}

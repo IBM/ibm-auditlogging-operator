@@ -43,7 +43,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	cache "github.com/IBM/controller-filtered-cache/filteredcache"
+	cache1 "github.com/IBM/controller-filtered-cache/filteredcache"
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers"
@@ -73,7 +73,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	gvkLabelMap := map[schema.GroupVersionKind]cache.Selector{
+	gvkLabelMap := map[schema.GroupVersionKind]cache1.Selector{
 		corev1.SchemeGroupVersion.WithKind("Secret"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
@@ -118,17 +118,51 @@ func main() {
 	}
 
 	options := ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "d9301293.ibm.com",
+		Scheme:           scheme,
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "d9301293.ibm.com",
 	}
+	//type CustomMetricsService struct{}
+	//metricsService := &CustomMetricsService{}
+
+	// ServeMetrics serves metrics using a custom HTTP server.
+
+	//  	func (c *CustomMetricsService) ServeMetrics(metricsPath string, addr string, port int) error {
+	// 	http.Handle(metricsPath, promhttp.Handler())
+	// 	listenAddress := fmt.Sprintf("%s:%d", addr, port)
+	// 	return http.ListenAndServe(listenAddress, nil)
+	//    }
+
+	//    // Start starts the metrics service.
+	//    func (c *CustomMetricsService) Start(stopCh <-chan struct{}) error {
+	// 	// Implement any custom start logic if needed
+	// 	return nil
+	//    }
+
+	//   // Shutdown shuts down the metrics service.
+	//   func (c *CustomMetricsService) Shutdown() {
+	// 	// Implement any custom shutdown logic if needed
+	//    }
+
+	// // Register metrics
+	// if err := metrics.Register(); err != nil {
+	// 	panic(fmt.Sprintf("unable to register metrics: %v", err))
+	// }
+
+	// metricsService := &webhook.Service{}
+
+	// options := ctrl.Options{
+	// 	Scheme:             scheme,
+	// 	MetricsBindAddress: metricsAddr,
+	// 	Port:               9443,
+	// 	LeaderElection:     enableLeaderElection,
+	// 	LeaderElectionID:   "d9301293.ibm.com",
+	// }
 
 	if watchNamespace != "" {
 		options.NewCache = k8sutil.NewAuditCache(strings.Split(watchNamespace, ","))
 	} else {
-		options.NewCache = cache.NewFilteredCacheBuilder(gvkLabelMap)
+		options.NewCache = cache1.NewFilteredCacheBuilder(gvkLabelMap)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
@@ -136,7 +170,9 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
+	// mgr.Add(metricsAddr)
+	// mgr.Add(ports)
+	//mgr.Add(metricsService)
 	if err = (&controllers.CommonAuditReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("CommonAudit"),
