@@ -19,7 +19,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -27,16 +29,15 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
-	"github.com/IBM/ibm-auditlogging-operator/controllers/k8sutil"
-
 	"github.com/IBM/ibm-auditlogging-operator/controllers/constant"
+	"github.com/IBM/ibm-auditlogging-operator/controllers/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -47,7 +48,11 @@ import (
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers"
+
 	// +kubebuilder:scaffold:imports
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -101,10 +106,10 @@ func main() {
 		batchv1.SchemeGroupVersion.WithKind("Job"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Certificate"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Certificate"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
-		certmgr.SchemeGroupVersion.WithKind("Issuer"): {
+		certmgr.SchemeBuilder.GroupVersion.WithKind("Issuer"): {
 			LabelSelector: constant.AuditTypeLabel,
 		},
 	}
@@ -118,15 +123,21 @@ func main() {
 	}
 
 	options := ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "d9301293.ibm.com",
+		Scheme: scheme,
+		//MetricsBindAddress: metricsAddr,
+		//Port:               9443,
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "d9301293.ibm.com",
 	}
-
+	// // Set the Metrics Bind Address and Port
+	// if metricsAddr != "" && metricsPort > 0 {
+	// 	options.MetricsBindAddress = metricsAddr
+	// 	options.MetricsPort = metricsPort
+	// }
 	if watchNamespace != "" {
 		options.NewCache = k8sutil.NewAuditCache(strings.Split(watchNamespace, ","))
+		//options.NewCache = cache.MultiNamespacedFilteredCacheBuilder(gvkLabelMap, strings.Split(watchNamespace, ","))
+
 	} else {
 		options.NewCache = cache.NewFilteredCacheBuilder(gvkLabelMap)
 	}
@@ -162,6 +173,43 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+	metricsPort := 9443
+
+	// Create a Prometheus metrics registry
+	r := prometheus.NewRegistry()
+
+	// Create an HTTP handler for Prometheus metrics
+	http.Handle("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}))
+	go func() {
+		addr := metricsAddr + ":" + strconv.Itoa(metricsPort)
+		http.ListenAndServe(addr, nil)
+	}()
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		panic(err)
+	}
+
+	// // Create a metrics listener and serve it on the specified address and port
+	// metricsServer := metrics.NewBuilder().
+	// 	For("controller_runtime").
+	// 	WithPort(metricsPort).
+	// 	WithListener(metricsAddr).
+	// 	Build()
+	// mux := http.NewServeMux()
+	// mux.Handle("/metrics", metricsServer)
+	// go func() {
+	// 	klog.Infof("Starting metrics server at %s:%d", metricsAddr, metricsPort)
+	// 	err := http.ListenAndServe(metricsAddr+":"+strconv.Itoa(metricsPort), mux)
+	// 	if err != nil {
+	// 		klog.Fatalf("Error starting metrics server: %v", err)
+	// 	}
+	// }()
+
+	// klog.Infof("Starting controller manager")
+
+	// if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	// 	klog.Fatalf("Error running manager: %v", err)
+	// }
 }
 
 // getWatchNamespace returns the Namespace the operator should be watching for changes

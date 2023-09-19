@@ -30,7 +30,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 
