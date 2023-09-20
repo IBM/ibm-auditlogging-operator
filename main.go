@@ -44,10 +44,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	cache "github.com/IBM/controller-filtered-cache/filteredcache"
+	//cache "github.com/IBM/controller-filtered-cache/filteredcache"
 	operatorv1 "github.com/IBM/ibm-auditlogging-operator/api/v1"
 	operatorv1alpha1 "github.com/IBM/ibm-auditlogging-operator/api/v1alpha1"
 	"github.com/IBM/ibm-auditlogging-operator/controllers"
+	cache "github.com/IBM/ibm-auditlogging-operator/controllers/k8sfcutil"
 
 	// +kubebuilder:scaffold:imports
 

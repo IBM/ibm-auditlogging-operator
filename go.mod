@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-logr/logr v1.2.4
+	github.com/gobuffalo/flect v1.0.2
 	github.com/ibm/ibm-cert-manager-operator v0.0.0-20220602233809-3a62073266c7
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.10
@@ -15,10 +16,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
-require (
-	github.com/IBM/controller-filtered-cache v0.3.6
-	github.com/prometheus/client_golang v1.16.0
-)
+//github.com/IBM/controller-filtered-cache v0.3.6
+require github.com/prometheus/client_golang v1.16.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -31,7 +30,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

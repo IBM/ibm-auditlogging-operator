@@ -14,16 +14,23 @@
 // limitations under the License.
 //
 
-package k8sutil
+package k8sfcutil
 
 import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
-	utils "github.com/IBM/ibm-auditlogging-operator/controllers/util"
-
+	"github.com/gobuffalo/flect"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	certificatesv1beta1 "k8s.io/api/certificates/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +41,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	toolscache "k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
@@ -42,8 +50,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-// NewAuditCache implements a customized cache with a for Audit
-func NewAuditCache(namespaces []string) cache.NewCacheFunc {
+// NewFilteredCacheBuilder implements a customized cache with a filter for specified resources
+func NewFilteredCacheBuilder(gvkLabelMap map[schema.GroupVersionKind]Selector) cache.NewCacheFunc {
 	return func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
 
 		// Get the frequency that informers are resynced
@@ -52,69 +60,52 @@ func NewAuditCache(namespaces []string) cache.NewCacheFunc {
 			resync = *opts.SyncPeriod
 		}
 
-		//Tamil new cache logic
-
-		var clusterGVKList []schema.GroupVersionKind
-		GVKList := []schema.GroupVersionKind{
-			{Group: "operator.ibm.com", Kind: "AuditLogging", Version: "v1alpha1"},
-		}
-		clusterGVKList = append(clusterGVKList, GVKList...)
-
 		// Generate informermap to contain the gvks and their informers
-		informerMap, err := buildInformerMap(config, opts, resync, clusterGVKList)
+		informerMap, err := buildInformerMap(config, opts, gvkLabelMap, resync)
 		if err != nil {
 			return nil, err
 		}
 
-		//NewCache := cache.MultiNamespacedCacheBuilder(namespaces)
-		// ctx := context.TODO()
-		// // Create a new cache with multiple namespaces
-		// controllerCache, err := cache.NewCache(ctx, cache.Options{
-		// 	DefaultNamespaces: namespaces, // Set the default namespace (can be empty)
-		// })
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// opts = cache.Options{}
-		// fallback, err := cache.NewCacheFunc(config, opts)
-
-		// NewCache := cache.MultiNamespacedCacheBuilder(namespaces)
-
-		// // // // Create a default cache for the other resources
-		// fallback, err := NewCache(config, opts)
-		// if err != nil {
-		// 	klog.Error(err, "Failed to init fallback cache")
-		// 	return nil, err
-		// }
-
-		// Create a default cache for the other resources
+		// Create a default cache for the unspecified resources
 		fallback, err := cache.New(config, opts)
 		if err != nil {
 			klog.Error(err, "Failed to init fallback cache")
 			return nil, err
 		}
+
 		// Return the customized cache
 		return filteredCache{config: config, informerMap: informerMap, fallback: fallback, Scheme: opts.Scheme}, nil
 	}
 }
 
-// buildInformerMap generates informerMap of the specified resource
-func buildInformerMap(config *rest.Config, opts cache.Options, resync time.Duration, clusterGVKList []schema.GroupVersionKind) (map[schema.GroupVersionKind]toolscache.SharedIndexInformer, error) {
+// Selector contains LabelSelector FieldSelector
+type Selector struct {
+	LabelSelector string
+	FieldSelector string
+}
 
+// buildInformerMap generates informerMap of the specified resource
+func buildInformerMap(config *rest.Config, opts cache.Options, gvkLabelMap map[schema.GroupVersionKind]Selector, resync time.Duration) (map[schema.GroupVersionKind]toolscache.SharedIndexInformer, error) {
 	// Initialize informerMap
 	informerMap := make(map[schema.GroupVersionKind]toolscache.SharedIndexInformer)
 
-	for _, gvk := range clusterGVKList {
+	for gvk, selector := range gvkLabelMap {
+		// Get the plural type of the kind as resource
+		plural := kindToResource(gvk.Kind)
 
-		// Create ListerWatcher by NewFilteredListWatchFromClient
+		fieldSelector := selector.FieldSelector
+		labelSelector := selector.LabelSelector
+		selectorFunc := func(options *metav1.ListOptions) {
+			options.FieldSelector = fieldSelector
+			options.LabelSelector = labelSelector
+		}
+
+		// Create ListerWatcher with the label by NewFilteredListWatchFromClient
 		client, err := getClientForGVK(gvk, config, opts.Scheme)
 		if err != nil {
 			return nil, err
 		}
-
-		// Get the plural type of the kind as resource
-		plural := kindToResource(gvk.Kind)
-		listerWatcher := toolscache.NewFilteredListWatchFromClient(client, plural, "", func(options *metav1.ListOptions) {})
+		listerWatcher := toolscache.NewFilteredListWatchFromClient(client, plural, "", selectorFunc)
 
 		// Build typed runtime object for informer
 		objType := &unstructured.Unstructured{}
@@ -134,48 +125,7 @@ func buildInformerMap(config *rest.Config, opts cache.Options, resync time.Durat
 		gvkList := schema.GroupVersionKind{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind + "List"}
 		informerMap[gvkList] = informer
 	}
-
 	return informerMap, nil
-
-	// // Initialize informerMap
-	// informerMap := make(map[schema.GroupVersionKind]toolscache.SharedIndexInformer)
-
-	// gvkList := []schema.GroupVersionKind{
-	// 	{Group: "operator.ibm.com", Kind: "AuditLogging", Version: "v1alpha1"},
-	// }
-
-	// for _, gvk := range gvkList {
-
-	// 	// Create ListerWatcher with the label by NewFilteredListWatchFromClient
-	// 	cli, err := getClientForGVK(gvk, config, opts.Scheme)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	// Get the plural type of the kind as resource
-	// 	plural := kindToResource(gvk.Kind)
-	// 	listerWatcher := toolscache.NewFilteredListWatchFromClient(cli, plural, "ibm-common-services", func(options *metav1.ListOptions) {})
-
-	// 	// Build typed runtime object for informer
-	// 	objType := &unstructured.Unstructured{}
-	// 	objType.GetObjectKind().SetGroupVersionKind(gvk)
-	// 	typed, err := opts.Scheme.New(gvk)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(objType.UnstructuredContent(), typed); err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	// Create new informer with the listerwatcher
-	// 	informer := toolscache.NewSharedIndexInformer(listerWatcher, typed, resync, toolscache.Indexers{toolscache.NamespaceIndex: toolscache.MetaNamespaceIndexFunc})
-	// 	informerMap[gvk] = informer
-	// 	// Build list type for the GVK
-	// 	gvkList := schema.GroupVersionKind{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind + "List"}
-	// 	informerMap[gvkList] = informer
-	// }
-
-	// return informerMap, nil
 }
 
 // filteredCache is the customized cache by the specified label
@@ -190,7 +140,7 @@ type filteredCache struct {
 // Get implements Reader
 // If the resource is in the cache, Get function get fetch in from the informer
 // Otherwise, resource will be get by the k8s client
-func (c filteredCache) Get(ctx context.Context, key client.ObjectKey, obj client.Object, co ...client.GetOption) error {
+func (c filteredCache) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 
 	// Get the GVK of the runtime object
 	gvk, err := apiutil.GVKForObject(obj, c.Scheme)
@@ -209,7 +159,7 @@ func (c filteredCache) Get(ctx context.Context, key client.ObjectKey, obj client
 	}
 
 	// Passthrough
-	return c.fallback.Get(ctx, key, obj, co...)
+	return c.fallback.Get(ctx, key, obj, opts...)
 }
 
 // getFromStore gets the resource from the cache
@@ -225,7 +175,7 @@ func (c filteredCache) getFromStore(informer toolscache.SharedIndexInformer, key
 
 	item, exists, err := informer.GetStore().GetByKey(keyString)
 	if err != nil {
-		klog.Info("Failed to get item from cache", "error", err)
+		klog.Error("Failed to get item from cache", "error", err)
 		return err
 	}
 	if !exists {
@@ -257,20 +207,18 @@ func (c filteredCache) getFromClient(ctx context.Context, key client.ObjectKey, 
 	// Get resource by the kubeClient
 	resource := kindToResource(gvk.Kind)
 
-	cli, err := getClientForGVK(gvk, c.config, c.Scheme)
+	client, err := getClientForGVK(gvk, c.config, c.Scheme)
 	if err != nil {
 		return err
 	}
-	ns := key.Namespace
-	if ns == "" {
-		ns, err = utils.GetCSNamespace()
-		if err != nil {
-			return err
-		}
+
+	// Different key for cluster scope resource and namespaced resource
+	restReq := client.Get()
+	if key.Namespace != "" {
+		restReq = restReq.Namespace(key.Namespace)
 	}
-	result, err := cli.
-		Get().
-		Namespace(ns).
+
+	result, err := restReq.
 		Name(key.Name).
 		Resource(resource).
 		VersionedParams(&metav1.GetOptions{}, metav1.ParameterCodec).
@@ -280,7 +228,7 @@ func (c filteredCache) getFromClient(ctx context.Context, key client.ObjectKey, 
 	if apierrors.IsNotFound(err) {
 		return err
 	} else if err != nil {
-		klog.Info("Failed to retrieve resource list", "error", err)
+		klog.Error("Failed to retrieve resource list", "error", err)
 		return err
 	}
 
@@ -334,6 +282,14 @@ func (c filteredCache) List(ctx context.Context, list client.ObjectList, opts ..
 			return err
 		}
 
+		if len(objList) == 0 {
+			return c.ListFromClient(ctx, list, gvk, opts...)
+		}
+
+		if len(objList) == 0 {
+			return c.ListFromClient(ctx, list, gvk, opts...)
+		}
+
 		// Check namespace and labelSelector
 		runtimeObjList := make([]runtime.Object, 0, len(objList))
 		for _, item := range objList {
@@ -379,6 +335,66 @@ func (c filteredCache) List(ctx context.Context, list client.ObjectList, opts ..
 	return c.fallback.List(ctx, list, opts...)
 }
 
+// ListFromClient implements list resource by k8sClient
+func (c filteredCache) ListFromClient(ctx context.Context, list runtime.Object, gvk schema.GroupVersionKind, opts ...client.ListOption) error {
+
+	listOpts := client.ListOptions{}
+	listOpts.ApplyOptions(opts)
+
+	// Get labelselector and fieldSelector
+	var labelSelector, fieldSelector string
+	if listOpts.FieldSelector != nil {
+		fieldSelector = listOpts.FieldSelector.String()
+	}
+	if listOpts.LabelSelector != nil {
+		labelSelector = listOpts.LabelSelector.String()
+	}
+
+	var namespace string
+
+	if c.namespace != "" {
+		if listOpts.Namespace != "" && c.namespace != listOpts.Namespace {
+			return fmt.Errorf("unable to list from namespace : %v because of unknown namespace for the cache", listOpts.Namespace)
+		}
+		namespace = c.namespace
+	} else if listOpts.Namespace != "" {
+		namespace = listOpts.Namespace
+	}
+
+	resource := kindToResource(gvk.Kind[:len(gvk.Kind)-4])
+
+	client, err := getClientForGVK(gvk, c.config, c.Scheme)
+	if err != nil {
+		return err
+	}
+	result, err := client.
+		Get().
+		Namespace(namespace).
+		Resource(resource).
+		VersionedParams(&metav1.ListOptions{
+			LabelSelector: labelSelector,
+			FieldSelector: fieldSelector,
+		}, metav1.ParameterCodec).
+		Do(ctx).
+		Get()
+
+	if err != nil {
+		klog.Error("Failed to retrieve resource list: ", err)
+		return err
+	}
+
+	// Copy the value of the item in the cache to the returned value
+	objVal := reflect.ValueOf(list)
+	itemVal := reflect.ValueOf(result)
+	if !objVal.Type().AssignableTo(objVal.Type()) {
+		return fmt.Errorf("cache had type %s, but %s was asked for", itemVal.Type(), objVal.Type())
+	}
+	reflect.Indirect(objVal).Set(reflect.Indirect(itemVal))
+	list.GetObjectKind().SetGroupVersionKind(gvk)
+
+	return nil
+}
+
 // GetInformer fetches or constructs an informer for the given object that corresponds to a single
 // API kind and resource.
 func (c filteredCache) GetInformer(ctx context.Context, obj client.Object, opts ...cache.InformerGetOption) (cache.Informer, error) {
@@ -407,46 +423,13 @@ func (c filteredCache) GetInformerForKind(ctx context.Context, gvk schema.GroupV
 // Start runs all the informers known to this cache until the given channel is closed.
 // It blocks.
 func (c filteredCache) Start(ctx context.Context) error {
-	klog.Info("Start Audit cache")
+	klog.Info("Start filtered cache")
 	for _, informer := range c.informerMap {
 		informer := informer
 		go informer.Run(ctx.Done())
 	}
 	return c.fallback.Start(ctx)
 }
-
-// func (c filteredCache) Start(ctx context.Context) error {
-// 	klog.Info("Start Audit cache")
-
-// 	// Use a WaitGroup to wait for all informers to start
-// 	var wg sync.WaitGroup
-
-// 	// Start informers in goroutines
-// 	for _, informer := range c.informerMap {
-// 		informer := informer
-// 		wg.Add(1)
-// 		go func() {
-// 			defer wg.Done()
-// 			// Start the informer and allow it to handle context cancellation
-// 			informer.Run(ctx.Done())
-// 		}()
-// 	}
-
-// 	// Wait for all informers to complete initialization
-// 	wg.Wait()
-
-// 	// Check if the context was canceled
-// 	select {
-// 	case <-ctx.Done():
-// 		klog.Info("Context canceled, not starting fallback cache")
-// 		return ctx.Err()
-// 	default:
-// 		// Context is still active, proceed to start the fallback cache
-// 	}
-
-// 	// Start the fallback cache
-// 	return c.fallback.Start(ctx)
-// }
 
 // WaitForCacheSync waits for all the caches to sync.  Returns false if it could not sync a cache.
 func (c filteredCache) WaitForCacheSync(ctx context.Context) bool {
@@ -522,10 +505,7 @@ func indexByField(indexer cache.Informer, field string, extractor client.Indexer
 
 // kindToResource converts kind to resource
 func kindToResource(kind string) string {
-	kindToResourceMap := map[string]string{
-		"AuditLogging": "auditloggings",
-	}
-	return kindToResourceMap[kind]
+	return strings.ToLower(flect.Pluralize(kind))
 }
 
 // listToGVK converts GVK list to GVK
@@ -564,16 +544,63 @@ func KeyToNamespacedKey(ns string, baseKey string) string {
 	return allNamespacesNamespace + "/" + baseKey
 }
 
+type handlerRegistration struct {
+	handles map[string]toolscache.ResourceEventHandlerRegistration
+}
+
+type syncer interface {
+	HasSynced() bool
+}
+
+// HasSynced asserts that the handler has been called for the full initial state of the informer.
+// This uses syncer to be compatible between client-go 1.27+ and older versions when the interface changed.
+func (h handlerRegistration) HasSynced() bool {
+	for _, reg := range h.handles {
+		if s, ok := reg.(syncer); ok {
+			if !s.HasSynced() {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func getClientForGVK(gvk schema.GroupVersionKind, config *rest.Config, scheme *runtime.Scheme) (toolscache.Getter, error) {
-	gv := gvk.GroupVersion()
-	cfg := rest.CopyConfig(config)
-	cfg.GroupVersion = &gv
-	cfg.APIPath = "/apis"
-	if cfg.UserAgent == "" {
-		cfg.UserAgent = rest.DefaultKubernetesUserAgent()
+	// Create a client for fetching resources
+	k8sClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.NegotiatedSerializer == nil {
-		cfg.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+	switch gvk.GroupVersion() {
+	case corev1.SchemeGroupVersion:
+		return k8sClient.CoreV1().RESTClient(), nil
+	case appsv1.SchemeGroupVersion:
+		return k8sClient.AppsV1().RESTClient(), nil
+	case batchv1.SchemeGroupVersion:
+		return k8sClient.BatchV1().RESTClient(), nil
+	case networkingv1.SchemeGroupVersion:
+		return k8sClient.NetworkingV1().RESTClient(), nil
+	case rbacv1.SchemeGroupVersion:
+		return k8sClient.RbacV1().RESTClient(), nil
+	case storagev1.SchemeGroupVersion:
+		return k8sClient.StorageV1().RESTClient(), nil
+	case certificatesv1beta1.SchemeGroupVersion:
+		return k8sClient.CertificatesV1beta1().RESTClient(), nil
+	default:
+		gv := gvk.GroupVersion()
+		cfg := rest.CopyConfig(config)
+		cfg.GroupVersion = &gv
+		if gvk.Group == "" {
+			cfg.APIPath = "/api"
+		} else {
+			cfg.APIPath = "/apis"
+		}
+		if cfg.UserAgent == "" {
+			cfg.UserAgent = rest.DefaultKubernetesUserAgent()
+		}
+		if cfg.NegotiatedSerializer == nil {
+			cfg.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+		}
+		return rest.RESTClientFor(cfg)
 	}
-	return rest.RESTClientFor(cfg)
 }
