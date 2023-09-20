@@ -221,6 +221,19 @@ spec:
         serviceAccountName: ibm-auditlogging-cleanup
       - rules:
         - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+        serviceAccountName: ibm-auditlogging-operator
+      - rules:
+        - apiGroups:
             - audit.policies.ibm.com
           resources:
             - auditpolicies
