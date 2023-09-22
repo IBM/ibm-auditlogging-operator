@@ -19,7 +19,7 @@ package controllers
 import (
 	"context"
 
-	certmgr "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmgr "github.com/ibm/ibm-cert-manager-operator/apis/certmanager/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
