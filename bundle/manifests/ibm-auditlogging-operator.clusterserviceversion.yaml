@@ -209,17 +209,6 @@ spec:
           verbs:
             - create
             - patch
-        serviceAccountName: ibm-auditlogging-operator
-      - rules:
-        - apiGroups:
-            - rbac.authorization.k8s.io
-          resources:
-            - clusterroles
-            - clusterrolebindings
-          verbs:
-            - delete
-        serviceAccountName: ibm-auditlogging-cleanup
-      - rules:
         - apiGroups:
             - coordination.k8s.io
           resources:
@@ -232,6 +221,15 @@ spec:
             - patch
             - update
         serviceAccountName: ibm-auditlogging-operator
+      - rules:
+        - apiGroups:
+            - rbac.authorization.k8s.io
+          resources:
+            - clusterroles
+            - clusterrolebindings
+          verbs:
+            - delete
+        serviceAccountName: ibm-auditlogging-cleanup
       - rules:
         - apiGroups:
             - audit.policies.ibm.com
