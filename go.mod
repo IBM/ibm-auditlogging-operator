@@ -56,9 +56,9 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -82,7 +82,7 @@ replace (
 	github.com/google/gnostic => github.com/google/gnostic v0.5.7-v3refs
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
 	golang.org/x/crypto => golang.org/x/crypto v0.7.0
-	golang.org/x/net => golang.org/x/net v0.8.0
+	golang.org/x/net => golang.org/x/net v0.17.0
 	golang.org/x/sys => golang.org/x/sys v0.6.0
 	golang.org/x/text => golang.org/x/text v0.8.0
 	k8s.io/api => k8s.io/api v0.26.1
